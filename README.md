@@ -166,6 +166,19 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 - Cuando el workflow esté operativo, se configurarán sus comprobaciones como obligatorias en `main`. Los fallos deberán resolverse antes de fusionar.
 - No se permite forzar cambios ni eliminar `main`.
 
+### Cómo revisar y fusionar una pull request en GitHub
+
+1. El autor abre la pull request hacia `main` y solicita revisión desde **Reviewers** a un compañero con permiso Write.
+2. El revisor entra en **Files changed**, revisa los cambios y las comprobaciones descritas.
+3. Si todo está correcto, pulsa **Review changes → Approve → Submit review**. Si necesita correcciones, utiliza **Request changes** y explica qué debe cambiar.
+4. El autor atiende los comentarios y solicita otra revisión cuando corresponda.
+5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Squash and merge** y confirma la fusión.
+6. Se elimina la rama con **Delete branch**, si no se elimina automáticamente.
+
+Un comentario normal no cuenta como aprobación. El autor no puede aprobar su propia pull request.
+
+La tarea pasa a **Hecho** cuando cumple todos sus criterios. Una PR parcial no completa automáticamente una historia.
+
 ### Estados del Kanban
 
 - **Backlog:** trabajo registrado y pendiente de seleccionar.
