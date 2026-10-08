@@ -1,0 +1,16 @@
+{
+  "name": "sportsplace-database-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "migrate": "node scripts/migrate.js",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "supabase": "2.120.0"
+  }
+}
