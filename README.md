@@ -19,7 +19,7 @@ La implementación y validación de estas historias se siguen en el Kanban.
 
 - Frontend: React con Vite, en JavaScript.
 - Backend: Node.js 24; el servidor inicial usa `node:http`. Anass y Alex deben confirmar Express o NestJS para la API funcional.
-- Base de datos: PostgreSQL mediante Supabase.
+- Base de datos: PostgreSQL mediante Supabase; el servidor utiliza `pg` para la conexión privada.
 - Entorno de desarrollo: Docker y Docker Compose, con servicios separados para web y servidor.
 - Integración continua: GitHub Actions, pendiente de configurar.
 - Autenticación: pendiente de confirmar el uso de Supabase Auth.
@@ -202,15 +202,21 @@ Fusionar una tarea parcial de frontend o backend no completa automáticamente la
 
 La base de desarrollo incluye una web React y una API de comprobación que arrancan juntas. La pantalla inicial verifica que puede comunicarse con el servidor mediante `/api/health`.
 
-Supabase es el proyecto compartido en la nube. Docker ejecuta nuestra web y nuestro servidor; la base de datos permanece en Supabase. La integración con sus datos y Auth se implementará cuando backend confirme las decisiones del sprint. El endpoint de salud comprueba la API, no la conexión con Supabase.
+Supabase es el proyecto compartido en la nube. Docker ejecuta nuestra web y nuestro servidor; la base de datos permanece en Supabase. TR-03 añade la primera migración y una comprobación de conexión PostgreSQL desde el servidor. El registro, el acceso y la confirmación por email se implementarán cuando backend confirme la autenticación. El endpoint de salud comprueba la API, no la conexión con Supabase.
 
 Estructura inicial:
 
 ```text
 sportsplace/
-├── backend/                 # Servidor, pruebas HTTP y Dockerfile
+├── backend/                 # API, conexión PostgreSQL, pruebas y Dockerfile
 ├── frontend/                # Web React, configuración de Vite y Dockerfile
-├── docs/TR-02-validacion.md  # Evidencia técnica y confirmaciones del equipo
+├── docs/
+│   ├── TR-02-validacion.md   # Arranque y confirmaciones del equipo
+│   └── TR-03-validacion.md   # Base de datos y evidencia de validación
+├── supabase/
+│   ├── migrations/          # Cambios del esquema mediante SQL versionado
+│   └── tests/centros.sql    # Pruebas de restricciones y permisos
+├── tools/                   # Herramienta Docker para aplicar migraciones
 ├── compose.yaml             # Arranque conjunto de web y API
 ├── .env.example             # Plantilla de configuración sin credenciales
 └── README.md                # Trabajo en equipo y uso del entorno
@@ -259,7 +265,7 @@ macOS o Linux:
 cp .env.example .env
 ```
 
-Este paso se hace una vez: conservar un `.env` existente para no sobrescribir la configuración local. Los valores de Supabase pueden quedarse vacíos para comprobar el arranque de TR-02.
+Este paso se hace una vez: conservar un `.env` existente para no sobrescribir la configuración local. Los valores de Supabase y `DATABASE_URL` pueden quedarse vacíos para comprobar el arranque de TR-02. TR-03 requiere configurar la conexión privada antes de ejecutar `db:check`.
 
 En Windows y macOS, conservar `LOCAL_UID=1000` y `LOCAL_GID=1000`. En Linux, obtener el usuario y grupo con `id -u` e `id -g` y poner esos valores en `.env` antes de construir las imágenes. Así el contenedor puede escribir los archivos del proyecto sin errores de permisos.
 
@@ -290,16 +296,39 @@ El archivo `.env` contiene:
 | `LOCAL_UID` / `LOCAL_GID` | Usuario y grupo del contenedor de desarrollo. Por defecto, 1000. Ajustarlos al usuario local en Linux. |
 | `SUPABASE_URL` | URL del proyecto compartido. Opcional para el arranque inicial. |
 | `SUPABASE_PUBLISHABLE_KEY` | Clave publicable del proyecto compartido. Opcional para el arranque inicial. |
+| `DATABASE_URL` | URI PostgreSQL privada que utiliza el servidor. Necesaria para comprobar TR-03. |
+| `MIGRATION_DATABASE_URL` | URI privada de un usuario con permisos para migrar. Opcional: si está vacía, las herramientas utilizan `DATABASE_URL`. |
+| `DATABASE_SSL_CA_FILE` | Ruta del certificado CA para verificar PostgreSQL. En Docker: `/app/.certs/supabase-ca.crt`. |
 
 La URL y la clave **publicable** se obtienen en el panel del proyecto Supabase, desde **Connect** o la configuración de claves API. Cada persona rellena su `.env` local. La clave publicable está diseñada para el cliente; los permisos sobre los datos se deberán definir con las políticas de Supabase al implementar la integración.
 
 Compose entrega al frontend únicamente estos valores públicos, con los nombres `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Las variables `VITE_*` son visibles en el navegador: no poner en ellas contraseñas, claves `secret` ni `service_role`. El archivo `.env.example` conserva valores vacíos y `.env` está excluido de Git y de las imágenes.
+
+`DATABASE_URL` y `MIGRATION_DATABASE_URL` contienen credenciales privadas. Solo se configuran en el `.env` local, nunca con un prefijo `VITE_`, en el README, en capturas ni en comentarios de GitHub. La clave publicable de Supabase no sustituye a la contraseña de PostgreSQL.
+
+#### Preparar la conexión PostgreSQL para TR-03
+
+1. En el proyecto compartido de Supabase, abrir **Connect → Session pooler** y copiar su URI PostgreSQL. Este modo permite conectar desde redes IPv4. Conservar exactamente el servidor, el usuario, el puerto y la base que muestra el panel.
+2. Poner la URI en `DATABASE_URL` del `.env` local y sustituir el marcador de contraseña por la contraseña de la base de datos. Codificar los caracteres reservados de la contraseña, por ejemplo `@`, `#` o espacios, para que formen parte de la URI y no cambien su estructura.
+3. Abrir **Database Settings → SSL Configuration → Download certificate**. Guardar el certificado CA en `backend/.certs/supabase-ca.crt` y configurar `DATABASE_SSL_CA_FILE=/app/.certs/supabase-ca.crt` en `.env`. La carpeta `.certs` está excluida de Git y de las imágenes; Docker la lee mediante el montaje local del backend. Las herramientas de migración adaptan esa ruta a su propio contenedor.
+
+El nombre del archivo puede ser otro: si se conserva el nombre descargado, ajustar `DATABASE_SSL_CA_FILE` para que coincida, manteniendo el prefijo Docker `/app/.certs/`.
+
+El servidor y las herramientas verifican TLS y la identidad del servidor de PostgreSQL. Si la verificación falla, revisar el certificado y la URI; no desactivar la comprobación. Los detalles de conexión y del certificado están en la [documentación oficial de Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres).
 
 Después de cambiar `.env`, recrear los servicios para aplicar los nuevos valores:
 
 ```bash
 docker compose up --detach --force-recreate --wait
 ```
+
+Después de configurar PostgreSQL y aplicar la migración, comprobar su conexión desde el servidor:
+
+```bash
+docker compose exec backend npm run db:check
+```
+
+El comando ejecuta `SELECT 1` y comprueba que existe `public.centros`. Debe mostrar **Conexión PostgreSQL: correcta** y **Tabla public.centros: encontrada**. Si la tabla falta, la conexión puede estar funcionando aunque la migración siga pendiente. Ver la web y `/api/health` en verde solo valida el arranque de TR-02.
 
 `LOCAL_UID` y `LOCAL_GID` se definen antes del primer arranque: se aplican al construir las imágenes. Si se necesitan cambiar más adelante, reconstruirlas y regenerar los volúmenes de dependencias. En esta base los volúmenes contienen únicamente dependencias de Node:
 
@@ -343,14 +372,17 @@ Para backend se utiliza `docker compose exec backend npm install nombre-del-paqu
 # Comprobar la configuración sin mostrar variables del entorno
 docker compose config --quiet
 
-# Pruebas HTTP de la API de comprobación
+# Pruebas HTTP y de la configuración PostgreSQL del servidor
 docker compose exec backend npm test
 
 # Comprobar que la web compila
 docker compose exec frontend npm run build
+
+# Conexión y existencia de la tabla: requiere configurar TR-03
+docker compose exec backend npm run db:check
 ```
 
-Las pruebas del servidor comprueban las rutas de salud, las rutas desconocidas y los métodos no permitidos. La compilación de React comprueba que la base del frontend se puede construir; no sustituye a las pruebas funcionales de las historias.
+Las pruebas del servidor comprueban las rutas de salud, las rutas desconocidas, los métodos no permitidos y el tratamiento de la configuración, TLS y errores de PostgreSQL. Las pruebas unitarias no necesitan credenciales de Supabase. `db:check` realiza la comprobación contra la base configurada. La compilación de React comprueba que la base del frontend se puede construir; no sustituye a las pruebas funcionales de las historias.
 
 Lint, pruebas de las historias y el workflow de GitHub Actions se concretarán con Asier. Todavía no hay un comando de lint ni una comprobación de CI que se pueda exigir en `main`.
 
@@ -363,12 +395,69 @@ Lint, pruebas de las historias y el workflow de GitHub Actions se concretarán c
 | Fallo al descargar imágenes o dependencias | Revisar la conexión a Internet y los registros del servicio; repetir el arranque cuando se resuelva. |
 | La web muestra un error de API | Comprobar `docker compose ps` y `docker compose logs backend`; después pulsar **Volver a comprobar** en la web. |
 | Cambió la configuración y no se aplica | Recrear los servicios con el comando de configuración. Un simple reinicio no actualiza las variables del contenedor. |
+| Falta `DATABASE_URL` | Rellenar la URI privada en `.env` y recrear backend. El arranque de TR-02 funciona sin esta configuración, pero `db:check` la necesita. |
+| No se pudo verificar TLS o leer el certificado | Descargar el CA del proyecto, comprobar `backend/.certs/supabase-ca.crt` y configurar su ruta Docker en `DATABASE_SSL_CA_FILE`. No usar una ruta de Windows dentro del contenedor. |
+| PostgreSQL no conecta | Comprobar la contraseña codificada en la URI, los datos de **Session pooler**, el estado del proyecto y la conexión de red. |
+| La tabla `public.centros` no aparece | Comprobar el proyecto configurado y las migraciones pendientes con el comando de TR-03. |
 
 ### Validación del equipo y cierre de TR-02
 
 Cada persona debe seguir estas instrucciones en su ordenador y registrar el resultado en la issue. El procedimiento y las seis confirmaciones se siguen en [TR-02: validación](docs/TR-02-validacion.md).
 
 TR-02 se cierra cuando los cambios están revisados e integrados y los seis miembros han confirmado el arranque. Preparar el entorno o fusionar esta base no completa por sí solo ese último criterio.
+
+## Base de datos y migraciones: TR-03
+
+Responsables: Anass y Alex. La base propuesta es independiente de la decisión de autenticación: no almacena contraseñas ni vincula todavía los centros con `auth.users`. Anass y Alex deben revisar los campos y acordar Supabase Auth u otra solución antes de implementar las historias de acceso.
+
+### Esquema inicial de centros
+
+La migración [20261008090000_crear_centros.sql](supabase/migrations/20261008090000_crear_centros.sql) crea `public.centros` con estos campos:
+
+| Campo | Regla |
+|---|---|
+| `id` | UUID generado al crear el centro; clave primaria. |
+| `nombre` | Obligatorio, no vacío; hasta 160 caracteres. |
+| `email` | Obligatorio, no vacío; hasta 254 caracteres. Único ignorando mayúsculas y espacios al principio o al final. |
+| `localidad` | Obligatoria, no vacía; hasta 120 caracteres. |
+| `direccion` | Opcional; hasta 255 caracteres. |
+| `codigo_postal` | Opcional; hasta 20 caracteres. |
+| `telefono` | Opcional; hasta 30 caracteres. |
+| `politica_privacidad_aceptada` | Debe indicarse explícitamente como `true`; no tiene un valor automático de aceptación. |
+| `politica_privacidad_aceptada_en` | Fecha obligatoria y explícita del consentimiento. |
+| `email_confirmado_en` | Fecha de confirmación; inicialmente vacía. |
+| `email_confirmado` | Valor generado a partir de la fecha anterior: `false` sin fecha y `true` cuando existe. No se modifica directamente. |
+| `creado_en` | Fecha de creación generada automáticamente. |
+
+Nombre, email y localidad son la propuesta mínima de datos básicos del centro; dirección, código postal y teléfono son opcionales. El equipo debe confirmar esta propuesta antes de aplicarla al proyecto compartido. La validación de formato y el formulario corresponden a US-01.
+
+La tabla registra el estado de confirmación, pero todavía no envía emails ni comprueba enlaces o tokens: US-02 sigue pendiente de implementación. RLS está activado y `anon`/`authenticated` no tienen permisos sobre `centros`; las políticas de acceso se añadirán cuando se acuerde la autenticación. La conexión privada del servidor requiere un usuario con los permisos adecuados.
+
+### Revisar y aplicar la primera migración
+
+La herramienta `dbtools` utiliza Supabase CLI **2.120.0**, fijada en sus dependencias. Es un servicio opcional del perfil `tools`: no se inicia con el comando normal de la web y la API ni instala una base de datos local. No hace falta instalar la CLI en el ordenador.
+
+1. Anass y Alex revisan el SQL y los campos propuestos. Una persona coordina la aplicación al proyecto compartido para evitar ejecuciones simultáneas.
+2. Configurar las credenciales privadas y el CA del proyecto como se indica arriba. Para migrar se utiliza `MIGRATION_DATABASE_URL` si está definida; en caso contrario, `DATABASE_URL`. El usuario de esa URI necesita permisos para crear la tabla y registrar las migraciones.
+3. Desde la raíz del repositorio, revisar las migraciones pendientes sin aplicar su SQL:
+
+```bash
+docker compose run --rm --build dbtools --dry-run
+```
+
+4. Después de revisar la propuesta y comprobar que la URI corresponde al proyecto compartido correcto, aplicar las migraciones pendientes:
+
+```bash
+docker compose run --rm --build dbtools
+```
+
+5. Comprobar `public.centros` en Supabase y ejecutar `docker compose exec backend npm run db:check`. Guardar la evidencia sin credenciales en la issue TR-03.
+
+La CLI mantiene el historial de las migraciones aplicadas. Los siguientes cambios del esquema se añaden en nuevos archivos SQL; no se edita una migración ya aplicada ni se duplican sus cambios manualmente en el panel. Referencia: [migraciones de Supabase](https://supabase.com/docs/guides/deployment/database-migrations).
+
+Las pruebas SQL están en [supabase/tests/centros.sql](supabase/tests/centros.sql). Se ejecutan en una base de pruebas después de aplicar la migración, con un usuario administrador y los roles `anon` y `authenticated`. Verifican las restricciones y los permisos dentro de una transacción que termina en `ROLLBACK`, sin conservar centros de prueba.
+
+La evidencia local y los criterios todavía pendientes se registran en [TR-03: validación](docs/TR-03-validacion.md). TR-03 podrá cerrarse cuando se confirme el acceso del equipo, se revise y aplique el esquema al Supabase compartido, la migración esté integrada en el repositorio y el servidor compruebe la conexión real con ese proyecto.
 
 ## Seguimiento
 
