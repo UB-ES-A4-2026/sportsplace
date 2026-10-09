@@ -122,7 +122,14 @@ El email de confirmación de Supabase enlaza a la web: `/confirmar-email?token_h
 - `200 { "usuario": usuario, "sesion": sesion }`. La cuenta queda activa y el servidor rellena `centros.email_confirmado_en`.
 - `400 ENLACE_INVALIDO`: el enlace no existe, ya se ha usado o ha caducado. Pedir un enlace nuevo es US-66 (Sprint 1).
 
-Configuración necesaria en Supabase (Carlos): **Authentication → Sign In / Providers → Confirm email** activado, **URL Configuration → Site URL** con la URL de la web, y la plantilla **Confirm signup** con el enlace `{{ .SiteURL }}/confirmar-email?token_hash={{ .TokenHash }}&type=email`.
+- `200` aunque no se pueda copiar la fecha en `centros`: Supabase Auth ya ha activado la cuenta y el enlace no se puede reutilizar. El servidor registra el error.
+
+Configuración necesaria en Supabase (Carlos):
+
+1. **Authentication → Sign In / Providers → Email**: *Confirm email* activado y contraseña mínima de 8 caracteres.
+2. **Authentication → URL Configuration → Site URL**: la URL de la web (`http://localhost:5173` en desarrollo).
+3. **Authentication → Emails → Confirm signup**: copiar [supabase/templates/confirmar-email.html](../supabase/templates/confirmar-email.html).
+4. El servidor de email que trae Supabase solo envía a los miembros del proyecto y muy pocos mensajes por hora. Sirve para la demo con nuestros emails; para usuarios reales hay que configurar un SMTP propio (**Authentication → Emails → SMTP Settings**).
 
 ### `POST /api/auth/login` (US-03)
 
