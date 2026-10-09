@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import express from 'express';
 import { errorHandler, notFoundHandler } from './errors.js';
+import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 
 // `auth` es el servicio de autenticación (Supabase Auth en producción y un
@@ -17,6 +18,7 @@ export function createApp({ auth = null } = {}) {
   app.use(express.json({ limit: '100kb' }));
 
   app.use(healthRouter());
+  app.use('/api/auth', authRouter());
 
   app.use(notFoundHandler);
   app.use(errorHandler);
