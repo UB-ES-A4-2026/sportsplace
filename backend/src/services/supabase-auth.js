@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { ApiError } from '../errors.js';
+import { emailAlreadyRegistered } from '../repositories/centros.js';
 
 // Supabase Auth guarda las contraseñas (hash y sal), envía el email de
 // confirmación y emite los tokens. El servidor solo traduce sus respuestas
@@ -59,6 +60,30 @@ export function createSupabaseAuth({
 
   return {
     client,
+
+    // US-01: crea la cuenta. Con «Confirm email» activado, Supabase envía el
+    // email de confirmación (US-02) y no devuelve sesión hasta confirmarlo.
+    async signUp(email, password) {
+      const { data, error } = await client.auth.signUp({ email: normalizeEmail(email), password });
+      if (error) {
+        if (['user_already_exists', 'email_exists'].includes(error.code)) throw emailAlreadyRegistered();
+        if (error.code === 'weak_password') {
+          throw new ApiError(400, 'DATOS_INVALIDOS', 'Revisa los datos del formulario.', {
+            password: 'La contraseña es demasiado débil.',
+          });
+        }
+        if (error.code === 'email_address_invalid') {
+          throw new ApiError(400, 'DATOS_INVALIDOS', 'Revisa los datos del formulario.', {
+            email: 'El email no es válido.',
+          });
+        }
+        if (error.status === 429) throw tooManyAttempts();
+        throw authUnavailable();
+      }
+      // Supabase no da error si el email ya tiene cuenta: devuelve un usuario sin identidades.
+      if (!data.user || data.user.identities?.length === 0) throw emailAlreadyRegistered();
+      return toUsuario(data.user);
+    },
 
     async signIn(email, password) {
       const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });

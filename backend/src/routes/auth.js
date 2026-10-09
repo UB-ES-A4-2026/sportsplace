@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ApiError, methodNotAllowed } from '../errors.js';
-import { getAuth, requireAuth } from '../middleware/auth.js';
+import { getAuth, getCentros, requireAuth } from '../middleware/auth.js';
+import { validarRegistro } from '../validation/registro.js';
 
 function requiredStrings(body, fields) {
   const details = {};
@@ -16,6 +17,14 @@ function requiredStrings(body, fields) {
 
 export function authRouter() {
   const router = Router();
+
+  // US-01: registrar mi centro. La cuenta queda pendiente de confirmar el email.
+  router.post('/registro', async (request, response) => {
+    const { centro, password } = validarRegistro(request.body);
+    const auth = getAuth(request);
+    const usuario = await getCentros(request).registrar(centro, () => auth.signUp(centro.email, password));
+    response.status(201).json({ usuario });
+  });
 
   // US-03: entrar con email y contraseña.
   router.post('/login', async (request, response) => {
@@ -43,6 +52,7 @@ export function authRouter() {
     response.status(204).end();
   });
 
+  router.all('/registro', methodNotAllowed(['POST']));
   router.all('/login', methodNotAllowed(['POST']));
   router.all('/refresh', methodNotAllowed(['POST']));
   router.all('/me', methodNotAllowed(['GET']));
