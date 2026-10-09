@@ -119,6 +119,33 @@ test('signUp detects existing accounts and maps Supabase errors', async () => {
   }
 });
 
+test('verifyEmail confirms with the token_hash and maps invalid links', async () => {
+  const requests = [];
+  const ok = serviceWith({
+    verifyOtp: async (params) => {
+      requests.push(params);
+      return { data: { user: supabaseUser, session: supabaseSession }, error: null };
+    },
+  });
+  assert.deepEqual(await ok.auth.verifyEmail('hash'), {
+    usuario: { id: 'u1', email: 'centro@example.com', email_confirmado: true },
+    confirmadoEn: '2026-10-09T10:00:00Z',
+    sesion: { access_token: 'a', refresh_token: 'r', expires_at: 1 },
+  });
+  assert.deepEqual(requests, [{ token_hash: 'hash', type: 'email' }]);
+
+  const cases = [
+    [{ code: 'otp_expired', status: 403 }, 400, 'ENLACE_INVALIDO'],
+    [{ code: 'validation_failed', status: 400 }, 400, 'ENLACE_INVALIDO'],
+    [{ code: 'over_request_rate_limit', status: 429 }, 429, 'DEMASIADOS_INTENTOS'],
+    [{ code: 'unexpected_failure', status: 500 }, 503, 'AUTH_NO_DISPONIBLE'],
+  ];
+  for (const [error, status, code] of cases) {
+    const { auth } = serviceWith({ verifyOtp: async () => ({ data: { user: null, session: null }, error }) });
+    await assert.rejects(auth.verifyEmail('hash'), { status, code }, JSON.stringify(error));
+  }
+});
+
 test('signOut closes only the current session and tolerates closed sessions', async () => {
   const requests = [];
   const ok = serviceWith({

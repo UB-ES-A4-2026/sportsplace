@@ -85,6 +85,21 @@ export function createSupabaseAuth({
       return toUsuario(data.user);
     },
 
+    // US-02: activa la cuenta con el token_hash del enlace de confirmación.
+    async verifyEmail(tokenHash) {
+      const { data, error } = await client.auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
+      if (error) {
+        if (error.status === 429) throw tooManyAttempts();
+        if (error.status >= 500 || !error.status) throw authUnavailable();
+        throw new ApiError(400, 'ENLACE_INVALIDO', 'El enlace de confirmación no es válido o ha caducado.');
+      }
+      return {
+        usuario: toUsuario(data.user),
+        confirmadoEn: data.user.email_confirmed_at,
+        sesion: data.session ? toSesion(data.session) : null,
+      };
+    },
+
     async signIn(email, password) {
       const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });
       if (error) {
