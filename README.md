@@ -18,11 +18,11 @@ La implementación y validación de estas historias se siguen en el Kanban.
 ## Tecnologías
 
 - Frontend: React con Vite, en JavaScript.
-- Backend: Node.js 24; el servidor inicial usa `node:http`. Anass y Alex deben confirmar Express o NestJS para la API funcional.
+- Backend: Node.js 24 con Express 5. El contrato de la API está en [docs/api-contrato.md](docs/api-contrato.md).
 - Base de datos: PostgreSQL mediante Supabase; el servidor utiliza `pg` para la conexión privada.
 - Entorno de desarrollo: Docker y Docker Compose, con servicios separados para web y servidor.
 - Integración continua: GitHub Actions, pendiente de configurar.
-- Autenticación: pendiente de confirmar el uso de Supabase Auth.
+- Autenticación: Supabase Auth, a través de nuestra API (ver el contrato).
 
 ## Equipo y responsabilidades
 
