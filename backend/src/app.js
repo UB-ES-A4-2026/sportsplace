@@ -1,29 +1,28 @@
 import { createServer } from 'node:http';
+import express from 'express';
+import { errorHandler, notFoundHandler } from './errors.js';
+import { healthRouter } from './routes/health.js';
 
-function sendJson(response, statusCode, body, extraHeaders = {}) {
-  response.writeHead(statusCode, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store',
-    ...extraHeaders,
+// `auth` es el servicio de autenticación (Supabase Auth en producción y un
+// doble en las pruebas). Puede ser null si falta la configuración de Supabase.
+export function createApp({ auth = null } = {}) {
+  const app = express();
+  app.disable('x-powered-by');
+  app.set('auth', auth);
+
+  app.use((request, response, next) => {
+    response.set('Cache-Control', 'no-store');
+    next();
   });
-  response.end(JSON.stringify(body));
+  app.use(express.json({ limit: '100kb' }));
+
+  app.use(healthRouter());
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+  return app;
 }
 
-export function createAppServer() {
-  return createServer((request, response) => {
-    if (request.method !== 'GET') {
-      sendJson(response, 405, { error: 'Method not allowed' }, { Allow: 'GET' });
-      return;
-    }
-
-    const pathname = request.url?.split('?', 1)[0];
-
-    // /api/health is the public API endpoint; /health is an alias for probes.
-    if (pathname === '/api/health' || pathname === '/health') {
-      sendJson(response, 200, { status: 'ok', service: 'sportsplace-api' });
-      return;
-    }
-
-    sendJson(response, 404, { error: 'Not found' });
-  });
+export function createAppServer(options) {
+  return createServer(createApp(options));
 }

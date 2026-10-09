@@ -1,5 +1,6 @@
 import { createAppServer } from './app.js';
 import { createDatabase } from './database.js';
+import { createSupabaseAuth } from './services/supabase-auth.js';
 
 const host = process.env.HOST || '0.0.0.0';
 const port = Number(process.env.PORT || 3000);
@@ -8,7 +9,12 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error('PORT must be an integer between 1 and 65535.');
 }
 
-const server = createAppServer();
+const auth = createSupabaseAuth();
+if (!auth) {
+  console.log('Supabase Auth pendiente de configuración: faltan SUPABASE_URL o SUPABASE_PUBLISHABLE_KEY.');
+}
+
+const server = createAppServer({ auth });
 let database;
 
 if (process.env.DATABASE_URL?.trim()) {

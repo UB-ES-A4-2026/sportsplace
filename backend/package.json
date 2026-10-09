@@ -13,6 +13,8 @@
     "db:check": "node scripts/check-database.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.117.3",
+    "express": "5.2.1",
     "pg": "8.23.1"
   }
 }
