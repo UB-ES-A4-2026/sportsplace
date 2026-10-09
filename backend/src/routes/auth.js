@@ -37,9 +37,16 @@ export function authRouter() {
     response.json({ usuario: request.usuario });
   });
 
+  // US-67: cerrar sesión.
+  router.post('/logout', requireAuth, async (request, response) => {
+    await getAuth(request).signOut(request.accessToken);
+    response.status(204).end();
+  });
+
   router.all('/login', methodNotAllowed(['POST']));
   router.all('/refresh', methodNotAllowed(['POST']));
   router.all('/me', methodNotAllowed(['GET']));
+  router.all('/logout', methodNotAllowed(['POST']));
 
   return router;
 }

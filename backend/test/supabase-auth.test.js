@@ -85,6 +85,21 @@ test('signIn maps Supabase errors to the API errors', async () => {
   }
 });
 
+test('signOut closes only the current session and tolerates closed sessions', async () => {
+  const requests = [];
+  const ok = serviceWith({
+    admin: { signOut: async (jwt, scope) => { requests.push([jwt, scope]); return { data: null, error: null }; } },
+  });
+  await ok.auth.signOut('token');
+  assert.deepEqual(requests, [['token', 'local']]);
+
+  const closed = serviceWith({ admin: { signOut: async () => ({ data: null, error: { status: 404 } }) } });
+  await closed.auth.signOut('token');
+
+  const down = serviceWith({ admin: { signOut: async () => ({ data: null, error: { status: 502 } }) } });
+  await assert.rejects(down.auth.signOut('token'), { status: 503, code: 'AUTH_NO_DISPONIBLE' });
+});
+
 test('refresh returns a new session or asks to log in again', async () => {
   const ok = serviceWith({
     refreshSession: async () => ({ data: { user: supabaseUser, session: supabaseSession }, error: null }),
