@@ -85,6 +85,13 @@ export function createSupabaseAuth({
       return { usuario: toUsuario(data.user), sesion: toSesion(data.session) };
     },
 
+    // US-67: cierra solo la sesión actual; su refresh_token deja de funcionar.
+    async signOut(accessToken) {
+      const { error } = await client.auth.admin.signOut(accessToken, 'local');
+      // Si la sesión ya no existe (401, 403 o 404), el resultado es el mismo: cerrada.
+      if (error && (error.status >= 500 || !error.status)) throw authUnavailable();
+    },
+
     async getUser(accessToken) {
       const { data, error } = await client.auth.getUser(accessToken);
       if (error) {
