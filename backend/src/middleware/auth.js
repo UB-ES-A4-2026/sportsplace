@@ -1,4 +1,5 @@
 import { ApiError } from '../errors.js';
+import { databaseUnavailable } from '../repositories/centros.js';
 import { authUnavailable, emailNotConfirmed } from '../services/supabase-auth.js';
 
 export function bearerToken(request) {
@@ -11,6 +12,12 @@ export function getAuth(request) {
   const auth = request.app.get('auth');
   if (!auth) throw authUnavailable();
   return auth;
+}
+
+export function getCentros(request) {
+  const centros = request.app.get('centros');
+  if (!centros) throw databaseUnavailable();
+  return centros;
 }
 
 // Exige una sesión válida y deja el usuario en request.usuario.

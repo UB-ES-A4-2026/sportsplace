@@ -85,6 +85,40 @@ test('signIn maps Supabase errors to the API errors', async () => {
   }
 });
 
+test('signUp creates the account with the normalized email', async () => {
+  const requests = [];
+  const { auth } = serviceWith({
+    signUp: async (credentials) => {
+      requests.push(credentials);
+      return { data: { user: { ...supabaseUser, email_confirmed_at: null, identities: [{}] }, session: null }, error: null };
+    },
+  });
+
+  assert.deepEqual(await auth.signUp(' Centro@Example.com', 'secreta123'), {
+    id: 'u1', email: 'centro@example.com', email_confirmado: false,
+  });
+  assert.deepEqual(requests, [{ email: 'centro@example.com', password: 'secreta123' }]);
+});
+
+test('signUp detects existing accounts and maps Supabase errors', async () => {
+  const existing = serviceWith({
+    signUp: async () => ({ data: { user: { ...supabaseUser, identities: [] }, session: null }, error: null }),
+  });
+  await assert.rejects(existing.auth.signUp('a@b.c', 'secreta123'), { status: 409, code: 'EMAIL_YA_REGISTRADO' });
+
+  const cases = [
+    [{ code: 'user_already_exists', status: 422 }, 409, 'EMAIL_YA_REGISTRADO'],
+    [{ code: 'weak_password', status: 422 }, 400, 'DATOS_INVALIDOS'],
+    [{ code: 'email_address_invalid', status: 400 }, 400, 'DATOS_INVALIDOS'],
+    [{ code: 'over_email_send_rate_limit', status: 429 }, 429, 'DEMASIADOS_INTENTOS'],
+    [{ code: 'unexpected_failure', status: 500 }, 503, 'AUTH_NO_DISPONIBLE'],
+  ];
+  for (const [error, status, code] of cases) {
+    const { auth } = serviceWith({ signUp: async () => ({ data: { user: null, session: null }, error }) });
+    await assert.rejects(auth.signUp('a@b.c', 'secreta123'), { status, code }, JSON.stringify(error));
+  }
+});
+
 test('signOut closes only the current session and tolerates closed sessions', async () => {
   const requests = [];
   const ok = serviceWith({

@@ -5,11 +5,13 @@ import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 
 // `auth` es el servicio de autenticación (Supabase Auth en producción y un
-// doble en las pruebas). Puede ser null si falta la configuración de Supabase.
-export function createApp({ auth = null } = {}) {
+// doble en las pruebas) y `centros` el repositorio de la tabla de centros.
+// Cualquiera puede ser null si falta su configuración.
+export function createApp({ auth = null, centros = null } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('auth', auth);
+  app.set('centros', centros);
 
   app.use((request, response, next) => {
     response.set('Cache-Control', 'no-store');

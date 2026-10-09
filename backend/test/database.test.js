@@ -182,3 +182,37 @@ test('db:check closes its pool after a failed query', async () => {
   assert.equal(current.closeCalls, 1);
   assert.doesNotMatch(output.join('\n'), /fake-password|pooler\.example\.invalid/);
 });
+
+function transactionFixture() {
+  const pool = new EventEmitter();
+  const statements = [];
+  let released = 0;
+  pool.connect = async () => ({
+    query: async (sql) => { statements.push(sql); return { rows: [] }; },
+    release: () => { released += 1; },
+  });
+  pool.end = async () => {};
+  const database = createDatabase({ environment: { DATABASE_URL: databaseUrl }, poolFactory: () => pool });
+  return { database, statements, get released() { return released; } };
+}
+
+test('transaction commits when the callback succeeds and releases the client', async () => {
+  const fixture = transactionFixture();
+  const result = await fixture.database.transaction(async (client) => {
+    await client.query('INSERT 1');
+    return 'ok';
+  });
+
+  assert.equal(result, 'ok');
+  assert.deepEqual(fixture.statements, ['BEGIN', 'INSERT 1', 'COMMIT']);
+  assert.equal(fixture.released, 1);
+});
+
+test('transaction rolls back and rethrows the original error', async () => {
+  const fixture = transactionFixture();
+  const failure = Object.assign(new Error('duplicate'), { code: '23505' });
+
+  await assert.rejects(fixture.database.transaction(async () => { throw failure; }), failure);
+  assert.deepEqual(fixture.statements, ['BEGIN', 'ROLLBACK']);
+  assert.equal(fixture.released, 1);
+});
