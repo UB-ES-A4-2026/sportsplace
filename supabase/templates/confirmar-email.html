@@ -1,0 +1,14 @@
+<!--
+  US-02: plantilla «Confirm signup» de Supabase Auth.
+  Copiar en Authentication → Emails → Confirm signup. Asunto: Confirma tu email en Sportsplace
+  El enlace abre la web, que envía token_hash a POST /api/auth/confirmar.
+-->
+<h2>Confirma tu email</h2>
+
+<p>Hola,</p>
+
+<p>Has registrado tu centro en Sportsplace con este email. Para activar la cuenta, abre este enlace:</p>
+
+<p><a href="{{ .SiteURL }}/confirmar-email?token_hash={{ .TokenHash }}&type=email">Confirmar mi email</a></p>
+
+<p>Si no has sido tú, ignora este mensaje.</p>
