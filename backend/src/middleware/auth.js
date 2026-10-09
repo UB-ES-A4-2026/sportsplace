@@ -1,6 +1,6 @@
 import { ApiError } from '../errors.js';
 import { databaseUnavailable } from '../repositories/centros.js';
-import { authUnavailable } from '../services/supabase-auth.js';
+import { authUnavailable, emailNotConfirmed } from '../services/supabase-auth.js';
 
 export function bearerToken(request) {
   const header = request.get('Authorization') ?? '';
@@ -35,3 +35,9 @@ export async function requireAuth(request, response, next) {
   next();
 }
 
+// US-02: hasta confirmar el email no se puede publicar anuncios ni hacer pedidos.
+// Se usa siempre después de requireAuth en esas rutas.
+export function requireEmailConfirmado(request, response, next) {
+  if (!request.usuario?.email_confirmado) throw emailNotConfirmed();
+  next();
+}
