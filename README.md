@@ -21,7 +21,7 @@ La implementación y validación de estas historias se siguen en el Kanban.
 - Backend: Node.js 24; el servidor inicial usa `node:http`. Anass y Alex deben confirmar Express o NestJS para la API funcional.
 - Base de datos: PostgreSQL mediante Supabase; el servidor utiliza `pg` para la conexión privada.
 - Entorno de desarrollo: Docker y Docker Compose, con servicios separados para web y servidor.
-- Integración continua: GitHub Actions, pendiente de configurar.
+- Integración continua: GitHub Actions. Cada pull request instala las dependencias y ejecuta el lint, las pruebas y la compilación ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 - Autenticación: pendiente de confirmar el uso de Supabase Auth.
 
 ## Equipo y responsabilidades
@@ -162,7 +162,7 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 - Los comentarios pendientes deben resolverse antes de fusionar.
 - Quien revisa debe comprobar los cambios y las pruebas descritas.
 - La revisión puede realizarla otra persona del equipo.
-- Mientras se prepara el workflow de GitHub Actions, cada pull request documenta las comprobaciones manuales realizadas.
+- Cada pull request ejecuta el workflow de GitHub Actions y su resultado debe estar en verde antes de fusionar.
 - Cuando el workflow esté operativo, se configurarán sus comprobaciones como obligatorias en `main`. Los fallos deberán resolverse antes de fusionar.
 - No se permite forzar cambios ni eliminar `main`.
 
@@ -372,6 +372,10 @@ Para backend se utiliza `docker compose exec backend npm install nombre-del-paqu
 # Comprobar la configuración sin mostrar variables del entorno
 docker compose config --quiet
 
+# Lint del servidor y de la web
+docker compose exec backend npm run lint
+docker compose exec frontend npm run lint
+
 # Pruebas HTTP y de la configuración PostgreSQL del servidor
 docker compose exec backend npm test
 
@@ -384,7 +388,13 @@ docker compose exec backend npm run db:check
 
 Las pruebas del servidor comprueban las rutas de salud, las rutas desconocidas, los métodos no permitidos y el tratamiento de la configuración, TLS y errores de PostgreSQL. Las pruebas unitarias no necesitan credenciales de Supabase. `db:check` realiza la comprobación contra la base configurada. La compilación de React comprueba que la base del frontend se puede construir; no sustituye a las pruebas funcionales de las historias.
 
-Lint, pruebas de las historias y el workflow de GitHub Actions se concretarán con Asier. Todavía no hay un comando de lint ni una comprobación de CI que se pueda exigir en `main`.
+El workflow de GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) se ejecuta en cada pull request y en cada cambio de `main`. Con Node.js 24, instala las dependencias con `npm ci` y ejecuta el lint (ESLint) en `backend/`, `frontend/` y `tools/`, las pruebas del servidor y de las herramientas, y la compilación de la web.
+
+Para reproducir el CI completo en local antes de abrir una pull request, ejecutar desde la raíz:
+
+```bash
+docker run --rm -v "$PWD":/repo -v /repo/backend/node_modules -v /repo/tools/node_modules -v /repo/frontend/node_modules -w /repo node:24-bookworm-slim sh -c "cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
+```
 
 ### Problemas habituales
 
