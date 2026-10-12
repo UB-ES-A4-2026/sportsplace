@@ -238,7 +238,7 @@ frontend/src/
 |---|---|---|---|
 | `/` | `InicioPage`: estado del entorno y de la API | No | TR-02 |
 | `/registro` | `RegistroPage` | No | US-01 |
-| `/confirmar-email` | `ConfirmarEmailPage` (recibirá `token_hash` y `type` en la URL) | No | US-02 |
+| `/confirmar-email` | `ConfirmarEmailPage`: lee `token_hash` y `type` de la URL y los envía a la API para activar la cuenta | No | US-02 |
 | `/entrar` | `EntrarPage` | No | US-03 |
 | `/panel` | `PanelPage` | Sí | US-67 |
 | `*` | `NoEncontradaPage` | No | TR-05 |
