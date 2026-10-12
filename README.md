@@ -229,15 +229,17 @@ frontend/src/
 │   ├── cliente.js           # api(ruta, opciones): llamadas a /api/... con errores ErrorApi
 │   └── sesion.js            # Lectura y guardado de la sesión en el navegador
 ├── components/
+│   ├── Campo.jsx            # Campo de formulario con etiqueta y error accesibles
 │   ├── Layout.jsx           # Cabecera, menú y pie comunes a todas las páginas
 │   └── RutaPrivada.jsx      # Redirige a /entrar si no hay sesión
+├── validacion/              # Validación de formularios, con las mismas reglas que el servidor
 └── pages/                   # Una página por ruta
 ```
 
 | Ruta | Página | Privada | Historia |
 |---|---|---|---|
 | `/` | `InicioPage`: estado del entorno y de la API | No | TR-02 |
-| `/registro` | `RegistroPage` | No | US-01 |
+| `/registro` | `RegistroPage`: formulario de alta del centro | No | US-01 |
 | `/confirmar-email` | `ConfirmarEmailPage` (recibirá `token_hash` y `type` en la URL) | No | US-02 |
 | `/entrar` | `EntrarPage` | No | US-03 |
 | `/panel` | `PanelPage` | Sí | US-67 |
