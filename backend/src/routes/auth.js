@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ApiError, methodNotAllowed } from '../errors.js';
 import { getAuth, getCentros, requireAuth } from '../middleware/auth.js';
 import { validarRegistro } from '../validation/registro.js';
+import { validarReenvio } from '../validation/reenvio.js';
 
 function requiredStrings(body, fields) {
   const details = {};
@@ -43,6 +44,14 @@ export function authRouter() {
     response.json({ usuario, sesion });
   });
 
+  // US-66: pedir un enlace de confirmación nuevo si el anterior ha caducado.
+  // Responde siempre 204 para no revelar qué emails tienen cuenta.
+  router.post('/reenviar-confirmacion', async (request, response) => {
+    const { email } = validarReenvio(request.body);
+    await getAuth(request).resendConfirmation(email);
+    response.status(204).end();
+  });
+
   // US-03: entrar con email y contraseña.
   router.post('/login', async (request, response) => {
     requiredStrings(request.body, {
@@ -71,6 +80,7 @@ export function authRouter() {
 
   router.all('/registro', methodNotAllowed(['POST']));
   router.all('/confirmar', methodNotAllowed(['POST']));
+  router.all('/reenviar-confirmacion', methodNotAllowed(['POST']));
   router.all('/login', methodNotAllowed(['POST']));
   router.all('/refresh', methodNotAllowed(['POST']));
   router.all('/me', methodNotAllowed(['GET']));
