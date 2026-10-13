@@ -213,4 +213,4 @@ Esta sección se completará cuando esté disponible el esqueleto de frontend y 
 
 - [Repositorio](https://github.com/UB-ES-A4-2026/sportsplace)
 - [Trello](https://trello.com/b/O7v4vfgE/kanban)
-- Kanban de GitHub: Sportsplace — Sprint 0. Enlace pendiente de añadir.
+- [Kanban de GitHub: Sportsplace — Sprint 0](https://github.com/orgs/UB-ES-A4-2026/projects/1)
