@@ -17,10 +17,10 @@ La implementación y validación de estas historias se siguen en el Kanban.
 
 ## Tecnologías
 
-- Frontend: React.
-- Backend: Node.js; pendiente de confirmar Express o NestJS.
+- Frontend: React con Vite, en JavaScript.
+- Backend: Node.js 24; el servidor inicial usa `node:http`. Anass y Alex deben confirmar Express o NestJS para la API funcional.
 - Base de datos: PostgreSQL mediante Supabase.
-- Entorno de desarrollo: Docker y Docker Compose, pendientes de configurar.
+- Entorno de desarrollo: Docker y Docker Compose, con servicios separados para web y servidor.
 - Integración continua: GitHub Actions, pendiente de configurar.
 - Autenticación: pendiente de confirmar el uso de Supabase Auth.
 
@@ -198,16 +198,177 @@ Fusionar una tarea parcial de frontend o backend no completa automáticamente la
 
 ## Arranque y comprobaciones
 
-El entorno de ejecución está en preparación durante el Sprint 0.
+### Qué incluye TR-02
 
-Esta sección se completará cuando esté disponible el esqueleto de frontend y backend e incluirá:
+La base de desarrollo incluye una web React y una API de comprobación que arrancan juntas. La pantalla inicial verifica que puede comunicarse con el servidor mediante `/api/health`.
 
-- Requisitos y versiones.
-- Instalación de dependencias.
-- Configuración mediante `.env.example`.
-- Arranque con Docker Compose.
-- Direcciones de acceso a la web y a la API.
-- Comandos de lint y tests.
+Supabase es el proyecto compartido en la nube. Docker ejecuta nuestra web y nuestro servidor; la base de datos permanece en Supabase. La integración con sus datos y Auth se implementará cuando backend confirme las decisiones del sprint. El endpoint de salud comprueba la API, no la conexión con Supabase.
+
+Estructura inicial:
+
+```text
+sportsplace/
+├── backend/                 # Servidor, pruebas HTTP y Dockerfile
+├── frontend/                # Web React, configuración de Vite y Dockerfile
+├── docs/TR-02-validacion.md  # Evidencia técnica y confirmaciones del equipo
+├── compose.yaml             # Arranque conjunto de web y API
+├── .env.example             # Plantilla de configuración sin credenciales
+└── README.md                # Trabajo en equipo y uso del entorno
+```
+
+### Requisitos
+
+- Git para clonar el repositorio.
+- Docker Desktop actualizado, abierto y con contenedores Linux. En Windows utiliza su configuración con WSL 2.
+- Docker Compose con soporte para `docker compose up --wait`.
+- Conexión a Internet para descargar la imagen de Node y las dependencias.
+- Puertos locales 5173 y 3000 libres, o configurar otros en `.env`.
+
+Las imágenes utilizan Node.js 24 y npm. No hace falta instalar Node ni npm en el ordenador para trabajar con Docker. Las versiones de las dependencias están fijadas en los `package-lock.json`.
+
+### Primer arranque
+
+1. Abrir Docker Desktop y esperar a que el motor esté en ejecución.
+2. Clonar el repositorio y entrar en su carpeta. Si ya está clonado, actualizar la rama que se vaya a utilizar:
+
+```bash
+git clone https://github.com/UB-ES-A4-2026/sportsplace.git
+cd sportsplace
+```
+
+Antes de integrar TR-02, Carlos debe publicar su rama para que los demás puedan probarla. Después de clonarla, o desde un clon existente sin cambios pendientes, obtener esa rama:
+
+```bash
+git fetch origin
+git switch chore/TR-02-entorno-desarrollo
+```
+
+Una vez fusionada, estas instrucciones se siguen desde `main` actualizada mediante `git switch main` y `git pull --ff-only`.
+
+3. Copiar `.env.example` a `.env` en la raíz. Ejecutar solo el comando correspondiente al sistema:
+
+PowerShell (Windows):
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS o Linux:
+
+```bash
+cp .env.example .env
+```
+
+Este paso se hace una vez: conservar un `.env` existente para no sobrescribir la configuración local. Los valores de Supabase pueden quedarse vacíos para comprobar el arranque de TR-02.
+
+En Windows y macOS, conservar `LOCAL_UID=1000` y `LOCAL_GID=1000`. En Linux, obtener el usuario y grupo con `id -u` e `id -g` y poner esos valores en `.env` antes de construir las imágenes. Así el contenedor puede escribir los archivos del proyecto sin errores de permisos.
+
+4. Desde la raíz del repositorio, arrancar ambos servicios con un comando:
+
+```bash
+docker compose up --build --detach --wait
+```
+
+El primer arranque tarda más porque descarga y construye las imágenes. Compose instala las dependencias de los lockfiles dentro de los contenedores y espera a que ambos servicios estén saludables. La web arranca después de que la API esté disponible.
+
+5. Abrir la web en **http://localhost:5173**. Debe mostrar React en funcionamiento y la API conectada. La API responde también en **http://localhost:3000/api/health**:
+
+```json
+{"status":"ok","service":"sportsplace-api"}
+```
+
+Si se cambiaron `WEB_PORT` o `API_PORT`, utilizar esos puertos. Los servicios se publican únicamente en el ordenador local. El navegador utiliza `/api/health` y Vite redirige la petición al servidor dentro de Docker.
+
+### Configuración de Supabase
+
+El archivo `.env` contiene:
+
+| Variable | Uso |
+|---|---|
+| `WEB_PORT` | Puerto de la web en el ordenador. Por defecto, 5173. |
+| `API_PORT` | Puerto de la API en el ordenador. Por defecto, 3000. |
+| `LOCAL_UID` / `LOCAL_GID` | Usuario y grupo del contenedor de desarrollo. Por defecto, 1000. Ajustarlos al usuario local en Linux. |
+| `SUPABASE_URL` | URL del proyecto compartido. Opcional para el arranque inicial. |
+| `SUPABASE_PUBLISHABLE_KEY` | Clave publicable del proyecto compartido. Opcional para el arranque inicial. |
+
+La URL y la clave **publicable** se obtienen en el panel del proyecto Supabase, desde **Connect** o la configuración de claves API. Cada persona rellena su `.env` local. La clave publicable está diseñada para el cliente; los permisos sobre los datos se deberán definir con las políticas de Supabase al implementar la integración.
+
+Compose entrega al frontend únicamente estos valores públicos, con los nombres `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Las variables `VITE_*` son visibles en el navegador: no poner en ellas contraseñas, claves `secret` ni `service_role`. El archivo `.env.example` conserva valores vacíos y `.env` está excluido de Git y de las imágenes.
+
+Después de cambiar `.env`, recrear los servicios para aplicar los nuevos valores:
+
+```bash
+docker compose up --detach --force-recreate --wait
+```
+
+`LOCAL_UID` y `LOCAL_GID` se definen antes del primer arranque: se aplican al construir las imágenes. Si se necesitan cambiar más adelante, reconstruirlas y regenerar los volúmenes de dependencias. En esta base los volúmenes contienen únicamente dependencias de Node:
+
+```bash
+docker compose down --volumes
+docker compose up --build --detach --wait
+```
+
+### Desarrollo diario
+
+Editar el código desde VS Code en `frontend/src` o `backend/src`. Docker monta estas carpetas y conserva las dependencias en volúmenes independientes, para que las instalaciones de Windows y Linux no se mezclen.
+
+La web recarga los cambios mediante polling para que funcione con archivos editados desde Windows. El servidor utiliza `node --watch`; si un cambio del servidor no se detecta, reiniciarlo con `docker compose restart backend`.
+
+Comandos desde la raíz:
+
+```bash
+# Estado de los servicios: ambos deben estar healthy
+docker compose ps
+
+# Ver los registros; Ctrl+C deja de mostrarlos sin detener el proyecto
+docker compose logs --follow
+
+# Detener y retirar los contenedores; conserva los volúmenes de dependencias
+docker compose down
+```
+
+Para volver a arrancar, utilizar el comando de **Primer arranque**. `npm ci` se ejecuta al iniciar cada servicio y sincroniza sus dependencias con el lockfile.
+
+Para añadir una dependencia, utilizar el contenedor del área correspondiente y guardar tanto `package.json` como `package-lock.json` en Git. Ejemplo para frontend, sustituyendo `nombre-del-paquete`:
+
+```bash
+docker compose exec frontend npm install nombre-del-paquete
+```
+
+Para backend se utiliza `docker compose exec backend npm install nombre-del-paquete`. Después, volver a ejecutar `docker compose up --build --detach --wait` y realizar las comprobaciones. No subir `node_modules` ni `dist`.
+
+### Comprobaciones disponibles
+
+```bash
+# Comprobar la configuración sin mostrar variables del entorno
+docker compose config --quiet
+
+# Pruebas HTTP de la API de comprobación
+docker compose exec backend npm test
+
+# Comprobar que la web compila
+docker compose exec frontend npm run build
+```
+
+Las pruebas del servidor comprueban las rutas de salud, las rutas desconocidas y los métodos no permitidos. La compilación de React comprueba que la base del frontend se puede construir; no sustituye a las pruebas funcionales de las historias.
+
+Lint, pruebas de las historias y el workflow de GitHub Actions se concretarán con Asier. Todavía no hay un comando de lint ni una comprobación de CI que se pueda exigir en `main`.
+
+### Problemas habituales
+
+| Problema | Qué comprobar |
+|---|---|
+| Docker no puede conectar con el motor | Abrir Docker Desktop, esperar a que termine el arranque y comprobar que utiliza contenedores Linux. |
+| Puerto ocupado | Cambiar `WEB_PORT` o `API_PORT` en `.env` y recrear los servicios. |
+| Fallo al descargar imágenes o dependencias | Revisar la conexión a Internet y los registros del servicio; repetir el arranque cuando se resuelva. |
+| La web muestra un error de API | Comprobar `docker compose ps` y `docker compose logs backend`; después pulsar **Volver a comprobar** en la web. |
+| Cambió la configuración y no se aplica | Recrear los servicios con el comando de configuración. Un simple reinicio no actualiza las variables del contenedor. |
+
+### Validación del equipo y cierre de TR-02
+
+Cada persona debe seguir estas instrucciones en su ordenador y registrar el resultado en la issue. El procedimiento y las seis confirmaciones se siguen en [TR-02: validación](docs/TR-02-validacion.md).
+
+TR-02 se cierra cuando los cambios están revisados e integrados y los seis miembros han confirmado el arranque. Preparar el entorno o fusionar esta base no completa por sí solo ese último criterio.
 
 ## Seguimiento
 
