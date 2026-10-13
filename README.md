@@ -393,8 +393,10 @@ El workflow de GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.y
 Para reproducir el CI completo en local antes de abrir una pull request, ejecutar desde la raíz:
 
 ```bash
-docker run --rm -v "$PWD":/repo -v /repo/backend/node_modules -v /repo/tools/node_modules -v /repo/frontend/node_modules -w /repo node:24-bookworm-slim sh -c "cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
+docker run --rm -v "${PWD}:/repo:ro" -w /tmp/sportsplace-ci node:24-bookworm-slim sh -c "cp -R /repo/backend /repo/tools /repo/frontend . && cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
 ```
+
+El contenedor lee el repositorio y copia las tres carpetas a su espacio temporal. Las dependencias y la compilación se generan dentro de ese espacio, que se elimina al terminar; así no crea archivos con propietario root en la carpeta de trabajo de Linux.
 
 ### Problemas habituales
 
