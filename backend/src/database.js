@@ -121,6 +121,26 @@ export function createDatabase({
         throw connectionError(error);
       }
     },
+    async query(sql, values) {
+      return pool.query(sql, values);
+    },
+    // Ejecuta callback(client) entre BEGIN y COMMIT; si lanza un error, ROLLBACK.
+    // Los errores originales se propagan para que quien llama pueda reconocer
+    // códigos como 23505 (valor único repetido); nunca se envían al cliente.
+    async transaction(callback) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await callback(client);
+        await client.query('COMMIT');
+        return result;
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
     close() {
       closing ??= Promise.resolve().then(() => pool.end()).catch(() => {
         throw new Error('No se pudo cerrar la conexión PostgreSQL.');
