@@ -48,7 +48,7 @@ El autor puede fusionar su pull request cuando se cumplan todos los requisitos d
 - Los identificadores, títulos, puntos y criterios de aceptación deben mantenerse coherentes en Excel, Trello y GitHub.
 - Cada tarea debe tener una o varias personas responsables y un resultado verificable.
 - Las historias usan su identificador original, por ejemplo US-01. Las tareas técnicas usan el suyo, por ejemplo TR-01.
-- Las tareas técnicas no son elementos sueltos del backlog: forman parte de la historia que las necesita. Las TR iniciales (repositorio, entorno, base de datos, CI, estructura de la API y de la web) son tareas de la primera historia. Solo aparece una TR independiente en el backlog si el Product Owner la da como tal.
+- Las tareas técnicas no son elementos sueltos del backlog: forman parte de la historia que las necesita. Las TR iniciales (repositorio, entorno, base de datos, CI, estructura de la API y de la web) son tareas de la primera historia. Solo aparece una TR independiente en el backlog si el Product Owner la da como tal. En GitHub, cada issue de tarea se añade como *sub-issue* de la issue de su historia.
 - El número de una issue de GitHub, como #5, no sustituye al identificador de la historia o tarea.
 - Frontend y backend pueden trabajar en tareas y pull requests diferentes de una misma historia.
 
@@ -94,12 +94,22 @@ Cada historia de usuario tiene una rama que sale de `dev` y reúne todo su traba
 
 #### Ramas de trabajo: categorías
 
-Dentro de una historia, cada parte del trabajo va en su propia rama, que sale de la rama de la historia y vuelve a ella:
+Una historia se divide en tareas. Una tarea es cualquier parte del trabajo necesaria para completarla: frontend, backend, base de datos, pruebas, documentación o configuración. Cada tarea tiene su propia rama, que sale de la rama de la historia, y su pull request hacia ella. Por ejemplo, en US-01:
 
-- `feature/US-01-registro-web`: formulario e interfaz.
+- `chore/TR-06-estructura-api`: estructura del servidor (tarea técnica).
+- `feature/TR-05-estructura-web`: estructura de la web (tarea técnica).
 - `feature/US-01-registro-api`: API y validaciones del servidor.
+- `feature/US-01-registro-web`: formulario e interfaz.
 
-Cada rama tiene su responsable y su pull request hacia `story/US-01-registro`.
+Cada rama tiene su responsable y su pull request hacia `story/US-01-registro`. Así la historia se monta completa en su propia rama y a `dev` solo llega cuando todo está implementado y probado.
+
+#### Historias que dependen de otra
+
+Si una historia necesita código de otra (por ejemplo, US-03 necesita la estructura del servidor que llega con US-01), no se crean ramas desde la otra historia:
+
+1. Se termina antes la historia de la que depende y se fusiona en `dev`.
+2. Se actualiza la rama de la historia desde `dev` (`git merge origin/dev`) y después cada rama de tarea desde su `story/`.
+3. Mientras tanto, las pull requests de la historia que espera se abren hacia su `story/` como **borrador** (*draft*) e indican de qué historia dependen. Hasta que se actualicen pueden mostrar también los cambios de la otra historia.
 
 El nombre sigue el formato `categoria/ID-descripcion`. La categoría indica el tipo de cambio y el ID identifica la historia o tarea original de Excel/Trello.
 
@@ -172,7 +182,7 @@ git push -u origin feature/US-03-login-api
 9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama temporal utilizada cuando ninguna otra PR dependa de ella.
 10. Cuando todas las partes de la historia estén fusionadas en su rama `story/`, probar la historia completa y abrir la pull request `story/US-03-login` → `dev`.
 
-Las tareas técnicas de una historia (`chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella. Solo una TR independiente dada por el Product Owner sale de `dev` y vuelve a `dev`.
+Todas las tareas de una historia (frontend, backend, `chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella. Solo una TR independiente dada por el Product Owner sale de `dev` y vuelve a `dev`.
 
 Si la rama base cambia durante el desarrollo, incorporar sus cambios desde la rama de trabajo, con los cambios propios ya guardados en commits. Una rama de trabajo se actualiza desde su `story/`, y una `story/` desde `dev`:
 
