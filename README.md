@@ -124,7 +124,7 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 - Crear cada rama desde su base actualizada, según la tabla anterior.
 - Mantener un cambio coherente y revisable por rama.
 - No crear ramas permanentes por persona, área o sprint: las únicas permanentes son `main` y `dev`.
-- Eliminar la rama después de fusionar su pull request. La rama `story/` se elimina cuando se fusiona en `dev`.
+- Conservar `main` y `dev`. Eliminar solo ramas temporales después de fusionar su pull request y cuando ninguna otra PR las utilice como base. La rama `story/` se elimina tras fusionarse en `dev`, cuando ya no tenga PR dependientes.
 
 #### Resumen del flujo
 
@@ -169,7 +169,7 @@ git push -u origin feature/US-03-login-api
 
 7. Abrir una pull request hacia `story/US-03-login` y mover la tarea a **En revisión**.
 8. Solicitar revisión a otra persona del equipo y atender sus comentarios.
-9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama utilizada.
+9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama temporal utilizada cuando ninguna otra PR dependa de ella.
 10. Cuando todas las partes de la historia estén fusionadas en su rama `story/`, probar la historia completa y abrir la pull request `story/US-03-login` → `dev`.
 
 Las tareas técnicas de una historia (`chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella. Solo una TR independiente dada por el Product Owner sale de `dev` y vuelve a `dev`.
@@ -204,7 +204,7 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 - Quien revisa debe comprobar los cambios y las pruebas descritas.
 - La revisión puede realizarla otra persona del equipo.
 - Cada pull request ejecuta el workflow de GitHub Actions y su resultado debe estar en verde antes de fusionar.
-- Cuando el workflow esté operativo, se configurarán sus comprobaciones como obligatorias en `main` y `dev`. Los fallos deberán resolverse antes de fusionar.
+- Los tres jobs del workflow deben estar configurados como comprobaciones obligatorias en `main` y `dev`. Carlos verifica esa configuración; los fallos deberán resolverse antes de fusionar.
 - No se permite forzar cambios ni eliminar `main` ni `dev`.
 
 ### Cómo revisar y fusionar una pull request en GitHub
@@ -214,7 +214,7 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 3. Si todo está correcto, pulsa **Review changes → Approve → Submit review**. Si necesita correcciones, utiliza **Request changes** y explica qué debe cambiar.
 4. El autor atiende los comentarios y solicita otra revisión cuando corresponda.
 5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Squash and merge** y confirma la fusión. La pull request `dev` → `main` es la única que se fusiona con **Create a merge commit**.
-6. Se elimina la rama con **Delete branch**, si no se elimina automáticamente.
+6. Se elimina únicamente la rama temporal con **Delete branch**, cuando ninguna otra PR la utilice como base. Se conservan `main` y `dev`, también después de publicar una entrega.
 
 Un comentario normal no cuenta como aprobación. El autor no puede aprobar su propia pull request.
 
