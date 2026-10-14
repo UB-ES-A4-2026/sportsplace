@@ -48,6 +48,7 @@ El autor puede fusionar su pull request cuando se cumplan todos los requisitos d
 - Los identificadores, títulos, puntos y criterios de aceptación deben mantenerse coherentes en Excel, Trello y GitHub.
 - Cada tarea debe tener una o varias personas responsables y un resultado verificable.
 - Las historias usan su identificador original, por ejemplo US-01. Las tareas técnicas usan el suyo, por ejemplo TR-01.
+- Las tareas técnicas no son elementos sueltos del backlog: forman parte de la historia que las necesita. Las TR iniciales (repositorio, entorno, base de datos, CI, estructura de la API y de la web) son tareas de la primera historia. Solo aparece una TR independiente en el backlog si el Product Owner la da como tal.
 - El número de una issue de GitHub, como #5, no sustituye al identificador de la historia o tarea.
 - Frontend y backend pueden trabajar en tareas y pull requests diferentes de una misma historia.
 
@@ -60,8 +61,9 @@ main                                  versiones entregables (builds)
  └── dev                              integración, siempre funcional
       ├── story/US-01-registro        una historia de usuario completa
       │    ├── feature/US-01-registro-api
-      │    └── feature/US-01-registro-web
-      └── chore/TR-04-ci-github-actions   tareas técnicas
+      │    ├── feature/US-01-registro-web
+      │    └── chore/TR-04-ci-github-actions   tarea técnica de la historia
+      └── chore/TR-08-...             TR independiente, solo si la da el PO
 ```
 
 `main` y `dev` están protegidas: solo reciben cambios mediante pull request con al menos una aprobación de otra persona, conversaciones resueltas y CI en verde. La protección se aplica también a los administradores.
@@ -78,7 +80,7 @@ main                                  versiones entregables (builds)
 
 `dev` es la rama sana del proyecto: en todo momento arranca, pasa el CI y lo que contiene funciona de punta a punta.
 
-- Solo recibe historias completas, tareas técnicas terminadas y correcciones, siempre mediante pull request.
+- Solo recibe historias completas, correcciones y las TR independientes que haya dado el Product Owner, siempre mediante pull request.
 - Una historia entra en `dev` únicamente cuando frontend, backend, base de datos y pruebas están terminados y se cumplen todos sus criterios de aceptación. No se fusiona en `dev` una parte suelta de una historia.
 - Si `dev` deja de funcionar, arreglarlo tiene prioridad sobre el trabajo nuevo.
 
@@ -87,7 +89,7 @@ main                                  versiones entregables (builds)
 Cada historia de usuario tiene una rama que sale de `dev` y reúne todo su trabajo, por ejemplo `story/US-01-registro`.
 
 - La crea la primera persona que empieza la historia y la publica para el resto.
-- No se programa directamente en ella: recibe las ramas `feature/` de la historia.
+- No se programa directamente en ella: recibe las ramas `feature/` de la historia y las de sus tareas técnicas (`chore/`, `docs/`).
 - Cuando la historia está completa, se abre una pull request `story/...` → `dev`. Antes de fusionarla se prueba el conjunto (web, API y base de datos) contra los criterios de aceptación, y Asier, como QA, valida la historia.
 
 #### Ramas de trabajo: categorías
@@ -108,8 +110,8 @@ El nombre sigue el formato `categoria/ID-descripcion`. La categoría indica el t
 | `test/` | su `story/` | Añadir o mejorar pruebas de una historia. | `test/US-03-pruebas-login` |
 | `refactor/` | su `story/` o `dev` | Reorganizar código manteniendo su comportamiento. | `refactor/US-03-servicio-login` |
 | `fix/` | su `story/` o `dev` | Corregir un comportamiento incorrecto: desde su historia si aún no está en `dev`, desde `dev` si ya está integrada. | `fix/US-03-error-login` |
-| `chore/` | `dev` | Configurar herramientas, dependencias, Docker, CI o mantenimiento del repositorio. | `chore/TR-01-plantilla-pr` |
-| `docs/` | `dev` | Cambiar exclusivamente documentación. | `docs/TR-01-reglas-trabajo` |
+| `chore/` | su `story/` (o `dev` si es una TR independiente del PO) | Tarea técnica: herramientas, dependencias, Docker, CI o mantenimiento del repositorio. | `chore/TR-04-ci-github-actions` |
+| `docs/` | su `story/` (o `dev` si es una TR independiente del PO) | Cambiar exclusivamente documentación. | `docs/TR-01-reglas-trabajo` |
 
 Las categorías son una convención del equipo. Cualquier miembro puede utilizar cualquiera de ellas según la tarea que tenga asignada.
 
@@ -128,9 +130,9 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 
 | Pull request | Quién la abre | Requisitos | Cómo se fusiona |
 |---|---|---|---|
-| `feature/...` → `story/...` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
+| `feature/`, `chore/`, `docs/`, `test/` → `story/...` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
 | `story/...` → `dev` | Quien cierra la historia | 1 aprobación, CI en verde, historia probada de punta a punta y validada por QA. | **Squash and merge** |
-| `chore/`, `docs/`, `fix/` → `dev` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
+| `chore/`, `docs/`, `fix/` → `dev` (TR independiente del PO o corrección) | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
 | `dev` → `main` | Carlos | Acuerdo del equipo, CI en verde y `dev` probada. | **Create a merge commit** |
 
 ### Procedimiento para desarrollar una tarea
@@ -170,9 +172,9 @@ git push -u origin feature/US-03-login-api
 9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama utilizada.
 10. Cuando todas las partes de la historia estén fusionadas en su rama `story/`, probar la historia completa y abrir la pull request `story/US-03-login` → `dev`.
 
-Las tareas técnicas (`chore/`, `docs/`) siguen los mismos pasos, pero salen de `dev` y su pull request va hacia `dev`.
+Las tareas técnicas de una historia (`chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella. Solo una TR independiente dada por el Product Owner sale de `dev` y vuelve a `dev`.
 
-Si la rama base cambia durante el desarrollo, incorporar sus cambios desde la rama de trabajo, con los cambios propios ya guardados en commits. Una rama `feature/` se actualiza desde su `story/`, y una `story/`, `chore/` o `docs/` desde `dev`:
+Si la rama base cambia durante el desarrollo, incorporar sus cambios desde la rama de trabajo, con los cambios propios ya guardados en commits. Una rama de trabajo se actualiza desde su `story/`, y una `story/` desde `dev`:
 
 ```bash
 git fetch origin
