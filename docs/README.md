@@ -2,6 +2,8 @@
 
 Propuestas para revisión del equipo. Fecha límite de las tareas: **14 de octubre de 2026 a las 15:00 (Europe/Madrid)**.
 
+La revisión del 14 de octubre adapta estos documentos al flujo acordado en la PR #25: ramas de trabajo → `story/` → `dev` → `main`, con los TR iniciales dentro de US-01.
+
 - [Planificación, reparto y seguimiento](sprint-0.md).
 - [Definition of Done](definition-of-done.md).
 - [Trabajo con agentes](../AGENTS.md).

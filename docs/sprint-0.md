@@ -24,7 +24,7 @@ El plan original de Clase 3 proponía tener todo integrado el 13/10. La fecha l�
 
 | ID | Resultado previsto | Responsables de área | Puntos |
 |---|---|---|---:|
-| TR-01 | Repositorio, reglas de ramas, protección de `main` y Kanban | Carlos | - |
+| TR-01 | Repositorio, reglas de ramas, protección de `main`/`dev` y Kanban | Carlos | - |
 | TR-02 | Entorno Docker reproducible por las seis personas | Carlos; cada persona confirma su arranque | - |
 | TR-03 | Supabase compartido, esquema, migraciones y conexión | Anass y Alex; Carlos apoya la configuración | - |
 | TR-04 | CI y comprobaciones obligatorias | Asier; Carlos configura la protección | - |
@@ -36,7 +36,7 @@ El plan original de Clase 3 proponía tener todo integrado el 13/10. La fecha l�
 | US-03 | Entrar con email y contraseña | Backend y frontend, según sus tareas asignadas | 2 |
 | US-67 | Cerrar sesión | Backend y frontend, según sus tareas asignadas | 1 |
 
-El responsable concreto de cada implementación se consulta en su issue y PR. QA valida los criterios y cada persona presenta una contribución terminada en la demo.
+Los TR iniciales son tareas de US-01 y se trabajan desde `story/US-01-registro`. Los TR ya integrados en `dev` se heredan al crear la historia; los cambios nuevos van desde una rama de trabajo hacia su `story/`. El responsable concreto de cada implementación se consulta en su issue y PR. QA valida los criterios y cada persona presenta una contribución terminada en la demo.
 
 ## Decisiones y dependencias
 
@@ -45,11 +45,11 @@ El responsable concreto de cada implementación se consulta en su issue y PR. QA
 | Web y entorno | React con Vite, JavaScript y Docker Compose. |
 | Servidor y autenticación | Las PR de Alex usan Express 5, Node.js 24 y Supabase Auth. Pendiente de registrar el acuerdo de Anass y Alex. |
 | Datos | PostgreSQL en Supabase; esquema inicial y enlace a `auth.users` pendientes de revisión y aplicación verificada. |
-| Integración | GitHub Actions: lint en las tres áreas, tests de backend/tools y build de frontend. Pendiente de integración y obligatoriedad en `main`. |
+| Integración | GitHub Actions ya integrado en la base técnica: lint en las tres áreas, tests de backend/tools y build de frontend. Falta integrar el ajuste de push a `dev` de #26 y verificar los jobs obligatorios en `main` y `dev`. |
 | API | La web consume `/api/...`; `docs/api-contrato.md` define rutas y errores. |
 | Despliegue de producción | Por decidir. El documento de Clase 3 lo considera opcional para Sprint 0. |
 
-La confirmación depende del registro. La integración de las PR encadenadas debe respetar sus bases: una aprobación o un CI de una versión anterior no certifica cambios posteriores. Las migraciones compartidas esperan la revisión del esquema. Las PR de frontend y backend se revisan por separado y la historia se valida como un conjunto.
+La confirmación depende del registro. El flujo acordado es ramas de trabajo → `story/US-xx-...` → `dev` → `main`. Las historias entran completas y validadas por QA en `dev`; Carlos publica las entregas de `dev` a `main` mediante merge commit. Las PR encadenadas de la estrategia anterior requieren revisar y separar sus cambios por historia antes de cambiar las bases: una aprobación o un CI de una versión anterior no certifica cambios posteriores. Las migraciones compartidas esperan la revisión del esquema. Las partes se revisan por separado y la historia se valida como un conjunto.
 
 ## Validación y preparación de la demo
 
