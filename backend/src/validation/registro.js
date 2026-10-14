@@ -1,6 +1,6 @@
 import { ApiError } from '../errors.js';
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Supabase Auth guarda la contraseña con bcrypt, que solo usa los primeros 72 bytes.
 const PASSWORD_MIN = 8;
 const PASSWORD_MAX_BYTES = 72;
