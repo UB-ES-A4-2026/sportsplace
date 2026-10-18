@@ -39,7 +39,9 @@ test('unknown routes return a JSON 404', async () => {
   const response = await fetch(`${baseUrl}/api/unknown`);
 
   assert.equal(response.status, 404);
-  assert.deepEqual(await response.json(), { error: 'Not found' });
+  assert.deepEqual(await response.json(), {
+    error: { code: 'NO_ENCONTRADO', message: 'Recurso no encontrado.' },
+  });
 });
 
 test('unsupported methods return 405 and advertise GET', async () => {
@@ -47,5 +49,20 @@ test('unsupported methods return 405 and advertise GET', async () => {
 
   assert.equal(response.status, 405);
   assert.equal(response.headers.get('allow'), 'GET');
-  assert.deepEqual(await response.json(), { error: 'Method not allowed' });
+  assert.deepEqual(await response.json(), {
+    error: { code: 'METODO_NO_PERMITIDO', message: 'Método no permitido.' },
+  });
+});
+
+test('invalid JSON bodies return the common error format', async () => {
+  const response = await fetch(`${baseUrl}/api/unknown`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{"email":',
+  });
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: { code: 'JSON_INVALIDO', message: 'El cuerpo de la petición no es un JSON válido.' },
+  });
 });
