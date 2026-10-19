@@ -285,6 +285,10 @@ frontend/src/
 ├── api/
 │   ├── cliente.js           # api(ruta, opciones): llamadas a /api/... con errores ErrorApi
 │   └── sesion.js            # Lectura y guardado de la sesión en el navegador
+├── auth/
+│   ├── AuthProvider.jsx     # Sesión: usuario, entrar, restaurar y renovar el token
+│   ├── contexto.js          # Contexto de la sesión
+│   └── useAuth.js           # Hook para leer la sesión en cualquier componente
 ├── components/
 │   ├── Campo.jsx            # Campo de formulario con etiqueta y error accesibles
 │   ├── Layout.jsx           # Cabecera, menú y pie comunes a todas las páginas
@@ -298,8 +302,8 @@ frontend/src/
 | `/` | `InicioPage`: estado del entorno y de la API | No | TR-02 |
 | `/registro` | `RegistroPage`: formulario de alta del centro | No | US-01 |
 | `/confirmar-email` | `ConfirmarEmailPage` (recibirá `token_hash` y `type` en la URL) | No | US-02 |
-| `/entrar` | `EntrarPage` | No | US-03 |
-| `/panel` | `PanelPage` | Sí | US-67 |
+| `/entrar` | `EntrarPage`: formulario de acceso con email y contraseña | No | US-03 |
+| `/panel` | `PanelPage`: zona privada (cerrar sesión en US-67) | Sí | US-03, US-67 |
 | `*` | `NoEncontradaPage` | No | TR-05 |
 
 Para añadir una página: crear `pages/NombrePage.jsx`, añadir su `<Route>` en `App.jsx` y su fila en esta tabla. Todas las llamadas al servidor pasan por `api()` de `api/cliente.js`, que añade la cabecera `Authorization` cuando hay sesión y convierte los errores del contrato en `ErrorApi` (se decide según `error.code`).
