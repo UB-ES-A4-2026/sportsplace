@@ -79,16 +79,28 @@ export default function AuthProvider({ children }) {
     setCaducidad(datos.sesion.expires_at);
   }, []);
 
-  // Borra la sesión solo en este navegador (el cierre de sesión en el servidor es US-67).
+  // Borra la sesión solo en este navegador (sin avisar al servidor).
   const olvidarSesion = useCallback(() => {
     borrarSesion();
     setUsuario(null);
     setCaducidad(null);
   }, []);
 
+  // US-67: POST /api/auth/logout. El servidor invalida el refresh_token; después se borra la sesión de este navegador.
+  const cerrarSesion = useCallback(async () => {
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch {
+      // 401: la sesión ya no era válida, equivale a un cierre correcto.
+      // Sin conexión u otro error: se cierra igualmente la sesión en este navegador.
+    } finally {
+      olvidarSesion();
+    }
+  }, [olvidarSesion]);
+
   const valor = useMemo(
-    () => ({ usuario, cargando, iniciarSesion, olvidarSesion }),
-    [usuario, cargando, iniciarSesion, olvidarSesion],
+    () => ({ usuario, cargando, iniciarSesion, cerrarSesion, olvidarSesion }),
+    [usuario, cargando, iniciarSesion, cerrarSesion, olvidarSesion],
   );
 
   return <AuthContexto.Provider value={valor}>{children}</AuthContexto.Provider>;
