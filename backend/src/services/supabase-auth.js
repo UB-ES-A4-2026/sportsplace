@@ -30,8 +30,20 @@ export function normalizeEmail(email) {
   return email.trim().toLowerCase();
 }
 
+function invalidCredentials() {
+  return new ApiError(401, 'CREDENCIALES_INCORRECTAS', 'Email o contraseña incorrectos.');
+}
+
+function notAuthenticated() {
+  return new ApiError(401, 'NO_AUTENTICADO', 'Tu sesión no es válida. Vuelve a entrar.');
+}
+
 function tooManyAttempts() {
   return new ApiError(429, 'DEMASIADOS_INTENTOS', 'Demasiados intentos. Espera unos minutos y vuelve a probar.');
+}
+
+export function emailNotConfirmed() {
+  return new ApiError(403, 'EMAIL_NO_CONFIRMADO', 'Confirma tu email con el enlace que te hemos enviado antes de continuar.');
 }
 
 export function createSupabaseAuth({
@@ -71,6 +83,31 @@ export function createSupabaseAuth({
       // Supabase no da error si el email ya tiene cuenta: devuelve un usuario sin identidades.
       if (!data.user || data.user.identities?.length === 0) throw emailAlreadyRegistered();
       return toUsuario(data.user);
+    },
+
+    async signIn(email, password) {
+      const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });
+      if (error) {
+        // Supabase comprueba la contraseña antes que la confirmación, así que
+        // este caso no revela si un email está registrado.
+        if (error.code === 'email_not_confirmed') throw emailNotConfirmed();
+        if (error.status === 429) throw tooManyAttempts();
+        // US-03: el mismo error tanto si falla el email como la contraseña.
+        if (error.code === 'invalid_credentials' || error.status === 400) throw invalidCredentials();
+        throw authUnavailable();
+      }
+      return { usuario: toUsuario(data.user), sesion: toSesion(data.session) };
+    },
+
+    async refresh(refreshToken) {
+      const { data, error } = await client.auth.refreshSession({ refresh_token: refreshToken });
+      if (error) {
+        if (error.status === 429) throw tooManyAttempts();
+        if (error.status >= 500 || !error.status) throw authUnavailable();
+        throw notAuthenticated();
+      }
+      if (!data.session) throw notAuthenticated();
+      return { usuario: toUsuario(data.user), sesion: toSesion(data.session) };
     },
 
     async getUser(accessToken) {
