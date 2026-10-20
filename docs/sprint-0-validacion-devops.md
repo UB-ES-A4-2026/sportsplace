@@ -77,6 +77,20 @@ No existe `package.json` en la raíz ni se ha supuesto un `npm test` global. El 
 
 Referencia versionada, sin copiar código entre historias: [plantilla Confirm signup de US-02 en `f97b667`](https://github.com/UB-ES-A4-2026/sportsplace/blob/f97b667f270eb18696440fce166402d439448dfd/supabase/templates/confirmar-email.html). El contrato y la implementación de #17 son compatibles: ruta `/confirmar-email`, parámetro `token_hash` a partir de `{{ .TokenHash }}` y `type=email`; la API espera esos campos en JSON y llama a `verifyOtp` con tipo `email`. También admite `signup` como entrada. La página integrada de TR-05 todavía no envía esa petición.
 
+### Resultado de la revisión manual comunicada por Carlos
+
+Carlos confirma en esta conversación el 20/10/2026, sin compartir credenciales:
+
+| Configuración revisada en el panel | Resultado aportado |
+|---|---|
+| Site URL | `http://localhost:5173`, correcto. |
+| Proveedor Email y Confirm email | Ambos activados, correcto. |
+| Mínimo de contraseña | 8 caracteres, coincide con el contrato. |
+| Confirm signup | Plantilla personalizada con `/confirmar-email`, `token_hash` derivado de `.TokenHash` y `type=email`, compatible con el contrato y #17. |
+| Custom SMTP | Activado según Carlos, quien posteriormente confirma que SMTP Settings ya muestra el puerto `465`. No se ha leído la configuración del servidor mediante la API de gestión ni se ha enviado un correo nuevo en esta revisión. |
+
+Para Gmail los puertos habituales son `465` (TLS implícito) o `587` (STARTTLS), no `463`. Carlos comunicó inicialmente que el panel volvía a mostrar `463`, pero después confirmó que ya muestra `465`; no se atribuye una causa a ese comportamiento. Conservar la configuración y la contraseña de aplicación existentes y comprobar una vez que `465` se mantiene al recargar antes de enviar correo. Esta revisión manual acredita los valores de configuración comunicados, no un envío nuevo ni el recorrido de confirmación.
+
 ### Comprobación manual de Carlos, sin revelar secretos
 
 1. Abrir el proyecto `tmzxoosguozwrndqnkwn` en Supabase. En **Authentication → URL Configuration**, comprobar que **Site URL** sea `http://localhost:5173`. Conservarlo si ya es correcto.
@@ -100,7 +114,7 @@ Estado comprobado de las ramas permanentes, sin modificarlas:
 | US-01 | API y estructura web integradas; formulario aún fuera de la historia, sin PR abierta en la consulta inicial; falta QA del conjunto y condiciones de cierre de sus tareas. | Lucía: formulario y PR. Asier: validación QA de historia completa. Revisión ajena y CI de la versión final. |
 | US-02 | #15 y #17 en borrador por dependencias; página de confirmación no integrada. | Alex/Anass: backend y actualización de dependencias; Lucía: confirmación web; Asier: QA. |
 | US-03 / US-67 | #13 y #14 en borrador, pendientes de las historias previas y de interfaz. | Alex: dependencias backend; Marta: login/logout; Asier: QA. No asumidas por Carlos. |
-| Supabase: Site URL, plantilla, SMTP y nueva recepción | Acceso de gestión/buzón no disponibles para el agente. | Carlos: comprobaciones manuales anteriores. |
+| Supabase: nueva recepción de correo | Site URL, proveedor, confirmación, mínimo, plantilla y Custom SMTP con puerto `465` confirmados manualmente por Carlos. Falta un envío nuevo desde Supabase y un buzón controlado para comprobar recepción; el agente no tiene acceso de gestión. | Carlos: comprobar una vez que `465` permanece al recargar y facilitar un buzón propio para una única prueba de registro, verificando antes que no existe la cuenta. |
 | Kanban Projects | La credencial existente tiene acceso al repositorio, pero no el scope `read:project`; no permite consultar Projects v2. | Carlos: acceso de Projects si desea comprobarlo o actualizarlo. No se cambió ningún estado sin evidencia. |
 | `story/US-01-registro` → `dev` | No se abre ni se fusiona una historia incompleta ni se toma la aprobación de #28 como QA de toda US-01. | Lucía y Asier primero; después revisión vigente y CI. |
 | `dev` → `main` | La entrega completa espera las historias y el visto bueno del equipo. Método obligatorio: **Create a merge commit**. | Equipo: visto bueno; Carlos: preparación y fusión cuando se cumplan todas las protecciones. |
