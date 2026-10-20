@@ -1,4 +1,5 @@
 import { createAppServer } from './app.js';
+import { createDatabase } from './database.js';
 
 const host = process.env.HOST || '0.0.0.0';
 const port = Number(process.env.PORT || 3000);
@@ -8,6 +9,24 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 
 const server = createAppServer();
+let database;
+
+if (process.env.DATABASE_URL?.trim()) {
+  try {
+    database = createDatabase({
+      onPoolError: (error) => console.error(error.message),
+    });
+    database.check().then(() => {
+      console.log('Conexión PostgreSQL: correcta.');
+    }).catch((error) => {
+      console.error(error.message);
+    });
+  } catch (error) {
+    console.error(error.message);
+  }
+} else {
+  console.log('PostgreSQL pendiente de configuración: falta DATABASE_URL.');
+}
 
 server.on('error', (error) => {
   console.error(`Unable to start Sportsplace API: ${error.message}`);
@@ -31,12 +50,20 @@ function shutdown(signal) {
   }, 10_000);
   timeout.unref();
 
-  server.close((error) => {
-    clearTimeout(timeout);
+  server.close(async (error) => {
     if (error) {
       console.error(`Unable to close Sportsplace API: ${error.message}`);
       process.exitCode = 1;
     }
+    if (database) {
+      try {
+        await database.close();
+      } catch {
+        console.error('No se pudo cerrar la conexión PostgreSQL.');
+        process.exitCode = 1;
+      }
+    }
+    clearTimeout(timeout);
   });
 }
 
