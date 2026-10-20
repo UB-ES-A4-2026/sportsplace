@@ -61,7 +61,7 @@ No existe `package.json` en la raíz ni se ha supuesto un `npm test` global. El 
 | Comprobación visual posterior de Carlos, comunicada en esta conversación | Abre `localhost:5173`, ve el frontend y accede a los apartados de login y registro. Todavía no hay formularios; confirma la estructura, no las funcionalidades ni el QA de la historia. |
 | Registro con email existente y variante con espacios/mayúsculas | Ambos HTTP 409 `EMAIL_YA_REGISTRADO`; no se crea cuenta ni se envía otro correo. |
 | Registro sin aceptar privacidad / con email mal formado | HTTP 400 `DATOS_INVALIDOS`, con detalle del campo correspondiente. |
-| Efectos de esas comprobaciones | Recuento de usuarios Auth y centros sin cambios. No hubo alta nueva ni reintentos de envío. |
+| Efectos de esas cuatro comprobaciones iniciales | Recuento de usuarios Auth y centros sin cambios. No hubo alta nueva ni reintentos de envío en esos casos. La prueba SMTP posterior realizó una única alta, descrita abajo. |
 | `docker compose exec -T backend npm run db:check` | Conexión correcta y `public.centros` encontrada, con TLS verificado. |
 | Consulta SQL en transacción de solo lectura | Migraciones `20261008090000` y `20261009120000` registradas; columnas de enlace y confirmación presentes; RLS activo; `anon`/`authenticated` sin lectura de `centros`. |
 | Proyecto configurado y API pública de ajustes Auth | Coincide con `tmzxoosguozwrndqnkwn`; HTTP 200; email habilitado, altas permitidas y confirmación obligatoria (`mailer_autoconfirm: false`). |
@@ -73,13 +73,13 @@ No existe `package.json` en la raíz ni se ha supuesto un `npm test` global. El 
 
 - [Anass, #8, 14/10](https://github.com/UB-ES-A4-2026/sportsplace/issues/8#issuecomment-6175158124): registro real, recepción de correo, confirmación y persistencia. Su advertencia sobre Site URL y plantilla describe aquella fecha; no se presupone que siga vigente después de los ajustes de Carlos.
 - [Alex, #4, 20/10](https://github.com/UB-ES-A4-2026/sportsplace/issues/4#issuecomment-6291838966): once comprobaciones reales de sesión, incluida la denegación sin email confirmado y la invalidación tras logout. Se realizaron en una rama de backend que contiene varias historias, no en la web integrada.
-- Una prueba SMTP directa desde Windows no acredita que Supabase entregue correo. En esta ejecución **no se ha enviado un nuevo correo**: no se dispone de un buzón de pruebas controlado ni de acceso de gestión a Supabase. La API pública no expone Site URL, plantilla ni SMTP; no se pueden certificar sus valores actuales desde ese acceso.
+- Una prueba SMTP directa desde Windows no acredita que Supabase entregue correo. La prueba nueva del 20/10 sí pasa por nuestra API y Supabase Auth: alta HTTP 201 y recepción del correo confirmada por Carlos, según el registro siguiente. La configuración del panel se acredita mediante la revisión manual de Carlos, no mediante la API de gestión, a la que el agente sigue sin acceso.
 
 Referencia versionada, sin copiar código entre historias: [plantilla Confirm signup de US-02 en `f97b667`](https://github.com/UB-ES-A4-2026/sportsplace/blob/f97b667f270eb18696440fce166402d439448dfd/supabase/templates/confirmar-email.html). El contrato y la implementación de #17 son compatibles: ruta `/confirmar-email`, parámetro `token_hash` a partir de `{{ .TokenHash }}` y `type=email`; la API espera esos campos en JSON y llama a `verifyOtp` con tipo `email`. También admite `signup` como entrada. La página integrada de TR-05 todavía no envía esa petición.
 
 ### Resultado de la revisión manual comunicada por Carlos
 
-Carlos confirma en esta conversación el 20/10/2026, sin compartir credenciales:
+Se registran únicamente los valores no secretos de la configuración que Carlos confirma en esta conversación el 20/10/2026:
 
 | Configuración revisada en el panel | Resultado aportado |
 |---|---|
@@ -87,9 +87,25 @@ Carlos confirma en esta conversación el 20/10/2026, sin compartir credenciales:
 | Proveedor Email y Confirm email | Ambos activados, correcto. |
 | Mínimo de contraseña | 8 caracteres, coincide con el contrato. |
 | Confirm signup | Plantilla personalizada con `/confirmar-email`, `token_hash` derivado de `.TokenHash` y `type=email`, compatible con el contrato y #17. |
-| Custom SMTP | Activado según Carlos, quien posteriormente confirma que SMTP Settings ya muestra el puerto `465`. No se ha leído la configuración del servidor mediante la API de gestión ni se ha enviado un correo nuevo en esta revisión. |
+| Custom SMTP | Activado; Carlos confirma el puerto `465` y que se mantiene al recargar. La prueba posterior de registro devuelve 201 y Carlos acredita la recepción real. No se ha leído la configuración mediante la API de gestión. |
 
-Para Gmail los puertos habituales son `465` (TLS implícito) o `587` (STARTTLS), no `463`. Carlos comunicó inicialmente que el panel volvía a mostrar `463`, pero después confirmó que ya muestra `465`; no se atribuye una causa a ese comportamiento. Conservar la configuración y la contraseña de aplicación existentes y comprobar una vez que `465` se mantiene al recargar antes de enviar correo. Esta revisión manual acredita los valores de configuración comunicados, no un envío nuevo ni el recorrido de confirmación.
+Para Gmail los puertos habituales son `465` (TLS implícito) o `587` (STARTTLS), no `463`. Carlos comunicó inicialmente que el panel volvía a mostrar `463`, pero después confirmó `465` y su persistencia al recargar; no se atribuye una causa al comportamiento anterior. Se conserva la contraseña de aplicación existente, sin mostrarla ni cambiarla. La revisión del panel y la prueba real de recepción son evidencias distintas; ninguna completa por sí sola US-02.
+
+### Prueba real de registro y entrega: 20/10/2026
+
+Aplicación `e755687`, ejecutada desde la rama documental en `5f14c5d`, contra el proyecto compartido. Carlos proporciona y autoriza un buzón de pruebas bajo su control; no se publica la dirección ni ninguna contraseña o token en esta evidencia.
+
+| Paso | Resultado y tipo de evidencia |
+|---|---|
+| Precondiciones, consulta de solo lectura | El buzón no existía ni en `auth.users` ni en `centros`. Email habilitado, altas permitidas y confirmación obligatoria. |
+| Único `POST /api/auth/registro`, entre 16:20:47 y 16:20:49 UTC | HTTP **201**, usuario devuelto con email coincidente y `email_confirmado: false`, sin sesión. Contraseña aleatoria de prueba, distinta de la de Gmail y no divulgada. |
+| Persistencia tras la petición | Una cuenta y un centro para el buzón probado, enlazados por `usuario_id`; privacidad aceptada; ambos sin confirmar. Supabase registra `confirmation_sent_at`. Comprobación técnica, sin borrar datos. |
+| Recepción real | Carlos confirma en esta conversación que ha recibido el correo de confirmación. Acredita entrega desde Supabase, no solo conectividad SMTP desde Windows. |
+| Destino del enlace recibido | Carlos abre la página local `/confirmar-email` en el puerto 5173 con los parámetros `token_hash` y `type=email`. Se omiten todos los valores del token y el enlace real. |
+| Estado posterior a la navegación | Consulta de solo lectura: Auth sigue sin confirmar, `centros.email_confirmado` sigue en `false` y su fecha de confirmación sigue vacía. Cuenta y centro permanecen correctamente enlazados. |
+| Disponibilidad de la confirmación | Sonda con cuerpo vacío, sin usar el token real: `POST /api/auth/confirmar` devuelve **404 NO_ENCONTRADO**. La API de US-02 todavía no está integrada y la página actual es un marcador. |
+
+**Resultado DevOps:** registro real y envío/recepción de correo comprobados. **No se declara activada la cuenta ni superado el flujo de confirmación.** Se hizo una sola alta, sin reintentos, reenvíos, verificación directa del token, eliminación de usuarios o traslado de código entre historias. La cuenta de pruebas se conserva; no repetir su registro.
 
 ### Comprobación manual de Carlos, sin revelar secretos
 
@@ -97,7 +113,7 @@ Para Gmail los puertos habituales son `465` (TLS implícito) o `587` (STARTTLS),
 2. En **Authentication → Sign In / Providers → Email**, comprobar **Confirm email** activado y mínimo de contraseña de **8** caracteres. No se ha leído ese mínimo por el acceso público.
 3. En **Authentication → Emails → Confirm signup**, comparar la plantilla con la referencia versionada: destino `/confirmar-email`, `token_hash` derivado de `.TokenHash` y `type=email`. Cambiarla solo si difiere. No compartir el enlace real.
 4. En **Authentication → Email / SMTP Settings**, verificar que el SMTP personalizado de Gmail está habilitado y conservar la contraseña de aplicación existente. No pegarla en GitHub, chat o capturas. Sin credencial de gestión no se ha podido leer ni modificar esta configuración.
-5. Para un envío nuevo, elegir un buzón de pruebas propio; comprobar primero en **Authentication → Users** y `centros` si el intento anterior ya creó la cuenta. Hacer un único registro válido mediante nuestra API y abrir el correo para comprobar origen y destino del enlace, sin publicarlo. Si hay timeout, comprobar el usuario antes de repetir; no eliminarlo para reintentar.
+5. La prueba de envío descrita arriba ya está realizada y el buzón de pruebas ya tiene cuenta. Para cualquier prueba nueva, usar un buzón autorizado y comprobar primero **Authentication → Users** y `centros`. No repetir el registro ni eliminar la cuenta para forzarlo. Si hay timeout, comprobar el usuario antes de cualquier nuevo intento.
 6. El recorrido web completo debe esperar las implementaciones de Lucía y la API de US-02 (#17): actualmente la página es un marcador y el endpoint de confirmación devuelve 404. No consumir un enlace esperando una confirmación que esta versión todavía no implementa. La validación final corresponde a Asier.
 
 ## Bloqueos y entrega
@@ -108,13 +124,15 @@ Estado comprobado de las ramas permanentes, sin modificarlas:
 - `dev` @ `29f6945`: no hay check runs asociados a ese commit; no se declara CI verde en su HEAD. El ajuste de ejecución en push a `dev` de #26 está en la historia y llegará mediante la integración completa de US-01.
 - `dev` está un commit por delante de `main`, pero ambos tienen el **mismo árbol de archivos** (cero archivos diferentes). No hay una entrega nueva de código para abrir `dev` → `main`; no se fabrica una PR vacía ni se adelantan historias parciales.
 
+La issue US-01 #1 figura cerrada por Asier el 20/10 a las 15:22 UTC, pero su [última evidencia QA](https://github.com/UB-ES-A4-2026/sportsplace/issues/1#issuecomment-6294232496) deja CP-01-01 bloqueado por 503/504 al registrar y no declara validada la historia. La prueba DevOps posterior sí consigue 201 y recepción del correo; no sustituye la repetición de CP-01-01 por QA sobre el formulario y la versión final. El formulario sigue fuera de la historia y US-01 no está integrada en `dev`. Se registra esta discrepancia sin modificar el cierre de Asier ni marcar criterios en su nombre.
+
 | Elemento | Pendiente real | Responsable / dependencia |
 |---|---|---|
 | TR-02, [#7](https://github.com/UB-ES-A4-2026/sportsplace/issues/7) | Asier acredita su arranque y Carlos confirma la comprobación visual del entorno arrancado y probado por el agente. No se atribuye a Carlos la ejecución personal de los comandos. Issue abierta; criterios sin rebajar. | Anass, Alex, Lucía y Marta: registrar su confirmación personal con SO, fecha, commit y resultado. |
-| US-01 | API y estructura web integradas; formulario aún fuera de la historia, sin PR abierta en la consulta inicial; falta QA del conjunto y condiciones de cierre de sus tareas. | Lucía: formulario y PR. Asier: validación QA de historia completa. Revisión ajena y CI de la versión final. |
+| US-01 | API y estructura web integradas; formulario fuera de la historia y sin PR abierta en la consulta actual. #1 figura cerrada, pero la última evidencia QA deja el alta válida bloqueada; la prueba DevOps posterior no sustituye su repetición ni la integración en `dev`. | Lucía: formulario y PR. Asier: repetir CP-01-01, validar la historia completa y revisar la coherencia del cierre. Revisión ajena y CI de la versión final. |
 | US-02 | #15 y #17 en borrador por dependencias; página de confirmación no integrada. | Alex/Anass: backend y actualización de dependencias; Lucía: confirmación web; Asier: QA. |
 | US-03 / US-67 | #13 y #14 en borrador, pendientes de las historias previas y de interfaz. | Alex: dependencias backend; Marta: login/logout; Asier: QA. No asumidas por Carlos. |
-| Supabase: nueva recepción de correo | Site URL, proveedor, confirmación, mínimo, plantilla y Custom SMTP con puerto `465` confirmados manualmente por Carlos. Falta un envío nuevo desde Supabase y un buzón controlado para comprobar recepción; el agente no tiene acceso de gestión. | Carlos: comprobar una vez que `465` permanece al recargar y facilitar un buzón propio para una única prueba de registro, verificando antes que no existe la cuenta. |
+| Supabase: configuración y correo | Completado para la comprobación DevOps: configuración revisada por Carlos, un registro real 201 y recepción confirmada. La navegación llega al marcador; no activa la cuenta porque falta integrar US-02. | Carlos: evidencia técnica/manual registrada. Lucía y Alex/Anass: implementaciones de US-02; Asier: QA del recorrido completo. |
 | Kanban Projects | La credencial existente tiene acceso al repositorio, pero no el scope `read:project`; no permite consultar Projects v2. | Carlos: acceso de Projects si desea comprobarlo o actualizarlo. No se cambió ningún estado sin evidencia. |
 | `story/US-01-registro` → `dev` | No se abre ni se fusiona una historia incompleta ni se toma la aprobación de #28 como QA de toda US-01. | Lucía y Asier primero; después revisión vigente y CI. |
 | `dev` → `main` | La entrega completa espera las historias y el visto bueno del equipo. Método obligatorio: **Create a merge commit**. | Equipo: visto bueno; Carlos: preparación y fusión cuando se cumplan todas las protecciones. |
