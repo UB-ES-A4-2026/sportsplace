@@ -1,5 +1,6 @@
 import { createAppServer } from './app.js';
 import { createDatabase } from './database.js';
+import { createCentrosRepository } from './repositories/centros.js';
 import { createSupabaseAuth } from './services/supabase-auth.js';
 
 const host = process.env.HOST || '0.0.0.0';
@@ -14,7 +15,6 @@ if (!auth) {
   console.log('Supabase Auth pendiente de configuración: faltan SUPABASE_URL o SUPABASE_PUBLISHABLE_KEY.');
 }
 
-const server = createAppServer({ auth });
 let database;
 
 if (process.env.DATABASE_URL?.trim()) {
@@ -33,6 +33,9 @@ if (process.env.DATABASE_URL?.trim()) {
 } else {
   console.log('PostgreSQL pendiente de configuración: falta DATABASE_URL.');
 }
+
+const centros = database ? createCentrosRepository(database) : null;
+const server = createAppServer({ auth, centros });
 
 server.on('error', (error) => {
   console.error(`Unable to start Sportsplace API: ${error.message}`);
