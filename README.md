@@ -18,11 +18,11 @@ La implementación y validación de estas historias se siguen en el Kanban.
 ## Tecnologías
 
 - Frontend: React con Vite, en JavaScript.
-- Backend: Node.js 24; el servidor inicial usa `node:http`. Anass y Alex deben confirmar Express o NestJS para la API funcional.
+- Backend: Node.js 24 con Express 5. El contrato de la API está en [docs/api-contrato.md](docs/api-contrato.md).
 - Base de datos: PostgreSQL mediante Supabase; el servidor utiliza `pg` para la conexión privada.
 - Entorno de desarrollo: Docker y Docker Compose, con servicios separados para web y servidor.
 - Integración continua: GitHub Actions. Cada pull request instala las dependencias y ejecuta el lint, las pruebas y la compilación ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
-- Autenticación: pendiente de confirmar el uso de Supabase Auth.
+- Autenticación: Supabase Auth, a través de nuestra API (ver el contrato).
 
 ## Equipo y responsabilidades
 
@@ -48,7 +48,7 @@ El autor puede fusionar su pull request cuando se cumplan todos los requisitos d
 - Los identificadores, títulos, puntos y criterios de aceptación deben mantenerse coherentes en Excel, Trello y GitHub.
 - Cada tarea debe tener una o varias personas responsables y un resultado verificable.
 - Las historias usan su identificador original, por ejemplo US-01. Las tareas técnicas usan el suyo, por ejemplo TR-01.
-- Las tareas técnicas no son elementos sueltos del backlog: forman parte de la historia que las necesita. Las TR iniciales (repositorio, entorno, base de datos, CI, estructura de la API y de la web) son tareas de la primera historia. Solo aparece una TR independiente en el backlog si el Product Owner la da como tal.
+- Las tareas técnicas no son elementos sueltos del backlog: forman parte de la historia que las necesita. Las TR iniciales (repositorio, entorno, base de datos, CI, estructura de la API y de la web) son tareas de la primera historia. Solo aparece una TR independiente en el backlog si el Product Owner la da como tal. En GitHub, cada issue de tarea se añade como *sub-issue* de la issue de su historia.
 - El número de una issue de GitHub, como #5, no sustituye al identificador de la historia o tarea.
 - Frontend y backend pueden trabajar en tareas y pull requests diferentes de una misma historia.
 
@@ -94,12 +94,22 @@ Cada historia de usuario tiene una rama que sale de `dev` y reúne todo su traba
 
 #### Ramas de trabajo: categorías
 
-Dentro de una historia, cada parte del trabajo va en su propia rama, que sale de la rama de la historia y vuelve a ella:
+Una historia se divide en tareas. Una tarea es cualquier parte del trabajo necesaria para completarla: frontend, backend, base de datos, pruebas, documentación o configuración. Cada tarea tiene su propia rama, que sale de la rama de la historia, y su pull request hacia ella. Por ejemplo, en US-01:
 
-- `feature/US-01-registro-web`: formulario e interfaz.
+- `chore/TR-06-estructura-api`: estructura del servidor (tarea técnica).
+- `feature/TR-05-estructura-web`: estructura de la web (tarea técnica).
 - `feature/US-01-registro-api`: API y validaciones del servidor.
+- `feature/US-01-registro-web`: formulario e interfaz.
 
-Cada rama tiene su responsable y su pull request hacia `story/US-01-registro`.
+Cada rama tiene su responsable y su pull request hacia `story/US-01-registro`. Así la historia se monta completa en su propia rama y a `dev` solo llega cuando todo está implementado y probado.
+
+#### Historias que dependen de otra
+
+Si una historia necesita código de otra (por ejemplo, US-03 necesita la estructura del servidor que llega con US-01), no se crean ramas desde la otra historia:
+
+1. Se termina antes la historia de la que depende y se fusiona en `dev`.
+2. Se actualiza la rama de la historia desde `dev` (`git merge origin/dev`) y después cada rama de tarea desde su `story/`.
+3. Mientras tanto, las pull requests de la historia que espera se abren hacia su `story/` como **borrador** (*draft*) e indican de qué historia dependen. Hasta que se actualicen pueden mostrar también los cambios de la otra historia.
 
 El nombre sigue el formato `categoria/ID-descripcion`. La categoría indica el tipo de cambio y el ID identifica la historia o tarea original de Excel/Trello.
 
@@ -124,7 +134,7 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 - Crear cada rama desde su base actualizada, según la tabla anterior.
 - Mantener un cambio coherente y revisable por rama.
 - No crear ramas permanentes por persona, área o sprint: las únicas permanentes son `main` y `dev`.
-- Eliminar la rama después de fusionar su pull request. La rama `story/` se elimina cuando se fusiona en `dev`.
+- Conservar `main` y `dev`. Eliminar solo ramas temporales después de fusionar su pull request y cuando ninguna otra PR las utilice como base. La rama `story/` se elimina tras fusionarse en `dev`, cuando ya no tenga PR dependientes.
 
 #### Resumen del flujo
 
@@ -169,10 +179,10 @@ git push -u origin feature/US-03-login-api
 
 7. Abrir una pull request hacia `story/US-03-login` y mover la tarea a **En revisión**.
 8. Solicitar revisión a otra persona del equipo y atender sus comentarios.
-9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama utilizada.
+9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama temporal utilizada cuando ninguna otra PR dependa de ella.
 10. Cuando todas las partes de la historia estén fusionadas en su rama `story/`, probar la historia completa y abrir la pull request `story/US-03-login` → `dev`.
 
-Las tareas técnicas de una historia (`chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella. Solo una TR independiente dada por el Product Owner sale de `dev` y vuelve a `dev`.
+Todas las tareas de una historia (frontend, backend, `chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella. Solo una TR independiente dada por el Product Owner sale de `dev` y vuelve a `dev`.
 
 Si la rama base cambia durante el desarrollo, incorporar sus cambios desde la rama de trabajo, con los cambios propios ya guardados en commits. Una rama de trabajo se actualiza desde su `story/`, y una `story/` desde `dev`:
 
@@ -204,7 +214,7 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 - Quien revisa debe comprobar los cambios y las pruebas descritas.
 - La revisión puede realizarla otra persona del equipo.
 - Cada pull request ejecuta el workflow de GitHub Actions y su resultado debe estar en verde antes de fusionar.
-- Cuando el workflow esté operativo, se configurarán sus comprobaciones como obligatorias en `main` y `dev`. Los fallos deberán resolverse antes de fusionar.
+- Los tres jobs del workflow deben estar configurados como comprobaciones obligatorias en `main` y `dev`. Carlos verifica esa configuración; los fallos deberán resolverse antes de fusionar.
 - No se permite forzar cambios ni eliminar `main` ni `dev`.
 
 ### Cómo revisar y fusionar una pull request en GitHub
@@ -214,7 +224,7 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 3. Si todo está correcto, pulsa **Review changes → Approve → Submit review**. Si necesita correcciones, utiliza **Request changes** y explica qué debe cambiar.
 4. El autor atiende los comentarios y solicita otra revisión cuando corresponda.
 5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Squash and merge** y confirma la fusión. La pull request `dev` → `main` es la única que se fusiona con **Create a merge commit**.
-6. Se elimina la rama con **Delete branch**, si no se elimina automáticamente.
+6. Se elimina únicamente la rama temporal con **Delete branch**, cuando ninguna otra PR la utilice como base. Se conservan `main` y `dev`, también después de publicar una entrega.
 
 Un comentario normal no cuenta como aprobación. El autor no puede aprobar su propia pull request.
 
@@ -262,6 +272,42 @@ sportsplace/
 ├── .env.example             # Plantilla de configuración sin credenciales
 └── README.md                # Trabajo en equipo y uso del entorno
 ```
+
+### Estructura de la web: TR-05
+
+La web es una aplicación de una sola página con React Router. `frontend/src` se organiza así:
+
+```text
+frontend/src/
+├── main.jsx                 # Arranque de React y BrowserRouter
+├── App.jsx                  # Definición de las rutas
+├── styles.css               # Estilos globales
+├── api/
+│   ├── cliente.js           # api(ruta, opciones): llamadas a /api/... con errores ErrorApi
+│   └── sesion.js            # Lectura y guardado de la sesión en el navegador
+├── auth/
+│   ├── AuthProvider.jsx     # Sesión: usuario, entrar, restaurar y renovar el token
+│   ├── contexto.js          # Contexto de la sesión
+│   └── useAuth.js           # Hook para leer la sesión en cualquier componente
+├── components/
+│   ├── Campo.jsx            # Campo de formulario con etiqueta y error accesibles
+│   ├── Layout.jsx           # Cabecera, menú y pie comunes a todas las páginas
+│   ├── BotonCerrarSesion.jsx  # Botón de cierre de sesión (US-67)
+│   └── RutaPrivada.jsx      # Redirige a /entrar si no hay sesión
+├── validacion/              # Validación de formularios, con las mismas reglas que el servidor
+└── pages/                   # Una página por ruta
+```
+
+| Ruta | Página | Privada | Historia |
+|---|---|---|---|
+| `/` | `InicioPage`: estado del entorno y de la API | No | TR-02 |
+| `/registro` | `RegistroPage`: formulario de alta del centro | No | US-01 |
+| `/confirmar-email` | `ConfirmarEmailPage` (recibirá `token_hash` y `type` en la URL) | No | US-02 |
+| `/entrar` | `EntrarPage`: formulario de acceso con email y contraseña | No | US-03 |
+| `/panel` | `PanelPage`: zona privada con botón para cerrar sesión | Sí | US-03, US-67 |
+| `*` | `NoEncontradaPage` | No | TR-05 |
+
+Para añadir una página: crear `pages/NombrePage.jsx`, añadir su `<Route>` en `App.jsx` y su fila en esta tabla. Todas las llamadas al servidor pasan por `api()` de `api/cliente.js`, que añade la cabecera `Authorization` cuando hay sesión y convierte los errores del contrato en `ErrorApi` (se decide según `error.code`).
 
 ### Requisitos
 
