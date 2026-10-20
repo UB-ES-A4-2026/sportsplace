@@ -80,6 +80,7 @@ Cualquier error de la API tiene esta forma:
 | `GET /api/health` | TR-02 | No | Carlos |
 | `POST /api/auth/registro` | US-01 | No | Anass |
 | `POST /api/auth/confirmar` | US-02 | No | Anass y Alex |
+| `POST /api/auth/reenviar-confirmacion` | US-66 | No | Anass |
 | `POST /api/auth/login` | US-03 | No | Alex |
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
@@ -120,9 +121,29 @@ El email de confirmación de Supabase enlaza a la web: `/confirmar-email?token_h
 ```
 
 - `200 { "usuario": usuario, "sesion": sesion }`. La cuenta queda activa y el servidor rellena `centros.email_confirmado_en`.
-- `400 ENLACE_INVALIDO`: el enlace no existe, ya se ha usado o ha caducado. Pedir un enlace nuevo es US-66 (Sprint 1).
+- `400 ENLACE_INVALIDO`: el enlace no existe, ya se ha usado o ha caducado. Para pedir un enlace nuevo, `POST /api/auth/reenviar-confirmacion` (US-66).
 
-Configuración necesaria en Supabase (Carlos): **Authentication → Sign In / Providers → Confirm email** activado, **URL Configuration → Site URL** con la URL de la web, y la plantilla **Confirm signup** con el enlace `{{ .SiteURL }}/confirmar-email?token_hash={{ .TokenHash }}&type=email`.
+- `200` aunque no se pueda copiar la fecha en `centros`: Supabase Auth ya ha activado la cuenta y el enlace no se puede reutilizar. El servidor registra el error.
+
+Configuración necesaria en Supabase (Carlos):
+
+1. **Authentication → Sign In / Providers → Email**: *Confirm email* activado y contraseña mínima de 8 caracteres.
+2. **Authentication → URL Configuration → Site URL**: la URL de la web (`http://localhost:5173` en desarrollo).
+3. **Authentication → Emails → Confirm signup**: copiar [supabase/templates/confirmar-email.html](../supabase/templates/confirmar-email.html).
+4. El servidor de email que trae Supabase solo envía a los miembros del proyecto y muy pocos mensajes por hora. Sirve para la demo con nuestros emails; para usuarios reales hay que configurar un SMTP propio (**Authentication → Emails → SMTP Settings**).
+
+### `POST /api/auth/reenviar-confirmacion` (US-66)
+
+Para cuando el enlace de confirmación ha caducado o se ha perdido el email. La web puede ofrecerlo en la pantalla "Enlace no válido" y en la de "Revisa tu email".
+
+```json
+{ "email": "centro@example.com" }
+```
+
+- `204` sin contenido. Supabase envía un email nuevo con la misma plantilla *Confirm signup*, así que el enlace abre `/confirmar-email` igual que el primero. El enlace anterior deja de funcionar.
+- La respuesta es la misma si el email no tiene cuenta o ya está confirmado, para no revelar qué emails están registrados. El frontend muestra siempre un mensaje del tipo "Si hay una cuenta pendiente con ese email, te hemos enviado un enlace nuevo".
+- `400 DATOS_INVALIDOS` con `details.email` si falta el email o su formato no es válido (misma regla que en el registro).
+- `429 DEMASIADOS_INTENTOS` si se piden enlaces demasiado seguidos (Supabase limita los reenvíos); `503 AUTH_NO_DISPONIBLE`.
 
 ### `POST /api/auth/login` (US-03)
 

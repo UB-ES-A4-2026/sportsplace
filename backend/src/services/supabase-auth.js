@@ -85,6 +85,33 @@ export function createSupabaseAuth({
       return toUsuario(data.user);
     },
 
+    // US-02: activa la cuenta con el token_hash del enlace de confirmación.
+    async verifyEmail(tokenHash) {
+      const { data, error } = await client.auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
+      if (error) {
+        if (error.status === 429) throw tooManyAttempts();
+        if (error.status >= 500 || !error.status) throw authUnavailable();
+        throw new ApiError(400, 'ENLACE_INVALIDO', 'El enlace de confirmación no es válido o ha caducado.');
+      }
+      return {
+        usuario: toUsuario(data.user),
+        confirmadoEn: data.user.email_confirmed_at,
+        sesion: data.session ? toSesion(data.session) : null,
+      };
+    },
+
+    // US-66: reenvía el email de confirmación con un enlace nuevo. Utiliza la
+    // misma plantilla «Confirm signup» que el registro, así que el enlace abre
+    // /confirmar-email igual que el primero.
+    async resendConfirmation(email) {
+      const { error } = await client.auth.resend({ type: 'signup', email: normalizeEmail(email) });
+      if (!error) return;
+      if (error.status === 429) throw tooManyAttempts();
+      if (error.status >= 500 || !error.status) throw authUnavailable();
+      // Otros errores (email sin cuenta o ya confirmado) se responden igual que
+      // un envío correcto, para no revelar qué emails tienen cuenta.
+    },
+
     async signIn(email, password) {
       const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });
       if (error) {

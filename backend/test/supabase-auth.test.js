@@ -119,6 +119,33 @@ test('signUp detects existing accounts and maps Supabase errors', async () => {
   }
 });
 
+test('verifyEmail confirms with the token_hash and maps invalid links', async () => {
+  const requests = [];
+  const ok = serviceWith({
+    verifyOtp: async (params) => {
+      requests.push(params);
+      return { data: { user: supabaseUser, session: supabaseSession }, error: null };
+    },
+  });
+  assert.deepEqual(await ok.auth.verifyEmail('hash'), {
+    usuario: { id: 'u1', email: 'centro@example.com', email_confirmado: true },
+    confirmadoEn: '2026-10-09T10:00:00Z',
+    sesion: { access_token: 'a', refresh_token: 'r', expires_at: 1 },
+  });
+  assert.deepEqual(requests, [{ token_hash: 'hash', type: 'email' }]);
+
+  const cases = [
+    [{ code: 'otp_expired', status: 403 }, 400, 'ENLACE_INVALIDO'],
+    [{ code: 'validation_failed', status: 400 }, 400, 'ENLACE_INVALIDO'],
+    [{ code: 'over_request_rate_limit', status: 429 }, 429, 'DEMASIADOS_INTENTOS'],
+    [{ code: 'unexpected_failure', status: 500 }, 503, 'AUTH_NO_DISPONIBLE'],
+  ];
+  for (const [error, status, code] of cases) {
+    const { auth } = serviceWith({ verifyOtp: async () => ({ data: { user: null, session: null }, error }) });
+    await assert.rejects(auth.verifyEmail('hash'), { status, code }, JSON.stringify(error));
+  }
+});
+
 test('signOut closes only the current session and tolerates closed sessions', async () => {
   const requests = [];
   const ok = serviceWith({
@@ -144,4 +171,40 @@ test('refresh returns a new session or asks to log in again', async () => {
     refreshSession: async () => ({ data: { user: null, session: null }, error: { code: 'refresh_token_not_found', status: 400 } }),
   });
   await assert.rejects(expired.auth.refresh('r'), { status: 401, code: 'NO_AUTENTICADO' });
+});
+
+function resendWith(result) {
+  const requests = [];
+  const { auth } = serviceWith({
+    resend: async (params) => {
+      requests.push(params);
+      return result;
+    },
+  });
+  return { auth, requests };
+}
+
+test('resendConfirmation asks Supabase for a new signup email with the normalized address', async () => {
+  const { auth, requests } = resendWith({ data: { user: null, session: null }, error: null });
+  await auth.resendConfirmation(' Centro@Example.com ');
+  assert.deepEqual(requests, [{ type: 'signup', email: 'centro@example.com' }]);
+});
+
+test('resendConfirmation hides unknown or confirmed emails and maps rate limits and outages', async () => {
+  for (const error of [
+    { status: 400, code: 'email_address_invalid' },
+    { status: 404, code: 'user_not_found' },
+    { status: 422, code: 'email_exists' },
+  ]) {
+    const { auth } = resendWith({ data: { user: null, session: null }, error });
+    await auth.resendConfirmation('centro@example.com');
+  }
+
+  const limited = resendWith({ data: { user: null, session: null }, error: { status: 429, code: 'over_email_send_rate_limit' } });
+  await assert.rejects(limited.auth.resendConfirmation('centro@example.com'), { status: 429, code: 'DEMASIADOS_INTENTOS' });
+
+  for (const error of [{ status: 500 }, { status: 0 }, {}]) {
+    const down = resendWith({ data: { user: null, session: null }, error });
+    await assert.rejects(down.auth.resendConfirmation('centro@example.com'), { status: 503, code: 'AUTH_NO_DISPONIBLE' });
+  }
 });

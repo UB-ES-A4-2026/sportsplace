@@ -304,7 +304,7 @@ frontend/src/
 |---|---|---|---|
 | `/` | `InicioPage`: estado del entorno y de la API | No | TR-02 |
 | `/registro` | `RegistroPage`: formulario de alta del centro | No | US-01 |
-| `/confirmar-email` | `ConfirmarEmailPage` (recibirá `token_hash` y `type` en la URL) | No | US-02 |
+| `/confirmar-email` | `ConfirmarEmailPage`: lee `token_hash` y `type` de la URL y los envía a la API para activar la cuenta | No | US-02 |
 | `/entrar` | `EntrarPage`: formulario de acceso con email y contraseña | No | US-03 |
 | `/panel` | `PanelPage`: zona privada con botón para cerrar sesión | Sí | US-03, US-67 |
 | `*` | `NoEncontradaPage` | No | TR-05 |
