@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api, ErrorApi } from '../api/cliente.js';
+import ReenviarConfirmacion from '../components/ReenviarConfirmacion.jsx';
 
 // US-02: el email de confirmación enlaza a /confirmar-email?token_hash=...&type=email.
 // Esta página envía esos valores a POST /api/auth/confirmar. Al confirmar, la cuenta queda activa.
@@ -63,6 +64,7 @@ export default function ConfirmarEmailPage() {
             Si ya lo habías abierto antes, tu cuenta puede estar activa: prueba a <Link to="/entrar">entrar</Link>.
             Si todavía no te has registrado, <Link to="/registro">crea tu cuenta</Link>.
           </p>
+          <ReenviarConfirmacion />
         </>
       )}
 
