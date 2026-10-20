@@ -172,3 +172,39 @@ test('refresh returns a new session or asks to log in again', async () => {
   });
   await assert.rejects(expired.auth.refresh('r'), { status: 401, code: 'NO_AUTENTICADO' });
 });
+
+function resendWith(result) {
+  const requests = [];
+  const { auth } = serviceWith({
+    resend: async (params) => {
+      requests.push(params);
+      return result;
+    },
+  });
+  return { auth, requests };
+}
+
+test('resendConfirmation asks Supabase for a new signup email with the normalized address', async () => {
+  const { auth, requests } = resendWith({ data: { user: null, session: null }, error: null });
+  await auth.resendConfirmation(' Centro@Example.com ');
+  assert.deepEqual(requests, [{ type: 'signup', email: 'centro@example.com' }]);
+});
+
+test('resendConfirmation hides unknown or confirmed emails and maps rate limits and outages', async () => {
+  for (const error of [
+    { status: 400, code: 'email_address_invalid' },
+    { status: 404, code: 'user_not_found' },
+    { status: 422, code: 'email_exists' },
+  ]) {
+    const { auth } = resendWith({ data: { user: null, session: null }, error });
+    await auth.resendConfirmation('centro@example.com');
+  }
+
+  const limited = resendWith({ data: { user: null, session: null }, error: { status: 429, code: 'over_email_send_rate_limit' } });
+  await assert.rejects(limited.auth.resendConfirmation('centro@example.com'), { status: 429, code: 'DEMASIADOS_INTENTOS' });
+
+  for (const error of [{ status: 500 }, { status: 0 }, {}]) {
+    const down = resendWith({ data: { user: null, session: null }, error });
+    await assert.rejects(down.auth.resendConfirmation('centro@example.com'), { status: 503, code: 'AUTH_NO_DISPONIBLE' });
+  }
+});
