@@ -54,6 +54,7 @@ Cualquier error de la API tiene esta forma:
 | 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo supera 100 kB. |
 | 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
+| 503 | `BASE_DATOS_NO_DISPONIBLE` | PostgreSQL no responde o no está configurado. |
 | 503 | `AUTH_NO_DISPONIBLE` | Supabase Auth no responde o no está configurado. |
 
 ### Objetos comunes
@@ -106,7 +107,9 @@ Cualquier error de la API tiene esta forma:
 - `201 { "usuario": usuario }`. No devuelve sesión: el centro tiene que confirmar el email. El frontend muestra "Revisa tu email".
 - `400 DATOS_INVALIDOS` con `details` por campo. Si `acepta_politica_privacidad` no es `true`, también.
 - `409 EMAIL_YA_REGISTRADO`. Para cumplir US-01 el servidor comprueba `centros` antes de llamar a Supabase, porque Supabase no avisa de los emails repetidos.
-- Contraseña mínima: 8 caracteres (se configura igual en Supabase).
+- Contraseña: entre 8 caracteres y 72 bytes (límite de bcrypt). En Supabase se configura el mismo mínimo.
+- El servidor crea el centro y la cuenta en la misma transacción: si Supabase falla, el centro no se guarda.
+- `429 DEMASIADOS_INTENTOS` si Supabase limita el envío de emails; `503 AUTH_NO_DISPONIBLE` o `503 BASE_DATOS_NO_DISPONIBLE`.
 
 ### `POST /api/auth/confirmar` (US-02)
 
@@ -171,16 +174,16 @@ El servidor tiene dos middlewares para las rutas privadas:
 
 Cualquier ruta para publicar anuncios o hacer pedidos (sprints siguientes) tiene que usar los dos. Con **Confirm email** activado, Supabase ya impide entrar sin confirmar; el segundo middleware evita depender solo de esa opción.
 
-## Propuesta para la tabla `centros` (revisión de TR-03)
+## Enlace de `centros` con las cuentas
 
-Con Supabase Auth, la cuenta vive en `auth.users` y el centro en `public.centros`. Proponemos añadir en una nueva migración:
+Con Supabase Auth, la cuenta vive en `auth.users` y el centro en `public.centros`. La migración `20261009120000_enlazar_centros_usuarios.sql` (US-01) añade:
 
 ```sql
 ALTER TABLE public.centros
     ADD COLUMN usuario_id UUID UNIQUE REFERENCES auth.users (id) ON DELETE CASCADE;
 ```
 
-- `usuario_id` enlaza cada centro con su cuenta. `ON DELETE CASCADE` ayuda con la supresión de datos (US-11, NFR-01).
+- `usuario_id` enlaza cada centro con su cuenta. Admite nulos solo porque el servidor inserta el centro antes de crear la cuenta, dentro de la misma transacción. `ON DELETE CASCADE` ayuda con la supresión de datos (US-11, NFR-01).
 - Las contraseñas no se guardan en `centros`: las guarda Supabase Auth.
-- `email_confirmado_en` se rellena en `POST /api/auth/confirmar` con la fecha de `auth.users.email_confirmed_at`.
+- `email_confirmado_en` se rellena en `POST /api/auth/confirmar` con la fecha de `auth.users.email_confirmed_at`. La fuente de verdad del estado de confirmación es Supabase Auth.
 - El servidor accede a `centros` con su conexión privada (`DATABASE_URL`). Las políticas RLS para el cliente no hacen falta mientras el frontend solo use nuestra API.
