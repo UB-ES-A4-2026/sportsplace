@@ -21,3 +21,6 @@ export function postJson(url, body, headers = {}) {
     body: JSON.stringify(body),
   });
 }
+
+export const usuarioConfirmado = { id: 'u1', email: 'centro@example.com', email_confirmado: true };
+export const sesion = { access_token: 'access-1', refresh_token: 'refresh-1', expires_at: 1760000000 };

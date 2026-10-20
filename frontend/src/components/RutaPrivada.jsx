@@ -1,12 +1,20 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
-import { leerSesion } from '../api/sesion.js';
+import { useAuth } from '../auth/useAuth.js';
 
-// Protege las rutas privadas: sin sesión guardada, lleva a /entrar.
-// TODO US-03: comprobar la sesión con GET /api/auth/me y renovar el token con /api/auth/refresh.
+// Protege las rutas privadas: sin sesión válida, lleva a /entrar y recuerda a dónde quería ir.
 export default function RutaPrivada() {
+  const { usuario, cargando } = useAuth();
   const location = useLocation();
 
-  if (!leerSesion()?.access_token) {
+  if (cargando) {
+    return (
+      <p className="status checking pagina" role="status">
+        <span className="dot" aria-hidden="true" />Comprobando tu sesión…
+      </p>
+    );
+  }
+
+  if (!usuario) {
     return <Navigate to="/entrar" replace state={{ desde: location.pathname }} />;
   }
 
