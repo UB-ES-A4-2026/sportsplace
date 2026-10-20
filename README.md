@@ -15,6 +15,8 @@ Historias seleccionadas para este sprint:
 
 La implementación y validación de estas historias se siguen en el Kanban.
 
+La comprobación de infraestructura del **20/10/2026** utiliza `story/US-01-registro` en `e755687`, con #28 (API de registro) y #30 (estructura web) integradas. Esto no completa US-01: faltan el formulario integrado y la validación conjunta de QA. Resultados, protecciones y bloqueos: [validación DevOps](docs/sprint-0-validacion-devops.md).
+
 ## Tecnologías
 
 - Frontend: React con Vite, en JavaScript.
@@ -253,7 +255,7 @@ Fusionar una tarea parcial de frontend o backend en la rama `story/` no completa
 
 La base de desarrollo incluye una web React y una API de comprobación que arrancan juntas. La pantalla inicial verifica que puede comunicarse con el servidor mediante `/api/health`.
 
-Supabase es el proyecto compartido en la nube. Docker ejecuta nuestra web y nuestro servidor; la base de datos permanece en Supabase. TR-03 añade la primera migración y una comprobación de conexión PostgreSQL desde el servidor. El registro, el acceso y la confirmación por email se implementarán cuando backend confirme la autenticación. El endpoint de salud comprueba la API, no la conexión con Supabase.
+Supabase es el proyecto compartido en la nube. Docker ejecuta nuestra web y nuestro servidor; la base de datos permanece en Supabase. El backend utiliza Express 5 y Supabase Auth, según el acuerdo de backend registrado en [#12](https://github.com/UB-ES-A4-2026/sportsplace/pull/12#issuecomment-6157083082). En esta rama está integrada la API de registro; confirmación, login y logout siguen en sus PR de historia. El endpoint de salud comprueba la API, no la conexión con Supabase ni el envío de correo.
 
 Estructura inicial:
 
@@ -308,6 +310,8 @@ frontend/src/
 
 Para añadir una página: crear `pages/NombrePage.jsx`, añadir su `<Route>` en `App.jsx` y su fila en esta tabla. Todas las llamadas al servidor pasan por `api()` de `api/cliente.js`, que añade la cabecera `Authorization` cuando hay sesión y convierte los errores del contrato en `ErrorApi` (se decide según `error.code`).
 
+TR-05 incorpora la estructura: las páginas de registro, confirmación y entrada todavía son marcadores de posición. `RutaPrivada` solo comprueba la presencia local de un token; la validación con `/api/auth/me`, el formulario y el cierre de sesión corresponden a las implementaciones de sus historias. Que una ruta sirva el HTML de React no acredita su funcionamiento.
+
 ### Requisitos
 
 - Git para clonar el repositorio.
@@ -328,27 +332,28 @@ git clone https://github.com/UB-ES-A4-2026/sportsplace.git
 cd sportsplace
 ```
 
-Antes de integrar TR-02, Carlos debe publicar su rama para que los demás puedan probarla. Después de clonarla, o desde un clon existente sin cambios pendientes, obtener esa rama:
+TR-02 ya está integrado en la base técnica. Desde un clon sin cambios pendientes, utilizar `dev` para el arranque base:
 
 ```bash
 git fetch origin
-git switch chore/TR-02-entorno-desarrollo
+git switch dev
+git pull --ff-only
 ```
 
-Una vez fusionada, estas instrucciones se siguen desde `dev` actualizada mediante `git switch dev` y `git pull --ff-only`.
+Para reproducir la integración de #28 y #30 antes de que US-01 llegue completa a `dev`, utilizar `story/US-01-registro` actualizada con `git switch story/US-01-registro` y `git pull --ff-only`. Anotar el commit probado. No desarrollar directamente sobre la historia: crear una rama de tarea desde ella.
 
 3. Copiar `.env.example` a `.env` en la raíz. Ejecutar solo el comando correspondiente al sistema:
 
 PowerShell (Windows):
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 macOS o Linux:
 
 ```bash
-cp .env.example .env
+if [ ! -f .env ]; then cp .env.example .env; fi
 ```
 
 Este paso se hace una vez: conservar un `.env` existente para no sobrescribir la configuración local. Los valores de Supabase y `DATABASE_URL` pueden quedarse vacíos para comprobar el arranque de TR-02. TR-03 requiere configurar la conexión privada antes de ejecutar `db:check`.
@@ -380,15 +385,15 @@ El archivo `.env` contiene:
 | `WEB_PORT` | Puerto de la web en el ordenador. Por defecto, 5173. |
 | `API_PORT` | Puerto de la API en el ordenador. Por defecto, 3000. |
 | `LOCAL_UID` / `LOCAL_GID` | Usuario y grupo del contenedor de desarrollo. Por defecto, 1000. Ajustarlos al usuario local en Linux. |
-| `SUPABASE_URL` | URL del proyecto compartido. Opcional para el arranque inicial. |
-| `SUPABASE_PUBLISHABLE_KEY` | Clave publicable del proyecto compartido. Opcional para el arranque inicial. |
+| `SUPABASE_URL` | URL del proyecto compartido; la utiliza Supabase Auth en el backend. Opcional para el arranque inicial. |
+| `SUPABASE_PUBLISHABLE_KEY` | Clave publicable que utiliza el backend para Supabase Auth. Opcional para el arranque inicial. |
 | `DATABASE_URL` | URI PostgreSQL privada que utiliza el servidor. Necesaria para comprobar TR-03. |
 | `MIGRATION_DATABASE_URL` | URI privada de un usuario con permisos para migrar. Opcional: si está vacía, las herramientas utilizan `DATABASE_URL`. |
 | `DATABASE_SSL_CA_FILE` | Ruta del certificado CA para verificar PostgreSQL. En Docker: `/app/.certs/supabase-ca.crt`. |
 
-La URL y la clave **publicable** se obtienen en el panel del proyecto Supabase, desde **Connect** o la configuración de claves API. Cada persona rellena su `.env` local. La clave publicable está diseñada para el cliente; los permisos sobre los datos se deberán definir con las políticas de Supabase al implementar la integración.
+La URL y la clave **publicable** se obtienen en el panel del proyecto Supabase, desde **Connect** o la configuración de claves API. Cada persona rellena su `.env` local. La web consume exclusivamente `/api/...`; el backend centraliza Supabase Auth y accede a `centros` mediante PostgreSQL privado.
 
-Compose entrega al frontend únicamente estos valores públicos, con los nombres `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Las variables `VITE_*` son visibles en el navegador: no poner en ellas contraseñas, claves `secret` ni `service_role`. El archivo `.env.example` conserva valores vacíos y `.env` está excluido de Git y de las imágenes.
+Compose conserva también las variables públicas `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` de la base inicial, pero el cliente web integrado no las utiliza para acceder a Supabase. Las variables `VITE_*` son visibles en el navegador: no poner en ellas contraseñas, claves `secret` ni `service_role`. El archivo `.env.example` conserva valores vacíos y `.env` está excluido de Git y de las imágenes.
 
 `DATABASE_URL` y `MIGRATION_DATABASE_URL` contienen credenciales privadas. Solo se configuran en el `.env` local, nunca con un prefijo `VITE_`, en el README, en capturas ni en comentarios de GitHub. La clave publicable de Supabase no sustituye a la contraseña de PostgreSQL.
 
@@ -416,12 +421,7 @@ docker compose exec backend npm run db:check
 
 El comando ejecuta `SELECT 1` y comprueba que existe `public.centros`. Debe mostrar **Conexión PostgreSQL: correcta** y **Tabla public.centros: encontrada**. Si la tabla falta, la conexión puede estar funcionando aunque la migración siga pendiente. Ver la web y `/api/health` en verde solo valida el arranque de TR-02.
 
-`LOCAL_UID` y `LOCAL_GID` se definen antes del primer arranque: se aplican al construir las imágenes. Si se necesitan cambiar más adelante, reconstruirlas y regenerar los volúmenes de dependencias. En esta base los volúmenes contienen únicamente dependencias de Node:
-
-```bash
-docker compose down --volumes
-docker compose up --build --detach --wait
-```
+`LOCAL_UID` y `LOCAL_GID` se definen antes del primer arranque: se aplican al construir las imágenes. Si se necesitan cambiar más adelante, revisar con Carlos los permisos de los volúmenes existentes antes de reconstruir. No eliminar volúmenes como parte de una comprobación de arranque.
 
 ### Desarrollo diario
 
@@ -472,9 +472,17 @@ docker compose exec frontend npm run build
 docker compose exec backend npm run db:check
 ```
 
-Las pruebas del servidor comprueban las rutas de salud, las rutas desconocidas, los métodos no permitidos y el tratamiento de la configuración, TLS y errores de PostgreSQL. Las pruebas unitarias no necesitan credenciales de Supabase. `db:check` realiza la comprobación contra la base configurada. La compilación de React comprueba que la base del frontend se puede construir; no sustituye a las pruebas funcionales de las historias.
+Las pruebas del servidor comprueban salud, errores, registro con dobles, configuración y TLS de PostgreSQL. Las pruebas unitarias no necesitan credenciales de Supabase. `db:check` realiza la comprobación contra la base configurada. La compilación de React comprueba que la base del frontend se puede construir; no sustituye a las pruebas funcionales de las historias.
 
-El workflow de GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) se ejecuta en cada pull request y en cada cambio de `main`. Con Node.js 24, instala las dependencias con `npm ci` y ejecuta el lint (ESLint) en `backend/`, `frontend/` y `tools/`, las pruebas del servidor y de las herramientas, y la compilación de la web.
+Para ejecutar lint y tests de `tools/` sin migrar, sin montar `.env` y sin instalar dependencias en el host, ejecutar desde la raíz (PowerShell, macOS o Linux):
+
+```bash
+docker run --rm -v "${PWD}/tools:/repo:ro" -w /tmp/sportsplace-tools node:24-bookworm-slim sh -c "cp -R /repo/. . && npm ci --no-audit --no-fund && npm run lint && npm test"
+```
+
+La copia y sus dependencias quedan en el contenedor temporal. No invocar el servicio `dbtools` sin `--dry-run` para ejecutar estas pruebas: su entrada está destinada a aplicar migraciones.
+
+El workflow de esta rama ([.github/workflows/ci.yml](.github/workflows/ci.yml)) se ejecuta en cada pull request y en cada cambio de `main` y `dev` (#26 integrado en la historia). Con Node.js 24, instala las dependencias con `npm ci` y ejecuta el lint (ESLint) en `backend/`, `frontend/` y `tools/`, las pruebas del servidor y de las herramientas, y la compilación de la web. La versión del workflow de cada rama depende de sus integraciones; no se ha adelantado US-01 a `dev` para publicar este ajuste.
 
 Para reproducir el CI completo en local antes de abrir una pull request, ejecutar desde la raíz:
 
@@ -506,7 +514,7 @@ TR-02 se cierra cuando los cambios están revisados e integrados y los seis miem
 
 ## Base de datos y migraciones: TR-03
 
-Responsables: Anass y Alex. La base propuesta es independiente de la decisión de autenticación: no almacena contraseñas ni vincula todavía los centros con `auth.users`. Anass y Alex deben revisar los campos y acordar Supabase Auth u otra solución antes de implementar las historias de acceso.
+Responsables: Anass y Alex. La primera migración está integrada en la base técnica; #28 añade a esta historia `20261009120000_enlazar_centros_usuarios.sql`, que relaciona `centros.usuario_id` con `auth.users`. Las contraseñas se gestionan en Supabase Auth, nunca en `centros`. Ambas migraciones están aplicadas en el proyecto compartido: evidencia de Anass en [#8](https://github.com/UB-ES-A4-2026/sportsplace/issues/8#issuecomment-6175158124) y comprobación de solo lectura del 20/10 en la [validación DevOps](docs/sprint-0-validacion-devops.md).
 
 ### Esquema inicial de centros
 
@@ -526,14 +534,17 @@ La migración [20261008090000_crear_centros.sql](supabase/migrations/20261008090
 | `email_confirmado_en` | Fecha de confirmación; inicialmente vacía. |
 | `email_confirmado` | Valor generado a partir de la fecha anterior: `false` sin fecha y `true` cuando existe. No se modifica directamente. |
 | `creado_en` | Fecha de creación generada automáticamente. |
+| `usuario_id` | Añadido por la segunda migración: UUID único que referencia `auth.users`, con `ON DELETE CASCADE`. |
 
-Nombre, email y localidad son la propuesta mínima de datos básicos del centro; dirección, código postal y teléfono son opcionales. El equipo debe confirmar esta propuesta antes de aplicarla al proyecto compartido. La validación de formato y el formulario corresponden a US-01.
+Nombre, email y localidad son obligatorios; dirección, código postal y teléfono son opcionales. La API integrada valida estos campos según el contrato. El formulario de US-01 sigue pendiente de integración.
 
-La tabla registra el estado de confirmación, pero todavía no envía emails ni comprueba enlaces o tokens: US-02 sigue pendiente de implementación. RLS está activado y `anon`/`authenticated` no tienen permisos sobre `centros`; las políticas de acceso se añadirán cuando se acuerde la autenticación. La conexión privada del servidor requiere un usuario con los permisos adecuados.
+La tabla registra el estado de confirmación; Supabase Auth envía el correo. El endpoint que verifica el token y copia la fecha de confirmación pertenece a US-02 (#17), no está integrado todavía en esta historia. RLS está activado y `anon`/`authenticated` no pueden acceder a `centros`. El servidor utiliza su conexión privada, sin necesitar políticas de cliente mientras la web solo consuma nuestra API.
 
-### Revisar y aplicar la primera migración
+### Revisar y aplicar nuevas migraciones
 
 La herramienta `dbtools` utiliza Supabase CLI **2.120.0**, fijada en sus dependencias. Es un servicio opcional del perfil `tools`: no se inicia con el comando normal de la web y la API ni instala una base de datos local. No hace falta instalar la CLI en el ordenador.
+
+Las migraciones `20261008090000` y `20261009120000` ya están aplicadas: no volver a crear sus cambios manualmente ni editar sus archivos. El procedimiento siguiente es para cambios nuevos revisados por sus responsables.
 
 1. Anass y Alex revisan el SQL y los campos propuestos. Una persona coordina la aplicación al proyecto compartido para evitar ejecuciones simultáneas.
 2. Configurar las credenciales privadas y el CA del proyecto como se indica arriba. Para migrar se utiliza `MIGRATION_DATABASE_URL` si está definida; en caso contrario, `DATABASE_URL`. El usuario de esa URI necesita permisos para crear la tabla y registrar las migraciones.

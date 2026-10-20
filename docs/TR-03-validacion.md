@@ -6,28 +6,28 @@ Responsables: Anass y Alex. Sprint: 0. Épica: E00. Prioridad: Must.
 
 | Criterio | Estado | Evidencia que falta para cerrarlo |
 |---|---|---|
-| El proyecto de Supabase está creado y compartido con el equipo. | Creación e invitaciones comunicadas por Carlos. | Confirmar que las seis personas pueden acceder al proyecto compartido. |
-| La tabla de centros tiene email único, datos básicos, aceptación de privacidad y estado de confirmación del email. | Esquema propuesto y probado localmente. | Anass y Alex revisan los campos; aplicar la migración al proyecto compartido y comprobar su tabla. |
-| La primera migración está en el repositorio. | Archivo preparado en la rama local `chore/TR-03-base-datos-supabase`. | Guardar los cambios en Git, publicar la rama, revisar la PR e integrarla en `main`. |
-| El servidor se conecta a la base de datos. | Conexión PostgreSQL y TLS comprobados contra el Supabase compartido. | Conservar la evidencia y repetir `db:check` después de aplicar la migración para comprobar también la tabla. |
+| El proyecto de Supabase está creado y compartido con el equipo. | Proyecto correcto y conexión real verificados; creación e invitaciones comunicadas anteriormente por Carlos. | Confirmar individualmente el acceso de las seis personas; la conexión del servidor no lo demuestra. |
+| La tabla de centros tiene email único, datos básicos, aceptación de privacidad y estado de confirmación del email. | Esquema revisado por backend; ambas migraciones aplicadas según Anass en #8 y comprobadas en solo lectura el 20/10. | Conservar el seguimiento del equipo; no volver a aplicar ni modificar las migraciones ya registradas. |
+| La primera migración está en el repositorio. | Integrada mediante #11 en `main` y heredada por `dev`; la segunda llega a la historia mediante #28. | La segunda migración acompaña a US-01 hacia `dev` cuando la historia esté completa y validada por QA. |
+| El servidor se conecta a la base de datos. | `db:check` correcto contra el proyecto compartido el 20/10, con TLS verificado y tabla encontrada. | Evidencia actual registrada abajo; no equivale a QA de las historias. |
 
-TR-03 todavía no está terminado. La conexión al Supabase compartido ya está comprobada. La migración queda preparada para la revisión de Anass y Alex y no se aplicará al proyecto compartido hasta que confirmen la propuesta de esquema. Los cambios siguen locales, sin commit ni publicación.
+No se declara TR-03 terminado: falta acreditar el acceso de las seis personas y completar las condiciones de integración de la historia. Ya no están pendientes la primera publicación, la aplicación remota ni la existencia de la tabla. Fuentes: [revisión de Anass en #28](https://github.com/UB-ES-A4-2026/sportsplace/pull/28#issuecomment-6252864966) y [validación real en #8](https://github.com/UB-ES-A4-2026/sportsplace/issues/8#issuecomment-6175158124).
 
-## Propuesta de esquema para revisar
+## Esquema revisado y aplicado
 
-La migración es `supabase/migrations/20261008090000_crear_centros.sql`. Los datos básicos propuestos son **nombre, email y localidad obligatorios**, con **dirección, código postal y teléfono opcionales**.
+La migración inicial es `supabase/migrations/20261008090000_crear_centros.sql`. Los datos básicos son **nombre, email y localidad obligatorios**, con **dirección, código postal y teléfono opcionales**.
 
 - El email es único ignorando mayúsculas y espacios al principio o al final.
 - La aceptación de la política de privacidad debe ser explícita y tener una fecha; no se acepta automáticamente al insertar un centro.
 - `email_confirmado_en` empieza vacío. `email_confirmado` se calcula desde esa fecha y no se escribe directamente.
-- La tabla tiene RLS activado. Los roles `anon` y `authenticated` no pueden leer ni modificar centros hasta acordar la autenticación y los permisos.
-- No hay contraseñas ni relación con `auth.users`. La decisión sobre Supabase Auth sigue pendiente de Anass y Alex.
+- La tabla tiene RLS activado. Los roles `anon` y `authenticated` no pueden leer ni modificar centros; el acceso acordado pasa por la conexión privada del backend, no por un cliente web de Supabase.
+- No hay contraseñas en `centros`. La segunda migración añade `usuario_id`, único y relacionado con `auth.users` mediante `ON DELETE CASCADE`. Express 5 y Supabase Auth están acordados por backend en [#12](https://github.com/UB-ES-A4-2026/sportsplace/pull/12#issuecomment-6157083082).
 
-Esta representación de la confirmación no implementa US-02. El envío de emails, los enlaces o tokens y su comprobación requieren el diseño de autenticación y el desarrollo de esa historia.
+Esta representación de la confirmación no implementa US-02 por sí sola. Supabase Auth envía el email y #17 incorpora su comprobación; esa historia sigue pendiente de integración y QA, no de elegir el mecanismo de autenticación.
 
 ## Evidencia técnica local
 
-Comprobaciones realizadas el **8 de octubre de 2026** en Windows sobre los cambios locales de `chore/TR-03-base-datos-supabase`. Para la base se utilizó PostgreSQL **17** en un contenedor temporal, con TLS y un certificado CA de pruebas cuya verificación estaba activada. No se ha aplicado ninguna migración al Supabase compartido.
+Comprobaciones históricas realizadas el **8 de octubre de 2026** en Windows sobre los cambios locales de `chore/TR-03-base-datos-supabase`. Para la base se utilizó PostgreSQL **17** en un contenedor temporal, con TLS y un certificado CA de pruebas cuya verificación estaba activada. En esa ejecución no se aplicó ninguna migración al Supabase compartido; su aplicación posterior está acreditada en #8.
 
 | Comprobación | Resultado |
 |---|---|
@@ -52,12 +52,24 @@ Conexión PostgreSQL: correcta.
 Tabla public.centros: no encontrada; migración pendiente.
 ```
 
-La conexión del servidor ya funciona. El comando termina con error mientras falte la tabla, aunque su primera comprobación haya sido correcta. No se ha aplicado la migración al proyecto remoto.
+Este resultado del 8/10 es histórico: entonces la conexión funcionaba y faltaba la tabla. No describe el estado remoto actual.
+
+### Estado remoto comprobado el 20/10/2026
+
+Ejecución técnica del agente en el ordenador de Carlos sobre `story/US-01-registro` @ `e755687`, proyecto `tmzxoosguozwrndqnkwn`:
+
+- `docker compose exec backend npm run db:check`: conexión correcta y `public.centros` encontrada, con la verificación TLS conservada.
+- Consulta en transacción de **solo lectura** a `supabase_migrations.schema_migrations`: `20261008090000` y `20261009120000` registradas.
+- Columnas `usuario_id`, `email` y estado/fecha de confirmación presentes.
+- RLS activado; `anon` y `authenticated` sin permiso de lectura sobre `centros`.
+- No se aplicaron migraciones, no se editaron las existentes y no se eliminaron datos.
+
+Anass acredita el registro, la recepción del correo y la confirmación del 14/10 en #8. Alex acredita las pruebas de sesión reales del 20/10 en [#4](https://github.com/UB-ES-A4-2026/sportsplace/issues/4#issuecomment-6291838966). Son pruebas de backend en ramas que incluyen otras historias, no una validación del recorrido web integrado ni una comprobación actual de la plantilla o del SMTP desde este agente.
 
 ## Validación en el proyecto compartido
 
 1. Carlos confirma el proyecto que se utilizará y que las seis personas han aceptado la invitación y pueden abrirlo.
-2. Anass y Alex revisan la propuesta de campos y la migración. Registrar en la issue el acuerdo sobre el esquema. La elección de autenticación debe quedar anotada cuando se tome.
+2. Para cambios nuevos, Anass y Alex revisan los campos y la migración. Los acuerdos de backend y las migraciones iniciales ya constan en las fuentes anteriores; no repetir sus cambios en el panel.
 3. Configurar el `.env` local con la URI privada de **Connect → Session pooler**. Descargar el CA desde **Database Settings → SSL Configuration → Download certificate**, guardarlo en `backend/.certs/supabase-ca.crt` y definir `DATABASE_SSL_CA_FILE=/app/.certs/supabase-ca.crt`.
 
    Si se conserva otro nombre para el certificado descargado, ajustar la variable para que coincida con el archivo dentro de `/app/.certs/`. En el ordenador de Carlos esta configuración y la conexión ya se han comprobado; los demás miembros deben utilizar su configuración local.
@@ -75,7 +87,7 @@ docker compose up --build --detach --force-recreate --wait
 docker compose run --rm --build dbtools --dry-run
 ```
 
-7. Con el esquema revisado y el proyecto de destino comprobado, aplicar la primera migración:
+7. Solo si hay migraciones nuevas pendientes, revisadas por backend, y con el proyecto de destino comprobado, aplicarlas de forma coordinada. Las dos migraciones iniciales ya están registradas:
 
 ```bash
 docker compose run --rm --build dbtools
@@ -101,10 +113,10 @@ Tabla public.centros: encontrada.
 | Comprobación | Responsable | Fecha | Resultado |
 |---|---|---|---|
 | Acceso de las seis personas al proyecto | Carlos | Pendiente | Pendiente de verificar |
-| Revisión del esquema propuesto | Anass y Alex | Pendiente | Pendiente |
-| Migración aplicada al Supabase compartido | Pendiente de asignar | Pendiente | Pendiente |
-| `db:check` contra el Supabase compartido | Ejecución técnica en el ordenador de Carlos | 8 de octubre de 2026 | Conexión TLS correcta; tabla pendiente de migración |
-| Migración revisada e integrada en `main` | Equipo | Pendiente | Pendiente |
+| Revisión del esquema | Backend | 18/10/2026 | Anass deja revisión de código y migración en #28; revisión previa de Alex como autor. |
+| Migraciones aplicadas al Supabase compartido | Alex, según evidencia de Anass | Acreditado el 14/10/2026 | Ambas versiones registradas; verificadas en solo lectura por el agente el 20/10. |
+| `db:check` contra el Supabase compartido | Agente en el ordenador de Carlos | 20/10/2026 | Conexión TLS correcta y tabla encontrada. |
+| Migraciones integradas | Equipo | Comprobado el 20/10/2026 | Primera en `main`/`dev`; segunda en `story/US-01-registro` mediante #28, pendiente de la integración completa de US-01. |
 
 ## Cierre de la issue
 
