@@ -44,3 +44,12 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
   .environment { padding: 22px; }
   .status-grid { grid-template-columns: 1fr; }
 }
+
+.cabecera { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { color: inherit; text-decoration: none; }
+.menu { display: flex; gap: 20px; font-size: 15px; font-weight: 600; }
+.menu a { color: #587068; text-decoration: none; padding-bottom: 2px; border-bottom: 2px solid transparent; }
+.menu a:hover { color: #174f46; }
+.menu a.active { color: #174f46; border-bottom-color: #174f46; }
+.pagina { max-width: 780px; padding: 76px 0 42px; }
+.pagina a { color: #174f46; }
