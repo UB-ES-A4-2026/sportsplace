@@ -13,8 +13,8 @@ Marcar los tres primeros tras revisar la implementación y su evidencia. El últ
 
 ## Prueba que realiza cada persona
 
-1. Obtener la versión de la rama o el commit que se está validando y anotarla con `git rev-parse --short HEAD`. Antes de fusionar, Carlos debe compartir la rama de TR-02; después se utiliza `main`.
-2. Seguir **Arranque y comprobaciones** del README: abrir Docker Desktop, copiar `.env.example` a `.env` y ejecutar `docker compose up --build --detach --wait` desde la raíz del repositorio.
+1. Obtener la versión de la rama o el commit que se está validando y anotarla con `git rev-parse --short HEAD`. La base de TR-02 ya está integrada; usar `dev` para esa base o `story/US-01-registro` para validar la integración actual de US-01, indicando cuál se ha probado.
+2. Seguir **Arranque y comprobaciones** del README: abrir Docker Desktop, copiar `.env.example` solo si no existe `.env` y ejecutar `docker compose up --build --detach --wait` desde la raíz del repositorio.
 3. Abrir `http://localhost:5173`: debe aparecer React en funcionamiento y la API conectada. Si se han cambiado los puertos, usar los valores de `.env`.
 4. Abrir `http://localhost:3000/api/health`: debe devolver `{"status":"ok","service":"sportsplace-api"}`. Si se cambió `API_PORT`, utilizar ese puerto.
 5. Ejecutar `docker compose ps`: los dos servicios deben estar `healthy`.
@@ -25,12 +25,32 @@ Marcar los tres primeros tras revisar la implementación y su evidencia. El últ
 
 | Persona | Sistema operativo | Fecha | Rama / commit | Resultado y evidencia |
 |---|---|---|---|---|
-| Carlos | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
-| Asier | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
+| Carlos | Windows, equipo de Carlos | 20/10/2026 | `story/US-01-registro` @ `e755687` | Arranque y pruebas ejecutados por el agente en este ordenador; falta confirmación personal de Carlos y comprobación visual. Ver evidencia técnica actual. |
+| Asier | macOS 15.7.4, MacBook Air | 10/10/2026 | `chore/TR-02-entorno-desarrollo` @ `105e159` | Correcto; [confirmación y captura en #7](https://github.com/UB-ES-A4-2026/sportsplace/issues/7#issuecomment-6100297245) y [aprobación de #10](https://github.com/UB-ES-A4-2026/sportsplace/pull/10#pullrequestreview-5480140625). |
 | Anass | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
 | Alex | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
 | Lucía | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
 | Marta | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
+
+Solo hay **una confirmación humana individual acreditada: Asier**. La ejecución del agente no se atribuye como confirmación personal de Carlos. Las pruebas de backend contra Supabase de Anass y Alex tampoco acreditan por sí solas el arranque de React y Node con Compose en sus ordenadores. Faltan las confirmaciones personales de Carlos, Anass, Alex, Lucía y Marta.
+
+## Evidencia técnica actual: 20/10/2026
+
+Ejecutada por el agente de desarrollo en el ordenador Windows de Carlos sobre `e755687` (historia con #28 y #30 integradas), desde la rama de tarea `docs/TR-02-validacion-sprint0`. Docker Engine 29.5.2, Compose 5.1.4 y contenedores Linux con Node.js 24. No equivale a validación humana ni al QA funcional de US-01.
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose config --quiet` | Correcto, sin mostrar el entorno. |
+| `docker compose up --build --detach --wait` | Construcción correcta; backend y frontend saludables. |
+| `docker compose ps` | Ambos servicios `healthy`, publicados solo en `127.0.0.1`. |
+| `/api/health` directa (3000) y por Vite (5173) | HTTP 200, cuerpo esperado y `Cache-Control: no-store`. |
+| Backend: `npm run lint` y `npm test` | Sin errores; 40/40 pruebas aprobadas, con dobles para Auth. |
+| Frontend: `npm run lint` y `npm run build` | Sin errores; compilación correcta. |
+| Tools: instalación aislada, `npm run lint` y `npm test` | Sin errores; 6/6 pruebas aprobadas. No se ejecutó el migrador. |
+| `docker compose exec backend npm run db:check` | PostgreSQL con TLS verificado y `public.centros` encontrada. |
+| Configuración privada | `.env` conservado; ignorado por Git y excluido de los contextos Docker. `.env.example` mantiene los secretos vacíos. |
+
+Las peticiones HTTP a las rutas de React solo acreditan que se sirve la SPA; no se ha realizado una comprobación visual en navegador en esta ejecución. Más detalle y dependencias en [validación DevOps](sprint-0-validacion-devops.md).
 
 ## Evidencia técnica de la implementación
 
@@ -51,6 +71,6 @@ Docker utilizado: Engine 29.5.2 y Compose 5.1.4. Las pruebas de otros sistemas y
 
 ## Cierre de la issue
 
-La tarea pasa a **En revisión** cuando el entorno está preparado y se solicita revisión. Pasa a **Hecho** y puede cerrarse después de integrar los cambios en `main`, completar todos los criterios y registrar las seis confirmaciones.
+La tarea pasa a **En revisión** cuando el entorno está preparado y se solicita revisión. El cierre requiere todos sus criterios y las seis confirmaciones, además de las condiciones de integración acordadas: tarea hacia `story/US-01-registro`, historia completa y validada por QA hacia `dev`, y entrega hacia `main` según el acuerdo del equipo. No se propone cerrar #7: faltan cinco confirmaciones personales y US-01 aún no está integrada en `dev`.
 
 Mientras falten validaciones individuales, la pull request referencia TR-02 sin usar `Closes #numero`. La configuración de GitHub Actions corresponde a Asier y se sigue por separado.
