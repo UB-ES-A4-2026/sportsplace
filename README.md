@@ -292,6 +292,7 @@ frontend/src/
 ├── components/
 │   ├── Campo.jsx            # Campo de formulario con etiqueta y error accesibles
 │   ├── Layout.jsx           # Cabecera, menú y pie comunes a todas las páginas
+│   ├── BotonCerrarSesion.jsx  # Botón de cierre de sesión (US-67)
 │   └── RutaPrivada.jsx      # Redirige a /entrar si no hay sesión
 ├── validacion/              # Validación de formularios, con las mismas reglas que el servidor
 └── pages/                   # Una página por ruta
@@ -303,7 +304,7 @@ frontend/src/
 | `/registro` | `RegistroPage`: formulario de alta del centro | No | US-01 |
 | `/confirmar-email` | `ConfirmarEmailPage` (recibirá `token_hash` y `type` en la URL) | No | US-02 |
 | `/entrar` | `EntrarPage`: formulario de acceso con email y contraseña | No | US-03 |
-| `/panel` | `PanelPage`: zona privada (cerrar sesión en US-67) | Sí | US-03, US-67 |
+| `/panel` | `PanelPage`: zona privada con botón para cerrar sesión | Sí | US-03, US-67 |
 | `*` | `NoEncontradaPage` | No | TR-05 |
 
 Para añadir una página: crear `pages/NombrePage.jsx`, añadir su `<Route>` en `App.jsx` y su fila en esta tabla. Todas las llamadas al servidor pasan por `api()` de `api/cliente.js`, que añade la cabecera `Authorization` cuando hay sesión y convierte los errores del contrato en `ErrorApi` (se decide según `error.code`).

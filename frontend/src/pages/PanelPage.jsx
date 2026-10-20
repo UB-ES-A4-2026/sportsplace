@@ -1,6 +1,7 @@
 import { useAuth } from '../auth/useAuth.js';
+import BotonCerrarSesion from '../components/BotonCerrarSesion.jsx';
 
-// Zona privada. TODO US-67: botón para cerrar sesión (POST /api/auth/logout).
+// Zona privada. US-67: desde aquí se puede cerrar la sesión.
 export default function PanelPage() {
   const { usuario } = useAuth();
 
@@ -10,6 +11,7 @@ export default function PanelPage() {
       <p className="intro-text">
         Has iniciado sesión como <strong>{usuario?.email}</strong>.
       </p>
+      <BotonCerrarSesion />
     </section>
   );
 }
