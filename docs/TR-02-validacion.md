@@ -25,14 +25,14 @@ Marcar los tres primeros tras revisar la implementación y su evidencia. El últ
 
 | Persona | Sistema operativo | Fecha | Rama / commit | Resultado y evidencia |
 |---|---|---|---|---|
-| Carlos | Windows, equipo de Carlos | 20/10/2026 | `story/US-01-registro` @ `e755687` | Arranque y pruebas ejecutados por el agente en este ordenador; falta confirmación personal de Carlos y comprobación visual. Ver evidencia técnica actual. |
+| Carlos | Windows, equipo de Carlos | 20/10/2026 | Aplicación `e755687`; rama de documentación en `fb570b5` | Carlos confirma en esta conversación que ha abierto `localhost:5173`: frontend visible y apartados de login/registro accesibles, todavía sin formularios. El arranque y las pruebas técnicas fueron ejecutados por el agente en este ordenador; no se atribuyen a Carlos como comandos ejecutados personalmente. |
 | Asier | macOS 15.7.4, MacBook Air | 10/10/2026 | `chore/TR-02-entorno-desarrollo` @ `105e159` | Correcto; [confirmación y captura en #7](https://github.com/UB-ES-A4-2026/sportsplace/issues/7#issuecomment-6100297245) y [aprobación de #10](https://github.com/UB-ES-A4-2026/sportsplace/pull/10#pullrequestreview-5480140625). |
 | Anass | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
 | Alex | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
 | Lucía | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
 | Marta | Pendiente | Pendiente | Pendiente | Pendiente de confirmación |
 
-Solo hay **una confirmación humana individual acreditada: Asier**. La ejecución del agente no se atribuye como confirmación personal de Carlos. Las pruebas de backend contra Supabase de Anass y Alex tampoco acreditan por sí solas el arranque de React y Node con Compose en sus ordenadores. Faltan las confirmaciones personales de Carlos, Anass, Alex, Lucía y Marta.
+Hay confirmación humana de **Asier** y comprobación visual confirmada por **Carlos** sobre el entorno arrancado y probado técnicamente por el agente. Son evidencias diferenciadas: no se afirma que Carlos haya ejecutado personalmente esos comandos ni que los formularios funcionen. Las pruebas de backend contra Supabase de Anass y Alex tampoco acreditan por sí solas el arranque de React y Node con Compose en sus ordenadores. Faltan las confirmaciones personales de Anass, Alex, Lucía y Marta.
 
 ## Evidencia técnica actual: 20/10/2026
 
@@ -50,7 +50,7 @@ Ejecutada por el agente de desarrollo en el ordenador Windows de Carlos sobre `e
 | `docker compose exec backend npm run db:check` | PostgreSQL con TLS verificado y `public.centros` encontrada. |
 | Configuración privada | `.env` conservado; ignorado por Git y excluido de los contextos Docker. `.env.example` mantiene los secretos vacíos. |
 
-Las peticiones HTTP a las rutas de React solo acreditan que se sirve la SPA; no se ha realizado una comprobación visual en navegador en esta ejecución. Más detalle y dependencias en [validación DevOps](sprint-0-validacion-devops.md).
+Las peticiones HTTP del agente a las rutas de React solo acreditan que se sirve la SPA. Posteriormente Carlos confirmó la comprobación visual descrita en su fila: la estructura carga y faltan los formularios, como corresponde a TR-05. No es QA de US-01 ni prueba de registro o sesión. Más detalle y dependencias en [validación DevOps](sprint-0-validacion-devops.md).
 
 ## Evidencia técnica de la implementación
 
@@ -71,6 +71,6 @@ Docker utilizado: Engine 29.5.2 y Compose 5.1.4. Las pruebas de otros sistemas y
 
 ## Cierre de la issue
 
-La tarea pasa a **En revisión** cuando el entorno está preparado y se solicita revisión. El cierre requiere todos sus criterios y las seis confirmaciones, además de las condiciones de integración acordadas: tarea hacia `story/US-01-registro`, historia completa y validada por QA hacia `dev`, y entrega hacia `main` según el acuerdo del equipo. No se propone cerrar #7: faltan cinco confirmaciones personales y US-01 aún no está integrada en `dev`.
+La tarea pasa a **En revisión** cuando el entorno está preparado y se solicita revisión. El cierre requiere todos sus criterios y las seis confirmaciones, además de las condiciones de integración acordadas: tarea hacia `story/US-01-registro`, historia completa y validada por QA hacia `dev`, y entrega hacia `main` según el acuerdo del equipo. No se propone cerrar #7: faltan las confirmaciones de Anass, Alex, Lucía y Marta y US-01 aún no está integrada en `dev`.
 
 Mientras falten validaciones individuales, la pull request referencia TR-02 sin usar `Closes #numero`. La configuración de GitHub Actions corresponde a Asier y se sigue por separado.

@@ -58,6 +58,7 @@ No existe `package.json` en la raíz ni se ha supuesto un `npm test` global. El 
 |---|---|
 | `GET /api/health`, directo y a través de Vite | Ambos HTTP 200, cuerpo `{"status":"ok","service":"sportsplace-api"}` y `Cache-Control: no-store`. |
 | Rutas `/`, `/registro`, `/confirmar-email`, `/entrar`, `/panel` | Sirven la SPA por HTTP. No es comprobación visual, de sesión ni de formularios. |
+| Comprobación visual posterior de Carlos, comunicada en esta conversación | Abre `localhost:5173`, ve el frontend y accede a los apartados de login y registro. Todavía no hay formularios; confirma la estructura, no las funcionalidades ni el QA de la historia. |
 | Registro con email existente y variante con espacios/mayúsculas | Ambos HTTP 409 `EMAIL_YA_REGISTRADO`; no se crea cuenta ni se envía otro correo. |
 | Registro sin aceptar privacidad / con email mal formado | HTTP 400 `DATOS_INVALIDOS`, con detalle del campo correspondiente. |
 | Efectos de esas comprobaciones | Recuento de usuarios Auth y centros sin cambios. No hubo alta nueva ni reintentos de envío. |
@@ -95,7 +96,7 @@ Estado comprobado de las ramas permanentes, sin modificarlas:
 
 | Elemento | Pendiente real | Responsable / dependencia |
 |---|---|---|
-| TR-02, [#7](https://github.com/UB-ES-A4-2026/sportsplace/issues/7) | Solo Asier tiene confirmación humana individual acreditada. El arranque técnico en este ordenador no es confirmación personal de Carlos. Issue abierta; criterios sin rebajar. | Carlos, Anass, Alex, Lucía y Marta: registrar su confirmación personal con SO, fecha, commit y resultado. |
+| TR-02, [#7](https://github.com/UB-ES-A4-2026/sportsplace/issues/7) | Asier acredita su arranque y Carlos confirma la comprobación visual del entorno arrancado y probado por el agente. No se atribuye a Carlos la ejecución personal de los comandos. Issue abierta; criterios sin rebajar. | Anass, Alex, Lucía y Marta: registrar su confirmación personal con SO, fecha, commit y resultado. |
 | US-01 | API y estructura web integradas; formulario aún fuera de la historia, sin PR abierta en la consulta inicial; falta QA del conjunto y condiciones de cierre de sus tareas. | Lucía: formulario y PR. Asier: validación QA de historia completa. Revisión ajena y CI de la versión final. |
 | US-02 | #15 y #17 en borrador por dependencias; página de confirmación no integrada. | Alex/Anass: backend y actualización de dependencias; Lucía: confirmación web; Asier: QA. |
 | US-03 / US-67 | #13 y #14 en borrador, pendientes de las historias previas y de interfaz. | Alex: dependencias backend; Marta: login/logout; Asier: QA. No asumidas por Carlos. |
