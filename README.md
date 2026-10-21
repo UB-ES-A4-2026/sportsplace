@@ -48,7 +48,7 @@ El autor puede fusionar su pull request cuando se cumplan todos los requisitos d
 - Cada tarea debe tener una o varias personas responsables y un resultado verificable.
 - Las historias usan su identificador original, por ejemplo US-01.
 - No se crean TR. Todo el trabajo técnico (entorno, base de datos, CI, estructura, configuración) es una **tarea** de la historia que lo necesita.
-- El Kanban de GitHub es el homólogo del de Trello y contiene **tareas**, no historias. Cada tarea es una issue con el ID de su historia en el título (por ejemplo, `US-04 · Formulario de alta de producto (web)`) y es *sub-issue* de la issue de su historia.
+- El Kanban de GitHub es el homólogo del de Trello y contiene **tareas**, no historias. Cada tarea es una issue con su propio ID en el título (por ejemplo, `T12-3 · Formulario de alta de producto (web)`) y es *sub-issue* de la issue de su historia.
 - El número de una issue de GitHub, como #5, no sustituye al identificador de la historia o tarea.
 - Frontend y backend pueden trabajar en tareas y pull requests diferentes de una misma historia.
 
@@ -68,10 +68,10 @@ Trabajamos con dos ramas permanentes, `main` y `dev`, y con ramas temporales por
 main                                  versiones entregables (builds)
  └── dev                              integración, siempre funcional
       ├── story/US-01-registro        una historia de usuario completa
-      │    ├── feature/US-01-registro-api
-      │    ├── feature/US-01-registro-web
-      │    └── chore/US-01-ci-github-actions   tarea técnica de la historia
-      └── fix/US-03-...               corrección de algo ya integrado
+      │    ├── feature/T01-3-registro-api
+      │    ├── feature/T01-4-registro-web
+      │    └── chore/T01-5-ci-github-actions    tarea técnica de la historia
+      └── fix/T03-4-...                   corrección de algo ya integrado
 ```
 
 `main` y `dev` están protegidas: solo reciben cambios mediante pull request con al menos una aprobación de otra persona, conversaciones resueltas y CI en verde. La protección se aplica también a los administradores.
@@ -104,10 +104,10 @@ Cada historia de usuario tiene una rama que sale de `dev` y reúne todo su traba
 
 Una historia se divide en tareas. Una tarea es cualquier parte del trabajo necesaria para completarla: frontend, backend, base de datos, pruebas, documentación o configuración. Cada tarea tiene su propia rama, que sale de la rama de la historia, y su pull request hacia ella. Por ejemplo, en US-01:
 
-- `chore/US-01-estructura-api`: estructura del servidor.
-- `chore/US-01-estructura-web`: estructura de la web.
-- `feature/US-01-registro-api`: API y validaciones del servidor.
-- `feature/US-01-registro-web`: formulario e interfaz.
+- `chore/T01-1-estructura-api`: estructura del servidor.
+- `chore/T01-2-estructura-web`: estructura de la web.
+- `feature/T01-3-registro-api`: API y validaciones del servidor.
+- `feature/T01-4-registro-web`: formulario e interfaz.
 
 Cada rama tiene su responsable y su pull request hacia `story/US-01-registro`. Así la historia se monta completa en su propia rama y a `dev` solo llega cuando todo está implementado y probado.
 
@@ -119,17 +119,20 @@ Si una historia necesita código de otra (por ejemplo, US-03 necesita la estruct
 2. Se actualiza la rama de la historia desde `dev` (`git merge origin/dev`) y después cada rama de tarea desde su `story/`.
 3. Mientras tanto, las pull requests de la historia que espera se abren hacia su `story/` como **borrador** (*draft*) e indican de qué historia dependen. Hasta que se actualicen pueden mostrar también los cambios de la otra historia.
 
-El nombre sigue el formato `categoria/ID-descripcion`. La categoría indica el tipo de cambio y el ID es siempre el de la historia.
+Los nombres distinguen historias de tareas, para que una tarea nunca parezca una historia:
+
+- **Historia:** `story/US-12-descripcion`. Solo su PR hacia `dev` lleva `US-12` en el título.
+- **Tarea:** `categoria/T12-3-descripcion`, donde `T12-3` es la tarea 3 de US-12. Su issue y su PR se titulan con ese ID (`T12-3: formulario de alta (web)`), nunca con `US-12`.
 
 | Categoría | Sale de y vuelve a | Cuándo utilizarla | Ejemplo |
 |---|---|---|---|
 | `story/` | `dev` | Reunir todo el trabajo de una historia de usuario. | `story/US-01-registro` |
-| `feature/` | su `story/` | Añadir una funcionalidad o una parte de ella. | `feature/US-01-registro-web` |
-| `test/` | su `story/` | Añadir o mejorar pruebas de una historia. | `test/US-03-pruebas-login` |
-| `refactor/` | su `story/` o `dev` | Reorganizar código manteniendo su comportamiento. | `refactor/US-03-servicio-login` |
-| `fix/` | su `story/` o `dev` | Corregir un comportamiento incorrecto: desde su historia si aún no está en `dev`, desde `dev` si ya está integrada. | `fix/US-03-error-login` |
-| `chore/` | su `story/` | Tarea técnica: herramientas, dependencias, Docker, CI o mantenimiento del repositorio. | `chore/US-01-ci-github-actions` |
-| `docs/` | su `story/` (o `dev` si es documentación del proceso) | Cambiar exclusivamente documentación. | `docs/US-01-contrato-api` |
+| `feature/` | su `story/` | Añadir una funcionalidad o una parte de ella. | `feature/T01-4-registro-web` |
+| `test/` | su `story/` | Añadir o mejorar pruebas de una historia. | `test/T03-3-pruebas-login` |
+| `refactor/` | su `story/` o `dev` | Reorganizar código manteniendo su comportamiento. | `refactor/T03-5-servicio-login` |
+| `fix/` | su `story/` o `dev` | Corregir un comportamiento incorrecto: desde su historia si aún no está en `dev`, desde `dev` si ya está integrada. | `fix/T03-6-error-login` |
+| `chore/` | su `story/` | Tarea técnica: herramientas, dependencias, Docker, CI o mantenimiento del repositorio. | `chore/T01-5-ci-github-actions` |
+| `docs/` | su `story/` (o `dev` si es documentación del proceso) | Cambiar exclusivamente documentación. | `docs/T01-6-contrato-api` |
 
 Las categorías son una convención del equipo. Cualquier miembro puede utilizar cualquiera de ellas según la tarea que tenga asignada.
 
@@ -137,7 +140,7 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 
 #### Reglas de nombres y alcance
 
-- Conservar el ID de la historia: `US-01`, `US-03`, etc.
+- `US-xx` solo en ramas `story/`; las ramas de tarea usan el ID de la tarea (`T12-3`).
 - Escribir la descripción en minúsculas, con guiones y sin espacios ni tildes.
 - Crear cada rama desde su base actualizada, según la tabla anterior.
 - Mantener un cambio coherente y revisable por rama.
@@ -171,7 +174,7 @@ git push -u origin story/US-03-login
 ```bash
 git switch story/US-03-login
 git pull --ff-only
-git switch -c feature/US-03-login-api
+git switch -c feature/T03-1-login-api
 ```
 
 5. Implementar el cambio y realizar las comprobaciones que correspondan.
@@ -182,7 +185,7 @@ git status
 git add ruta/del/archivo
 git diff --cached
 git commit -m "US-03: implementar acceso con email y contraseña"
-git push -u origin feature/US-03-login-api
+git push -u origin feature/T03-1-login-api
 ```
 
 7. Abrir una pull request hacia `story/US-03-login` y mover la tarea a **En revisión**.
