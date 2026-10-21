@@ -223,6 +223,9 @@ E2E-6 · Cancelar con datos
 - T12-3 · Frontend: botón «Publicar anuncio» en la cabecera y pantalla `/anuncios/nuevo` con validación, contadores y diálogo de cancelar (componente de formulario reutilizable por US-15, US-19 y US-90).
 - T12-4 · Frontend: ficha `/anuncios/:id` y pantalla «Anuncio no encontrado».
 - T12-5 · QA: automatizar E2E-1..6 y los casos límite CA26-CA29.
+- T12-6 · DevOps: entorno de pruebas desplegado (web + API) con despliegue automático al fusionar en `dev` (NFR-02 y DoD «desplegada en el entorno de pruebas»); URL en el README y variables documentadas en `.env.example`.
+- T12-7 · DevOps: job de e2e en el CI (Playwright, web y API levantadas contra la base de pruebas), obligatorio en las PR hacia `story/*` y `dev`; plantilla de test que usará QA.
+- T12-8 · DevOps: base de datos de pruebas separada del Supabase compartido, script de semilla (centros y anuncios de ejemplo de los e2e, incluidos 21 anuncios para US-18) y procedimiento para aplicar las migraciones nuevas al Supabase compartido tras fusionar en `dev`.
 
 **Decisiones pendientes**
 - Destino del logo mientras no exista el catálogo. Propuesta: `/mis-anuncios`.
