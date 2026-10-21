@@ -5,6 +5,7 @@ Esta carpeta es la especificación funcional y técnica del proyecto. Se impleme
 | Archivo | Contenido |
 |---|---|
 | [00-guia-comun.md](00-guia-comun.md) | Normas de redacción, convenciones de API e interfaz y diccionario de datos. |
+| [E01-E02-registro-y-perfil.md](E01-E02-registro-y-perfil.md) | Sprint 1: US-04 (recuperar contraseña), US-07 (perfil del centro) y US-68 (ubicación). El resto de historias del archivo son de sprints posteriores. |
 | [E03-publicacion-de-material.md](E03-publicacion-de-material.md) | Sprint 1: «Base común» de los anuncios y las historias US-12 a US-18 y US-70, con sus criterios (CA), flujos e2e y tareas. |
 
 Las demás épicas se añaden aquí cuando entran en un sprint. La misma información está en Trello (historias) y en GitHub (historias y tareas).
