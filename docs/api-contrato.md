@@ -85,6 +85,8 @@ Cualquier error de la API tiene esta forma:
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
+| `GET /api/centros/mio` | US-07 | Sí | Alex |
+| `PATCH /api/centros/mio` | US-07 | Sí, con email confirmado | Alex |
 
 ### `GET /api/health`
 
@@ -185,6 +187,49 @@ Privada. Sin cuerpo.
 - `401 NO_AUTENTICADO` si la sesión ya no era válida. El frontend lo trata igual que un cierre correcto.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
+
+### `GET /api/centros/mio` (US-07)
+
+Privada (`requireAuth`). Devuelve el centro al que pertenece el usuario (en este sprint, el de `centros.usuario_id`; US-84 lo amplía a miembros).
+
+- `200 { "centro": centro }`:
+
+```json
+{
+  "id": "uuid", "nombre": "Club Natació Exemple", "email": "centro@example.com",
+  "localidad": "Barcelona", "direccion": null, "codigo_postal": "08001", "telefono": "+34 931 234 567",
+  "descripcion": "Club de natación…", "email_contacto": "material@clubnatacio.cat",
+  "web": "https://clubnatacio.cat", "creado_en": "2026-10-09T10:00:00.000Z"
+}
+```
+
+- `401 NO_AUTENTICADO`.
+- `404 NO_ENCONTRADO` si la cuenta no tiene ningún centro (no debería pasar: el alta crea los dos en la misma transacción).
+- `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `PATCH /api/centros/mio` (US-07)
+
+Privada (`requireAuth` + `requireEmailConfirmado`). Cuerpo con cualquiera de estos campos; los que no se envían no cambian y `null` o `""` borra un opcional:
+
+```json
+{ "nombre": "Club Natació Exemple", "descripcion": "…", "telefono": "+34 931 234 567", "email_contacto": "material@clubnatacio.cat", "web": "https://clubnatacio.cat" }
+```
+
+Se recortan los espacios antes de validar. Los límites se cuentan por caracteres (un emoji es 1).
+
+| Campo | Regla | Mensaje en `details` |
+|---|---|---|
+| `nombre` | Obligatorio, 1-160 | «El nombre del centro es obligatorio.», «Como máximo 160 caracteres.» |
+| `descripcion` | Opcional, 0-1000, admite saltos de línea | «Como máximo 1000 caracteres.» |
+| `telefono` | Opcional, dígitos, espacios y un `+` inicial, 9-30 | «El teléfono no es válido.», «Como máximo 30 caracteres.» |
+| `email_contacto` | Opcional, misma regla que el email del alta, se guarda en minúsculas | «El email no es válido.» |
+| `web` | Opcional, máx. 255, `http://` o `https://` y dominio con punto | «La web debe empezar por http:// o https://.», «La web no es válida.», «Como máximo 255 caracteres.» |
+
+- `200 { "centro": centro }` con los datos actualizados. Cada `PATCH` correcto actualiza `centros.actualizado_en`.
+- `400 DATOS_INVALIDOS` con `details` por campo. Un campo desconocido o no editable (`email`, `usuario_id`, `localidad`…) da `details.<campo>` «Este campo no se puede modificar.».
+- `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `503 BASE_DATOS_NO_DISPONIBLE`.
+
+No existe ninguna ruta para editar otro centro por id.
 
 ## Rutas privadas y confirmación del email (US-02)
 
