@@ -145,15 +145,15 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 - Crear cada rama desde su base actualizada, según la tabla anterior.
 - Mantener un cambio coherente y revisable por rama.
 - No crear ramas permanentes por persona, área o sprint: las únicas permanentes son `main` y `dev`.
-- Conservar `main` y `dev`. Eliminar solo ramas temporales después de fusionar su pull request y cuando ninguna otra PR las utilice como base. La rama `story/` se elimina tras fusionarse en `dev`, cuando ya no tenga PR dependientes.
+- Conservar todas las ramas: `main`, `dev`, las `story/` y las ramas de trabajo. No se eliminan después de fusionarse, para que sigan visibles en el historial (Network).
 
 #### Resumen del flujo
 
 | Pull request | Quién la abre | Requisitos | Cómo se fusiona |
 |---|---|---|---|
-| `feature/`, `chore/`, `docs/`, `test/` → `story/...` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
-| `story/...` → `dev` | Quien cierra la historia | 1 aprobación, CI en verde, historia probada de punta a punta y validada por QA. | **Squash and merge** |
-| `docs/`, `fix/` → `dev` (documentación del proceso o corrección) | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
+| `feature/`, `chore/`, `docs/`, `test/` → `story/...` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Create a merge commit** |
+| `story/...` → `dev` | Quien cierra la historia | 1 aprobación, CI en verde, historia probada de punta a punta y validada por QA. | **Create a merge commit** |
+| `docs/`, `fix/` → `dev` (documentación del proceso o corrección) | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Create a merge commit** |
 | `dev` → `main` | Carlos | Acuerdo del equipo, CI en verde y `dev` probada. | **Create a merge commit** |
 
 ### Procedimiento para desarrollar una tarea
@@ -190,7 +190,7 @@ git push -u origin feature/T03-1-login-api
 
 7. Abrir una pull request hacia `story/US-03-login` y mover la tarea a **En revisión**.
 8. Solicitar revisión a otra persona del equipo y atender sus comentarios.
-9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama temporal utilizada cuando ninguna otra PR dependa de ella.
+9. Tras la aprobación y las comprobaciones, fusionar mediante **Create a merge commit**. No se borra la rama: debe seguir visible en el historial (Network).
 10. Cuando todas las partes de la historia estén fusionadas en su rama `story/`, probar la historia completa y abrir la pull request `story/US-03-login` → `dev`.
 
 Todas las tareas de una historia (frontend, backend, `chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella.
@@ -234,8 +234,8 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 2. El revisor entra en **Files changed**, revisa los cambios y las comprobaciones descritas.
 3. Si todo está correcto, pulsa **Review changes → Approve → Submit review**. Si necesita correcciones, utiliza **Request changes** y explica qué debe cambiar.
 4. El autor atiende los comentarios y solicita otra revisión cuando corresponda.
-5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Squash and merge** y confirma la fusión. La pull request `dev` → `main` es la única que se fusiona con **Create a merge commit**.
-6. Se elimina únicamente la rama temporal con **Delete branch**, cuando ninguna otra PR la utilice como base. Se conservan `main` y `dev`, también después de publicar una entrega.
+5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Create a merge commit** y confirma la fusión. No se usa **Squash and merge** ni **Rebase and merge**: el profesor pidió que las ramas no desaparezcan del historial (Network), y el squash provocó los conflictos de la integración del Sprint 0.
+6. No se pulsa **Delete branch**: se conservan todas las ramas, también `main` y `dev` después de publicar una entrega.
 
 Un comentario normal no cuenta como aprobación. El autor no puede aprobar su propia pull request.
 
