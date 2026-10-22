@@ -113,3 +113,36 @@ export function validarAnuncio(cuerpo) {
   }
   return anuncio;
 }
+
+// US-18 (CA11): `pagina` (por defecto 1) y `por_pagina` (1-50, por defecto 20)
+// de la query. Solo se aceptan dígitos: «2.5», «-1», «abc» o un parámetro
+// repetido se rechazan con su mensaje.
+export const POR_PAGINA_DEFECTO = 20;
+
+function enteroDeQuery(valor) {
+  if (typeof valor !== 'string' || !/^\d+$/.test(valor)) return null;
+  const numero = Number(valor);
+  return Number.isSafeInteger(numero) ? numero : null;
+}
+
+export function validarPaginacion(query) {
+  const details = {};
+  let pagina = 1;
+  let porPagina = POR_PAGINA_DEFECTO;
+
+  if (query.pagina !== undefined) {
+    pagina = enteroDeQuery(query.pagina);
+    if (pagina === null || pagina < 1) details.pagina = 'Debe ser un número entero mayor que 0.';
+  }
+  if (query.por_pagina !== undefined) {
+    porPagina = enteroDeQuery(query.por_pagina);
+    if (porPagina === null || porPagina < 1 || porPagina > 50) {
+      details.por_pagina = 'Debe ser un número entre 1 y 50.';
+    }
+  }
+
+  if (Object.keys(details).length > 0) {
+    throw new ApiError(400, 'DATOS_INVALIDOS', MENSAJE_DATOS_INVALIDOS, details);
+  }
+  return { pagina, porPagina };
+}

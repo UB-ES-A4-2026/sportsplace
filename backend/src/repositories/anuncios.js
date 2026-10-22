@@ -34,6 +34,24 @@ export function aAnuncio(fila) {
   };
 }
 
+// Fila de la tabla → `resumen` de la lista «Mis anuncios» (US-18, CA12).
+// CA30 de US-12: sin US-13 ni US-14 en dev, sin foto principal y como donación.
+export function aResumen(fila) {
+  return {
+    id: fila.id,
+    titulo: fila.titulo,
+    categoria: fila.categoria,
+    deporte: fila.deporte,
+    unidades_disponibles: fila.unidades_disponibles,
+    modalidad: 'donacion',
+    precio_unitario_centimos: null,
+    estado: fila.estado,
+    foto_principal_url: null,
+    publicado_en: fecha(fila.publicado_en),
+    actualizado_en: fecha(fila.actualizado_en),
+  };
+}
+
 const COLUMNAS = `id, centro_id, titulo, descripcion, categoria, deporte,
   unidades_disponibles, estado_material, estado, publicado_en, creado_en, actualizado_en`;
 
@@ -85,6 +103,33 @@ export function createAnunciosRepository(database) {
       );
       if (rows.length === 0) throw anuncioNoEncontrado();
       return aAnuncio(rows[0]);
+    },
+
+    // US-18 (CA3, CA4, CA10, CA14): anuncios del centro de la sesión salvo los
+    // retirados, del último modificado al más antiguo (a igualdad, id
+    // descendente). Si se pide una página mayor que la última, se devuelve la
+    // última, con su número en `pagina`.
+    async listarMios(usuarioId, { pagina, porPagina }) {
+      const centro = 'SELECT c.id FROM public.centros c WHERE c.usuario_id = $1';
+      const { rows: [{ total }] } = await consultar(
+        `SELECT count(*)::integer AS total
+         FROM public.anuncios a
+         WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'`,
+        [usuarioId],
+      );
+      const ultima = Math.max(1, Math.ceil(total / porPagina));
+      const paginaServida = Math.min(pagina, ultima);
+
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.categoria, a.deporte, a.unidades_disponibles,
+                a.estado, a.publicado_en, a.actualizado_en
+         FROM public.anuncios a
+         WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'
+         ORDER BY a.actualizado_en DESC, a.id DESC
+         LIMIT $2 OFFSET $3`,
+        [usuarioId, porPagina, (paginaServida - 1) * porPagina],
+      );
+      return { anuncios: rows.map(aResumen), total, pagina: paginaServida, por_pagina: porPagina };
     },
   };
 }
