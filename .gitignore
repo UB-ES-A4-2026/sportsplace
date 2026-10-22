@@ -152,5 +152,8 @@ vite.config.ts.timestamp-*
 # Astro generated types
 .astro/
 
+# Entorno aislado de pruebas; contiene claves locales y material TLS.
+.e2e/
+
 # Turbo Repo
 .turbo

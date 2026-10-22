@@ -14,6 +14,8 @@ El Sprint 0 está entregado en `main` (21/10/2026). Historias completadas:
 
 Validación de infraestructura del sprint: [validación DevOps](docs/sprint-0-validacion-devops.md).
 
+Sprint 1: [base de pruebas aislada y semilla de QA (T12-8)](docs/base-pruebas.md).
+
 ## Tecnologías
 
 - Frontend: React con Vite, en JavaScript.
