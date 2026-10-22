@@ -81,3 +81,7 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 .campo-con-sufijo { display: flex; align-items: center; gap: 8px; }
 .campo .campo-con-sufijo input { width: 160px; }
 .campo-ayuda { margin: 0; color: #62766d; font-size: 13px; }
+.precio-anuncio { font-weight: 700; color: #19372f; white-space: nowrap; }
+.precio-anuncio-grande { font-size: 24px; }
+.etiqueta { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 650; white-space: nowrap; }
+.etiqueta-verde { color: #1d5c33; background: #dcefe1; }
