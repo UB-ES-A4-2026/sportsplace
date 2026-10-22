@@ -7,7 +7,7 @@ Propuesta para revisar por el equipo antes de incorporarla al repositorio. Compl
 - Leer `README.md`, la issue de la tarea y, para autenticación o interfaz, `docs/api-contrato.md`.
 - Comprobar la rama y los cambios locales. Conservar el trabajo de otras personas y no incluirlo por accidente en la propia PR.
 - Mantener `main` para las entregas y `dev` para la integración. Crear una rama `story/US-xx-descripcion` desde `dev` por historia, y las ramas de trabajo desde esa historia. No subir cambios directamente a `main`, `dev` ni programar directamente en `story/`.
-- Las ramas `feature/`, `test/`, `chore/` y `docs/` de una historia vuelven a su `story/` mediante PR. Los TR iniciales forman parte de US-01; el trabajo técnico ya incluido en `dev` se hereda al crear su rama. Una TR independiente solo sale de `dev` si el Product Owner la define como tal.
+- Las ramas `feature/`, `test/`, `chore/` y `docs/` de una historia vuelven a su `story/` mediante PR. No existen TR: el trabajo técnico es una tarea de su historia. Implementar exactamente los criterios de aceptación de la historia; si algo no está especificado, preguntar en lugar de suponer.
 - Si una PR depende de otra, dejar explícita esa dependencia y comprobar su base antes de integrarla. No borrar una rama que siga siendo base de otra PR.
 
 ## Arquitectura y responsabilidades
