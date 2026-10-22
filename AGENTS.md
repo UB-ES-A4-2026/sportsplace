@@ -54,7 +54,7 @@ La conexión real se verifica con `docker compose exec backend npm run db:check`
 - Revisar el diff antes del commit, incluyendo los archivos preparados para subir.
 - Explicar en la PR el resultado, las comprobaciones ejecutadas y cualquier criterio pendiente. Un resultado de pruebas local no equivale a un CI verde en el último commit.
 - Solicitar una aprobación de otra persona. Tras modificar una versión aprobada, pedir revisión de la nueva versión.
-- Integrar las ramas de trabajo en su `story/` mediante **Squash and merge**. La historia completa entra en `dev` por PR, con **Squash and merge**, criterios cumplidos y validación de QA. Publicar `dev` en `main` mediante **Create a merge commit**, según el acuerdo del equipo. No eludir la protección de `main` ni de `dev`.
-- Conservar `main` y `dev`. Eliminar únicamente ramas temporales después de su fusión, cuando ninguna otra PR las utilice como base.
+- Fusionar todas las PR mediante **Create a merge commit**; nunca **Squash and merge** ni **Rebase and merge** (el profesor pidió que las ramas sigan visibles en el historial). Las ramas de trabajo entran en su `story/`; la historia completa entra en `dev` por PR, con criterios cumplidos y validación de QA; `dev` se publica en `main` según el acuerdo del equipo. No eludir la protección de `main` ni de `dev`.
+- No borrar ramas después de fusionarlas, ni `main` y `dev` ni las ramas de trabajo.
 - Usar `Refs #n` para una contribución parcial. Usar `Closes #n` cuando se complete la issue entera según `docs/definition-of-done.md`.
 - Actualizar documentación y seguimiento sin marcar como realizado algo preparado, simulado o aún pendiente de otra persona.

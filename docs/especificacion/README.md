@@ -61,7 +61,7 @@ La issue de cada tarea indica de qué tareas depende.
    - En la descripción, indica qué CA cumple y cómo se ha probado.
    - Mueve la tarea a **En revisión** y pide revisión a otra persona: backend ↔ backend, frontend ↔ frontend, y QA para las de QA.
 8. **Revisión y fusión.**
-   - Con 1 aprobación y el CI en verde, el autor fusiona con **Squash and merge**.
+   - Con 1 aprobación y el CI en verde, el autor fusiona con **Create a merge commit** (nunca *Squash* ni *Rebase*) y no borra la rama.
    - Si la PR sale *out of date*, pulsa **Update branch** antes.
    - La tarea se cierra sola y pasa a **Hecho**.
 9. **Cerrar la historia** (quien termina la última tarea, normalmente QA):
