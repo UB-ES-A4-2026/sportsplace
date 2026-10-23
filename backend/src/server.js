@@ -1,6 +1,8 @@
 import { createAppServer } from './app.js';
 import { createDatabase } from './database.js';
+import { createAnunciosRepository } from './repositories/anuncios.js';
 import { createCentrosRepository } from './repositories/centros.js';
+import { createFotosStorage, urlPublicaFoto } from './services/storage-fotos.js';
 import { createSupabaseAuth } from './services/supabase-auth.js';
 
 const host = process.env.HOST || '0.0.0.0';
@@ -14,6 +16,13 @@ const auth = createSupabaseAuth();
 if (!auth) {
   console.log('Supabase Auth pendiente de configuración: faltan SUPABASE_URL o SUPABASE_PUBLISHABLE_KEY.');
 }
+
+const fotos = createFotosStorage();
+if (!fotos) {
+  console.log('Storage de fotos pendiente de configuración: faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.');
+}
+const supabaseUrl = process.env.SUPABASE_URL?.trim();
+const urlFoto = supabaseUrl ? (ruta) => urlPublicaFoto(supabaseUrl, ruta) : undefined;
 
 let database;
 
@@ -35,7 +44,8 @@ if (process.env.DATABASE_URL?.trim()) {
 }
 
 const centros = database ? createCentrosRepository(database) : null;
-const server = createAppServer({ auth, centros });
+const anuncios = database ? createAnunciosRepository(database, { urlFoto }) : null;
+const server = createAppServer({ auth, centros, anuncios, fotos });
 
 server.on('error', (error) => {
   console.error(`Unable to start Sportsplace API: ${error.message}`);
