@@ -42,7 +42,9 @@ Son credenciales sintéticas locales: no copiarlas a GitHub Secrets ni incluir
 - Centro sin confirmar: Auth y `centros` sin fecha de confirmación.
 - Cuando existe la tabla canónica de T12-1: **21 anuncios no retirados de A**
   (paginación 20 + 1 de US-18), uno de B y otro retirado de A. IDs y fechas
-  deterministas; sin fotos y con modalidad donación según US-12 CA30.
+  deterministas; sin fotos. T12-1 no contiene modalidad ni precio: la API devuelve
+  donación sin precio según US-12 CA30. Si las columnas de T14-1 ya existen, la
+  semilla también escribe `donacion` y precio nulo; no exige esa migración.
 
 Las credenciales están en el archivo local generado. La semilla vuelve a establecer
 las cuentas y anuncios conocidos, sin duplicarlos. Para un estado totalmente limpio
@@ -54,15 +56,31 @@ npm --prefix tools run test-env:seed -- --require-anuncios
 npm --prefix tools run test-env:down
 ```
 
-Mientras T12-1 no esté integrado, `up` prepara Auth/centros e informa expresamente
-que los anuncios están pendientes. **`--require-anuncios` falla** si falta la tabla.
+Esta rama incorpora la migración real de T12-1 desde la historia US-12. En ramas
+que aún no la tengan, `up` prepara Auth/centros e informa expresamente que los
+anuncios están pendientes. **`--require-anuncios` falla** si falta la tabla.
 Si existe pero no coincide con el esquema, también falla: no crea ni modifica
 columnas para simular la migración del equipo. QA debe usar el modo estricto para
-US-12/US-18 cuando entre T12-1. Las pruebas iniciales de infraestructura de T12-7
+US-12/US-18. Las pruebas iniciales de infraestructura de T12-7
 pueden ejecutarse con Auth/centros; no acreditan los CA de anuncios.
 
 `down` detiene y elimina los volúmenes **solo del proyecto local de este checkout**.
 No tocar el entorno normal de Compose ni ejecutar `docker volume prune`.
+
+## Validación de la semilla con T12-1
+
+El 23/10/2026 se incorporó la historia US-12 (`706fabb`) en la rama de T12-8.
+Con Docker y Node.js 24, `test-env:up -- --require-anuncios` aplicó la migración
+real `20261022210000_crear_anuncios.sql`; repetir
+`test-env:seed -- --require-anuncios` mantuvo exactamente 23 anuncios: 21 de A no
+retirados, uno de B y uno retirado de A. Ambos comandos verificaron TLS.
+También pasó `supabase/tests/anuncios.sql` en esa base local con `ROLLBACK`.
+
+El lint y las 14 pruebas de `tools` cubren el esquema de US-12 sin columnas de
+precio y la siembra como donación si US-14 ya las incorpora. El backend integrado
+pasó lint y sus 110 pruebas. Esta evidencia valida la preparación de datos; la
+paginación y los demás criterios de las historias los comprueba QA por la API/web.
+No se aplicaron migraciones ni semillas al Supabase compartido.
 
 ## Migraciones nuevas al Supabase compartido
 

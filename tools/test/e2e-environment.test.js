@@ -51,3 +51,42 @@ test('un esquema anuncios incompleto no se rellena con SQL alternativo', async (
   await assert.rejects(seedAnuncios(client), /no coincide/);
   assert.equal(queries, 2);
 });
+
+function recordingSeedClient(extraColumns = []) {
+  // Columns of the real T12-1 migration. US-14 is a separate dependency.
+  const columns = ['id', 'centro_id', 'titulo', 'descripcion', 'categoria', 'deporte',
+    'unidades_disponibles', 'estado_material', 'estado', 'publicado_en', 'creado_en',
+    'actualizado_en', 'retirado_en', 'entregado_en', ...extraColumns];
+  const inserts = [];
+  return {
+    inserts,
+    query: async (sql, values) => {
+      if (sql.includes('to_regclass')) return { rows: [{ exists: true }] };
+      if (sql.includes('information_schema.columns')) return { rows: columns.map((column_name) => ({ column_name })) };
+      inserts.push({ sql, values });
+      return { rows: [] };
+    },
+  };
+}
+
+test('T12-1 siembra los 23 anuncios sin depender de las columnas de US-14', async () => {
+  const client = recordingSeedClient();
+  assert.deepEqual(await seedAnuncios(client, { requireAnuncios: true }), { seeded: 23, pending: null });
+  assert.equal(client.inserts.length, 23);
+  for (const { sql, values } of client.inserts) {
+    assert.doesNotMatch(sql, /modalidad|precio_unitario_centimos/);
+    assert.match(sql, /ON CONFLICT \(id\) DO UPDATE/);
+    assert.equal(values.length, 14);
+  }
+});
+
+test('si US-14 está aplicada la semilla establece donación sin precio', async () => {
+  const client = recordingSeedClient(['modalidad', 'precio_unitario_centimos']);
+  await seedAnuncios(client, { requireAnuncios: true });
+  assert.equal(client.inserts.length, 23);
+  for (const { sql, values } of client.inserts) {
+    assert.match(sql, /modalidad=EXCLUDED.modalidad/);
+    assert.match(sql, /precio_unitario_centimos=EXCLUDED.precio_unitario_centimos/);
+    assert.deepEqual(values.slice(-2), ['donacion', null]);
+  }
+});

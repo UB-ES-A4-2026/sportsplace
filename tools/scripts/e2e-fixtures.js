@@ -18,8 +18,6 @@ export function fixtureAnuncios() {
     deporte: 'futbol',
     unidades_disponibles: index + 1,
     estado_material: 'buen_estado',
-    modalidad: 'donacion',
-    precio_unitario_centimos: null,
     estado: states[index % states.length],
     publicado_en: new Date(Date.UTC(2026, 9, 1, 10, index)).toISOString(),
     creado_en: new Date(Date.UTC(2026, 9, 1, 10, index)).toISOString(),
@@ -41,12 +39,19 @@ export async function seedAnuncios(client, { requireAnuncios = false } = {}) {
   }
   const { rows: columns } = await client.query("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'anuncios'");
   const required = Object.keys(fixtureAnuncios()[0]);
-  if (required.some((name) => !columns.some((column) => column.column_name === name))) {
-    throw new Error('El esquema anuncios no coincide con la Base común E03. Revisar T12-1 antes de sembrar.');
+  const available = new Set(columns.map((column) => column.column_name));
+  if (required.some((name) => !available.has(name))) {
+    throw new Error('El esquema anuncios no coincide con T12-1. Revisar las migraciones antes de sembrar.');
   }
+  // T12-1 does not include the columns that T14-1 will add. If those columns
+  // are already present, keep the fixture as a donation with no price (CA30).
+  const optional = Object.fromEntries(Object.entries({ modalidad: 'donacion', precio_unitario_centimos: null })
+    .filter(([name]) => available.has(name)));
+  const fields = [...required, ...Object.keys(optional)];
   for (const row of fixtureAnuncios()) {
-    const updates = required.filter((name) => name !== 'id').map((name) => `${name}=EXCLUDED.${name}`).join(', ');
-    await client.query(`INSERT INTO public.anuncios (${required.join(', ')}) VALUES (${required.map((_, i) => `$${i + 1}`).join(', ')}) ON CONFLICT (id) DO UPDATE SET ${updates}`, required.map((name) => row[name]));
+    const values = { ...row, ...optional };
+    const updates = fields.filter((name) => name !== 'id').map((name) => `${name}=EXCLUDED.${name}`).join(', ');
+    await client.query(`INSERT INTO public.anuncios (${fields.join(', ')}) VALUES (${fields.map((_, i) => `$${i + 1}`).join(', ')}) ON CONFLICT (id) DO UPDATE SET ${updates}`, fields.map((name) => values[name]));
   }
   return { seeded: 23, pending: null };
 }
