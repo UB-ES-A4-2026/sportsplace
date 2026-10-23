@@ -152,8 +152,10 @@ vite.config.ts.timestamp-*
 # Astro generated types
 .astro/
 
-# Entorno aislado de pruebas; contiene claves locales y material TLS.
+# Entorno y resultados locales de Playwright (T12-7/T12-8).
 .e2e/
+e2e/playwright-report/
+e2e/test-results/
 
 # Turbo Repo
 .turbo
