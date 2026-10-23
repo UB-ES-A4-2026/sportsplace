@@ -223,7 +223,16 @@ Verificado el **23/10/2026** en `sportsplace-dev`, con la sesión de Carlos:
 - **Email OTP expiration = 3600 s**, ya configurado al abrir el proveedor Email.
 - **Site URL = http://localhost:5173** y SMTP personalizado habilitado con puerto **465**, conservados.
 
-**Pendiente:** acreditar la recepción de un correo real en un buzón de pruebas controlado, revisión ajena e integración. La comprobación del panel no acredita la entrega del correo ni los casos de caducidad de 59/61 minutos. Los endpoints y pantallas de recuperación requieren T04-2 y T04-3.
+Prueba real del **23/10/2026 a las 20:23:59 (Europe/Madrid)**: la petición de
+recuperación devuelve **500** y el registro de Auth indica que Gmail rechaza
+la autenticación SMTP con **535 / 5.7.8 BadCredentials**. No se recibió el correo
+en el buzón de pruebas. Actualizar la contraseña de aplicación en los ajustes SMTP
+del panel y repetir la comprobación de recepción; no añadirla al repositorio.
+
+**Pendiente:** reparar la credencial SMTP, acreditar la recepción del correo,
+revisión ajena e integración. La comprobación del panel no acredita la entrega
+del correo ni los casos de caducidad de 59/61 minutos. Los endpoints y pantallas
+de recuperación requieren T04-2 y T04-3.
 
 ## Rutas privadas y confirmación del email (US-02)
 
