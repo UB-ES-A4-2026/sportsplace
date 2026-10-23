@@ -1,4 +1,5 @@
 import { ApiError, errorInterno } from '../errors.js';
+import { fotosNoPertenecen } from '../validation/fotos.js';
 import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -154,38 +155,107 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
       return aAnuncio(rows[0], fotos.get(rows[0].id));
     },
 
-    // US-15 (CA7, CA9, CA14, CA15, CA17, CA20): sustituye los datos del anuncio
-    // del centro de la sesión sin tocar `estado` ni `publicado_en` y renueva
-    // `actualizado_en` aunque no cambie nada. La condición de estado va en el
-    // propio UPDATE, así que un anuncio que otra persona acaba de marcar como
-    // entregado no se modifica. Si no se actualiza ninguna fila, se mira el
-    // estado para distinguir 404 de 409: `entregado` y `retirado` son finales,
-    // de modo que esa segunda lectura no puede dar un resultado desfasado.
-    async editar(usuarioId, id, datos) {
+    // US-15 (CA15, CA17, CA20): antes de subir las fotos nuevas, comprueba que
+    // el anuncio es del centro de la sesión y se puede editar, y devuelve su
+    // centro (para la ruta de las fotos) y los ids de sus fotos actuales.
+    async paraEditar(usuarioId, id) {
       if (!esIdDeAnuncio(id)) throw anuncioNoEncontrado();
-      const propio = `a.id = $2 AND a.centro_id = (
-        SELECT c.id FROM public.centros c WHERE c.usuario_id = $1
-      ) AND a.estado <> 'retirado'`;
-
       const { rows } = await consultar(
-        `UPDATE public.anuncios a
-         SET titulo = $3, descripcion = $4, categoria = $5, deporte = $6,
-             unidades_disponibles = $7, estado_material = $8, actualizado_en = now()
-         WHERE ${propio} AND a.estado <> 'entregado'
-         RETURNING ${COLUMNAS}`,
-        [
-          usuarioId, id, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
-          datos.unidades_disponibles, datos.estado_material,
-        ],
-      );
-      if (rows.length > 0) return aAnuncio(rows[0]);
-
-      const { rows: actual } = await consultar(
-        `SELECT a.estado FROM public.anuncios a WHERE ${propio}`,
+        `SELECT a.centro_id, a.estado,
+                COALESCE(array_agg(f.id) FILTER (WHERE f.id IS NOT NULL), '{}') AS foto_ids
+         FROM public.anuncios a
+         JOIN public.centros c ON c.id = a.centro_id
+         LEFT JOIN public.anuncio_fotos f ON f.anuncio_id = a.id
+         WHERE a.id = $2 AND c.usuario_id = $1 AND a.estado <> 'retirado'
+         GROUP BY a.id`,
         [usuarioId, id],
       );
-      if (actual.length === 0) throw anuncioNoEncontrado();
-      throw anuncioNoEditable();
+      if (rows.length === 0) throw anuncioNoEncontrado();
+      if (rows[0].estado === 'entregado') throw anuncioNoEditable();
+      return { centroId: rows[0].centro_id, fotoIds: rows[0].foto_ids };
+    },
+
+    // US-15 (CA7-CA9, CA12-CA17, CA20): sustituye los datos y las fotos del
+    // anuncio en una transacción, sin tocar `estado` ni `publicado_en` y
+    // renovando `actualizado_en` aunque no cambie nada. `fotos` es la lista
+    // final en orden: las conservadas solo llevan `id`, `orden` y
+    // `es_principal`; las nuevas, además, `ruta`, `tipo_mime` y `bytes`.
+    // El anuncio se bloquea (FOR UPDATE) y se vuelve a comprobar dentro de la
+    // transacción, por si otra persona lo ha entregado o ha cambiado sus fotos
+    // desde paraEditar. Las fotos se borran y se vuelven a insertar con el mismo
+    // id, ruta y creado_en: así el orden y la principal cambian sin chocar con
+    // las restricciones UNIQUE. Devuelve el anuncio y las rutas de las fotos
+    // quitadas, que se borran de Storage después de confirmar (CA16).
+    async editar(usuarioId, id, { datos, fotos }) {
+      if (!esIdDeAnuncio(id)) throw anuncioNoEncontrado();
+      try {
+        return await database.transaction(async (client) => {
+          const { rows: actual } = await client.query(
+            `SELECT a.estado
+             FROM public.anuncios a
+             JOIN public.centros c ON c.id = a.centro_id
+             WHERE a.id = $2 AND c.usuario_id = $1 AND a.estado <> 'retirado'
+             FOR UPDATE OF a`,
+            [usuarioId, id],
+          );
+          if (actual.length === 0) throw anuncioNoEncontrado();
+          if (actual[0].estado === 'entregado') throw anuncioNoEditable();
+
+          const { rows } = await client.query(
+            `UPDATE public.anuncios
+             SET titulo = $2, descripcion = $3, categoria = $4, deporte = $5,
+                 unidades_disponibles = $6, estado_material = $7, actualizado_en = now()
+             WHERE id = $1
+             RETURNING ${COLUMNAS}`,
+            [
+              id, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
+              datos.unidades_disponibles, datos.estado_material,
+            ],
+          );
+
+          const { rows: anteriores } = await client.query(
+            `DELETE FROM public.anuncio_fotos WHERE anuncio_id = $1
+             RETURNING id, ruta, tipo_mime, bytes, creado_en`,
+            [id],
+          );
+          const porId = new Map(anteriores.map((fila) => [fila.id, fila]));
+          const finales = fotos.map((foto) => {
+            if (foto.ruta) return { ...foto, creado_en: null };
+            const anterior = porId.get(foto.id);
+            if (!anterior) throw fotosNoPertenecen();
+            return { ...anterior, orden: foto.orden, es_principal: foto.es_principal };
+          });
+          const conservadas = new Set(finales.map((foto) => foto.id));
+
+          const { rows: filasFotos } = await client.query(
+            `INSERT INTO public.anuncio_fotos (id, anuncio_id, ruta, tipo_mime, bytes, orden, es_principal, creado_en)
+             SELECT f.id, $1, f.ruta, f.tipo_mime, f.bytes, f.orden, f.es_principal, COALESCE(f.creado_en, now())
+             FROM unnest($2::uuid[], $3::text[], $4::text[], $5::integer[], $6::smallint[], $7::boolean[], $8::timestamptz[])
+               AS f(id, ruta, tipo_mime, bytes, orden, es_principal, creado_en)
+             RETURNING id, ruta, orden, es_principal`,
+            [
+              id,
+              finales.map((foto) => foto.id),
+              finales.map((foto) => foto.ruta),
+              finales.map((foto) => foto.tipo_mime),
+              finales.map((foto) => foto.bytes),
+              finales.map((foto) => foto.orden),
+              finales.map((foto) => foto.es_principal),
+              finales.map((foto) => foto.creado_en),
+            ],
+          );
+          filasFotos.sort((a, b) => a.orden - b.orden);
+          return {
+            anuncio: aAnuncio(rows[0], filasFotos.map((fila) => aFoto(fila, urlFoto))),
+            rutasQuitadas: anteriores.filter((fila) => !conservadas.has(fila.id)).map((fila) => fila.ruta),
+          };
+        });
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        console.error(`No se pudo editar el anuncio: ${error?.code ?? 'error desconocido'}`);
+        if (esViolacionDeRestriccion(error)) throw errorInterno();
+        throw databaseUnavailable();
+      }
     },
   };
 }

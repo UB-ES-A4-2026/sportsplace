@@ -3,9 +3,9 @@ import { methodNotAllowed } from '../errors.js';
 import { getAnuncios, getFotosStorage, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
 import { leerPublicacion } from '../middleware/multipart.js';
 import { anuncioNoEncontrado, esIdDeAnuncio } from '../repositories/anuncios.js';
+import { editarAnuncio } from '../services/editar-anuncio.js';
 import { publicarAnuncio } from '../services/publicar-anuncio.js';
-import { validarAnuncio } from '../validation/anuncios.js';
-import { validarPublicacion } from '../validation/fotos.js';
+import { validarEdicion, validarPublicacion } from '../validation/fotos.js';
 
 // E03: todas las rutas de anuncios son privadas y exigen el email confirmado.
 export function anunciosRouter() {
@@ -33,15 +33,21 @@ export function anunciosRouter() {
     response.json({ anuncio });
   });
 
-  // US-15: modificar un anuncio publicado (CA11-CA17, CA20). Mismas reglas que
-  // al publicar; `estado` y el resto de claves no previstas se ignoran.
-  // Mientras US-13 no esté en dev, el cuerpo es JSON y sin fotos, igual que
-  // POST en esta rama (US-12, CA30).
+  // US-15: modificar un anuncio publicado (CA5, CA7-CA17, CA20) con el mismo
+  // multipart que al publicar: `datos` (con `fotos_conservar`), `fotos` nuevas
+  // y `foto_principal`. `estado` y el resto de claves no previstas se ignoran.
   // Un :id que no es un UUID responde 404 antes de mirar el cuerpo («Propiedad»).
   router.patch('/:id', async (request, response) => {
     if (!esIdDeAnuncio(request.params.id)) throw anuncioNoEncontrado();
-    const datos = validarAnuncio(request.body);
-    const anuncio = await getAnuncios(request).editar(request.usuario.id, request.params.id, datos);
+    const { anuncio: datos, ...fotos } = validarEdicion(await leerPublicacion(request));
+    const anuncio = await editarAnuncio({
+      anuncios: getAnuncios(request),
+      storage: getFotosStorage(request),
+      usuarioId: request.usuario.id,
+      id: request.params.id,
+      datos,
+      ...fotos,
+    });
     response.json({ anuncio });
   });
 

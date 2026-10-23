@@ -1,7 +1,8 @@
 import busboy from 'busboy';
 import { ApiError } from '../errors.js';
 
-// US-13 CA12 y CA16: recepción de `POST /api/anuncios` en multipart/form-data.
+// US-13 CA12 y CA16: recepción de `POST /api/anuncios` en multipart/form-data
+// (también `PATCH /api/anuncios/:id`, US-15 CA11 y CA15).
 export const LIMITE_PETICION_MULTIPART = 41_943_040; // 40 MB en total
 export const LIMITE_BYTES_FOTO = 5_242_880; // 5 MB por foto
 // La parte `datos` tiene el mismo límite que un cuerpo JSON del resto de rutas.
