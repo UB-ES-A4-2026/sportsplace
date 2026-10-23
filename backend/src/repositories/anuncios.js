@@ -3,10 +3,17 @@ import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export const esIdDeAnuncio = (id) => typeof id === 'string' && UUID.test(id);
+
 // «Propiedad»: un anuncio que no existe, es de otro centro o está retirado
 // responde exactamente igual (404), para no revelar si existe.
 export function anuncioNoEncontrado() {
   return new ApiError(404, 'NO_ENCONTRADO', 'Anuncio no encontrado.');
+}
+
+// US-15 (CA15, CA20): un anuncio entregado ya no se puede modificar.
+export function anuncioNoEditable() {
+  return new ApiError(409, 'ANUNCIO_NO_EDITABLE', 'Este anuncio ya no se puede editar.');
 }
 
 const fecha = (valor) => (valor === null || valor === undefined ? null : new Date(valor).toISOString());
@@ -85,6 +92,40 @@ export function createAnunciosRepository(database) {
       );
       if (rows.length === 0) throw anuncioNoEncontrado();
       return aAnuncio(rows[0]);
+    },
+
+    // US-15 (CA7, CA9, CA14, CA15, CA17, CA20): sustituye los datos del anuncio
+    // del centro de la sesión sin tocar `estado` ni `publicado_en` y renueva
+    // `actualizado_en` aunque no cambie nada. La condición de estado va en el
+    // propio UPDATE, así que un anuncio que otra persona acaba de marcar como
+    // entregado no se modifica. Si no se actualiza ninguna fila, se mira el
+    // estado para distinguir 404 de 409: `entregado` y `retirado` son finales,
+    // de modo que esa segunda lectura no puede dar un resultado desfasado.
+    async editar(usuarioId, id, datos) {
+      if (!esIdDeAnuncio(id)) throw anuncioNoEncontrado();
+      const propio = `a.id = $2 AND a.centro_id = (
+        SELECT c.id FROM public.centros c WHERE c.usuario_id = $1
+      ) AND a.estado <> 'retirado'`;
+
+      const { rows } = await consultar(
+        `UPDATE public.anuncios a
+         SET titulo = $3, descripcion = $4, categoria = $5, deporte = $6,
+             unidades_disponibles = $7, estado_material = $8, actualizado_en = now()
+         WHERE ${propio} AND a.estado <> 'entregado'
+         RETURNING ${COLUMNAS}`,
+        [
+          usuarioId, id, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
+          datos.unidades_disponibles, datos.estado_material,
+        ],
+      );
+      if (rows.length > 0) return aAnuncio(rows[0]);
+
+      const { rows: actual } = await consultar(
+        `SELECT a.estado FROM public.anuncios a WHERE ${propio}`,
+        [usuarioId, id],
+      );
+      if (actual.length === 0) throw anuncioNoEncontrado();
+      throw anuncioNoEditable();
     },
   };
 }

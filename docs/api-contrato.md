@@ -51,6 +51,7 @@ Cualquier error de la API tiene esta forma:
 | 404 | `NO_ENCONTRADO` | La ruta o el recurso no existe. |
 | 405 | `METODO_NO_PERMITIDO` | Método HTTP no admitido en esa ruta. |
 | 409 | `EMAIL_YA_REGISTRADO` | Ya existe una cuenta con ese email. |
+| 409 | `ANUNCIO_NO_EDITABLE` | El anuncio está entregado y ya no se puede modificar (US-15). |
 | 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo supera 100 kB. |
 | 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
@@ -111,6 +112,7 @@ Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anu
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
+| `PATCH /api/anuncios/:id` | US-15 | Sí (email confirmado) | Alex |
 
 ### `GET /api/health`
 
@@ -241,6 +243,30 @@ Privada: `requireAuth` + `requireEmailConfirmado`.
 - `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
 - `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `PATCH /api/anuncios/:id` (US-15)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Modifica un anuncio del centro de la sesión. El cuerpo es el anuncio **completo**, con los mismos campos que `POST /api/anuncios` (no es un parche parcial):
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 10,
+  "estado_material": "buen_estado"
+}
+```
+
+- `200 { "anuncio": anuncio }`. No cambia `estado` ni `publicado_en`; `actualizado_en` se renueva siempre, aunque no cambie ningún dato.
+- Se pueden editar los anuncios `activo`, `pausado` y `reservado`.
+- Reglas y mensajes: los mismos que `POST /api/anuncios` («Tabla de campos» de E03). `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por cada campo incorrecto; no se modifica nada. Un cuerpo que no es JSON, `400 JSON_INVALIDO`.
+- Las claves `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID (con un `:id` que no es UUID, antes de validar el cuerpo).
+- `409 ANUNCIO_NO_EDITABLE`, `message` «Este anuncio ya no se puede editar.», si está `entregado` (también si otra persona del centro lo marca como entregado mientras se edita: la condición de estado va en el mismo `UPDATE`).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- Mientras US-13 y US-14 no estén en `dev`, el cuerpo es JSON sin fotos ni precio (US-12, CA30). Con US-13 pasa a `multipart/form-data`: parte `datos` (este JSON más `modalidad`, `precio_unitario_centimos` y `fotos_conservar`), partes `fotos` (0-8 nuevas) y parte `foto_principal` (`existente:<id>` o `nueva:<índice>`), con las reglas de CA11-CA13 y CA16 de US-15.
 
 ## Rutas privadas y confirmación del email (US-02)
 
