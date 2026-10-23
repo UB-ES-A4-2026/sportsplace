@@ -1,10 +1,19 @@
 # T13-1 · Metadatos y Storage de anuncios
 
-La migración [20261022180000_crear_anuncio_fotos_storage.sql](../supabase/migrations/20261022180000_crear_anuncio_fotos_storage.sql)
+La migración [20261023090000_crear_anuncio_fotos_storage.sql](../supabase/migrations/20261023090000_crear_anuncio_fotos_storage.sql)
 añade `anuncio_fotos`, sus restricciones y el bucket `anuncios`. **Depende de la
 tabla `public.anuncios` de T12-1.** La PR se mantiene en borrador hasta que US-12
 entre en `dev` y US-13 se actualice desde ella. No se aplica al compartido antes
 de revisión de Anass/Alex e integración coordinada.
+
+El nombre ordena esta migración **después** de
+`20261022210000_crear_anuncios.sql` (T12-1). La versión inicial tenía el timestamp
+`20261022180000`, anterior al de su dependencia, y fallaría en una instalación
+limpia. Se renombró antes de aplicarla al proyecto compartido, conservando el SQL
+sin cambios. Las ramas que incorporaron aquella versión (#124 y #123) deben
+incorporar también este renombrado; no deben conservar ambos archivos. Si alguien
+aplicó el nombre anterior en su base local desechable, debe recrear esa base desde
+el historial corregido. No se modifica el historial de migraciones compartido.
 
 - 1 a 5.242.880 bytes por foto, orden 1 a 8, único por anuncio y orden.
 - Como máximo una principal por anuncio (índice único parcial).
@@ -43,9 +52,11 @@ Prueba adicional de Storage real con datos desechables:
 3. Listar el bucket como `anon` y `authenticated`: no devuelve el objeto.
 4. Intentar subida como cliente: se rechaza. El servidor puede borrar su objeto.
 
-Hasta disponer de T12-1, se puede validar el SQL de forma aislada con una tabla
-`anuncios` mínima **solo como fixture temporal de prueba**, nunca como migración
-de la historia. Esa comprobación no acredita integración con el esquema de Anass.
+Para comprobar la integración mientras US-12 aún no está en `dev`, se puede usar
+en la base local desechable una copia exacta de la migración de T12-1 desde su
+commit de historia. Esa copia pertenece solo al entorno de prueba: no se añade
+una tabla ficticia ni se integra la otra historia en esta rama. Primero se aplica
+T12-1, después T13-1 y finalmente se ejecutan estas comprobaciones.
 
 ## Evidencia del 22/10/2026
 
@@ -54,5 +65,17 @@ de prueba (solo su PK) y todas las comprobaciones SQL terminaron en `ROLLBACK`.
 También se comprobó Storage por HTTP: subida con la clave local del servidor,
 descarga pública 200 con el mismo PNG, listado vacío y subida rechazada tanto
 para `anon` como para un usuario autenticado; borrado final por el servidor.
-Compose valida sin errores. Pendiente repetir la integración con la migración
-real de T12-1 y aplicar al compartido tras revisión. No se modificó el compartido.
+Compose valida sin errores. No se modificó el compartido.
+
+## Evidencia del 23/10/2026
+
+Repetida la validación en Supabase local después de aplicar la migración **real**
+de T12-1 (`20261022210000_crear_anuncios.sql`, historia US-12 `706fabb`) y su semilla
+de 23 anuncios de T12-8. La migración renombrada de T13-1 se aplica después de
+T12-1. Las comprobaciones de `anuncio_fotos.sql` pasan y terminan en `ROLLBACK`.
+También pasan de nuevo subida del servidor, descarga pública del PNG, listado
+vacío y rechazo de escritura para `anon` y `authenticated`, con borrado final del
+objeto de prueba. No se necesita una tabla `anuncios` ficticia para esta evidencia.
+
+Pendiente la integración de US-12 en `dev`, actualización de la historia US-13,
+revisión ajena y aplicación coordinada al Supabase compartido.
