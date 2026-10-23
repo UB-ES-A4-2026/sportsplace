@@ -17,7 +17,7 @@ El frontend **solo habla con nuestra API** (`/api/...`). No llama a Supabase Aut
 ## Convenciones
 
 - Todas las rutas empiezan por `/api`. En desarrollo, Vite redirige `/api` al servidor.
-- Peticiones y respuestas en JSON (`Content-Type: application/json`).
+- Peticiones y respuestas en JSON (`Content-Type: application/json`). Excepción: `POST /api/anuncios` recibe `multipart/form-data` (US-13); su respuesta sigue siendo JSON.
 - Las rutas privadas necesitan la cabecera `Authorization: Bearer <access_token>`.
 - Los campos se escriben en `snake_case` y en castellano, igual que en la base de datos.
 - Todas las respuestas llevan `Cache-Control: no-store`.
@@ -51,11 +51,13 @@ Cualquier error de la API tiene esta forma:
 | 404 | `NO_ENCONTRADO` | La ruta o el recurso no existe. |
 | 405 | `METODO_NO_PERMITIDO` | Método HTTP no admitido en esa ruta. |
 | 409 | `EMAIL_YA_REGISTRADO` | Ya existe una cuenta con ese email. |
-| 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo supera 100 kB. |
+| 409 | `ANUNCIO_NO_EDITABLE` | El anuncio está entregado y ya no se puede modificar (US-15). |
+| 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo JSON supera 100 kB, o la petición multipart de `POST /api/anuncios` o `PATCH /api/anuncios/:id` supera 40 MB (41.943.040 bytes). |
 | 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
 | 503 | `BASE_DATOS_NO_DISPONIBLE` | PostgreSQL no responde o no está configurado. |
 | 503 | `AUTH_NO_DISPONIBLE` | Supabase Auth no responde o no está configurado. |
+| 503 | `ALMACENAMIENTO_NO_DISPONIBLE` | Supabase Storage no responde o falta `SUPABASE_SERVICE_ROLE_KEY` (fotos de los anuncios, US-13). |
 
 ### Objetos comunes
 
@@ -73,6 +75,32 @@ Cualquier error de la API tiene esta forma:
 
 `expires_at` está en segundos Unix. El `access_token` dura una hora; antes de que caduque, el frontend usa `POST /api/auth/refresh`.
 
+`anuncio` (E03, «Objeto `anuncio`» de `docs/especificacion/E03-publicacion-de-material.md`):
+
+```json
+{
+  "id": "uuid",
+  "centro_id": "uuid",
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado",
+  "modalidad": "donacion",
+  "precio_unitario_centimos": null,
+  "estado": "activo",
+  "fotos": [
+    { "id": "uuid", "url": "https://<proyecto>.supabase.co/storage/v1/object/public/anuncios/<centro_id>/<anuncio_id>/<foto_id>.jpg", "orden": 1, "es_principal": true }
+  ],
+  "publicado_en": "2026-11-03T10:15:00.000Z",
+  "creado_en": "2026-11-03T10:15:00.000Z",
+  "actualizado_en": "2026-11-03T10:15:00.000Z"
+}
+```
+
+Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una tiene `es_principal: true`; `url` es la URL pública del bucket `anuncios`, que responde sin sesión (US-13). Mientras US-14 no esté en `dev`, todos los anuncios salen como `modalidad: "donacion"` y `precio_unitario_centimos: null` (US-12, CA30).
+
 ## Endpoints
 
 | Método y ruta | Historia | Privada | Responsable backend |
@@ -85,6 +113,9 @@ Cualquier error de la API tiene esta forma:
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
+| `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
+| `PATCH /api/anuncios/:id` | US-15 | Sí (email confirmado) | Alex |
 
 ### `GET /api/health`
 
@@ -185,6 +216,111 @@ Privada. Sin cuerpo.
 - `401 NO_AUTENTICADO` si la sesión ya no era válida. El frontend lo trata igual que un cierre correcto.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
+
+### `POST /api/anuncios` (US-12, US-13)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo `multipart/form-data` (US-13 CA12) con estas partes:
+
+| Parte | Contenido |
+|---|---|
+| `datos` | Texto JSON con los campos del anuncio (abajo). Como máximo 100 kB. |
+| `fotos` | De 1 a 8 archivos JPG, PNG o WebP de 5 MB (5.242.880 bytes) como máximo cada uno, en el orden en que se añadieron. Una parte `fotos` por archivo. |
+| `foto_principal` | Opcional. Índice 1..n de la foto principal, como texto. Si falta, la principal es la 1. |
+
+`datos`:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado"
+}
+```
+
+Desde el navegador se construye con `FormData` (sin fijar a mano el `Content-Type`, que lleva el `boundary`):
+
+```js
+const formulario = new FormData();
+formulario.append('datos', JSON.stringify(datos));
+for (const archivo of fotos) formulario.append('fotos', archivo);
+formulario.append('foto_principal', String(indicePrincipal));
+fetch('/api/anuncios', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formulario });
+```
+
+- `201 { "anuncio": anuncio }` con la cabecera `Location: /api/anuncios/<id>`. El anuncio se crea `activo`, del centro de la sesión, con `publicado_en` = `creado_en` = `actualizado_en`, y `fotos` con n elementos (`orden` 1..n, una con `es_principal: true`).
+- Reglas y mensajes: «Tabla de campos» de E03. Los textos se recortan de espacios y las longitudes se cuentan en caracteres Unicode. `unidades_disponibles` solo acepta un entero JSON entre 1 y 9999: `"3"`, `3.0` o `2.5` se rechazan.
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por **cada** campo incorrecto, incluidas las fotos (US-13 CA14). No se crea nada ni se sube ninguna foto.
+  - `details.datos` «Faltan los datos del anuncio.»: falta la parte `datos`, no es JSON o supera 100 kB. También si el cuerpo no es multipart (por ejemplo, JSON). Un `datos` JSON que no es un objeto (p. ej. `[]`) devuelve los seis campos obligatorios.
+  - `details.fotos`: 0 fotos → «Añade al menos una foto.»; más de 8 → «Puedes añadir 8 fotos como máximo.»; algún archivo que no es JPG, PNG o WebP → «Solo se admiten fotos JPG, PNG o WebP.»; alguno de más de 5.242.880 bytes → «Cada foto debe pesar 5 MB como máximo.» (si hay varios problemas, el primero de esta lista).
+  - El tipo se decide por el contenido (cabecera binaria: JPEG `FF D8 FF`, PNG `89 50 4E 47`, WebP `RIFF....WEBP`), nunca por la extensión ni por el `Content-Type` de la parte (US-13 CA13).
+  - `details.foto_principal` «La foto principal no es válida.»: `foto_principal` no es un entero o está fuera de 1..n.
+- `413 PETICION_DEMASIADO_GRANDE`: la petición entera supera 41.943.040 bytes (40 MB). Se responde con `Connection: close`.
+- Las claves de `datos` `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran. Las partes desconocidas también.
+- Fotos en Supabase Storage, bucket `anuncios`, ruta `<centro_id>/<anuncio_id>/<foto_id>.<jpg|png|webp>`, sin modificar. El nombre original del archivo no se guarda. Solo el servidor escribe en el bucket, con `SUPABASE_SERVICE_ROLE_KEY`.
+- Creación atómica (US-13 CA20): si falla la subida de cualquier foto o la base de datos, no queda ni el anuncio ni ninguna foto (el servidor borra las ya subidas). `503 ALMACENAMIENTO_NO_DISPONIBLE` si falla Storage, `503 BASE_DATOS_NO_DISPONIBLE` si falla PostgreSQL y `500 ERROR_INTERNO` si la base de datos rechaza datos ya validados.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`: se comprueban antes de leer el cuerpo.
+- US-14 añadirá `modalidad` y `precio_unitario_centimos` a `datos`.
+
+### `GET /api/anuncios/:id` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`.
+
+- `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado, con sus `fotos` en orden (US-13).
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `PATCH /api/anuncios/:id` (US-15)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Modifica un anuncio del centro de la sesión. Cuerpo `multipart/form-data` (US-15 CA11), como `POST /api/anuncios`:
+
+| Parte | Contenido |
+|---|---|
+| `datos` | Texto JSON con el anuncio **completo** (los mismos campos que al publicar, no es un parche parcial) más `fotos_conservar`. Como máximo 100 kB. |
+| `fotos` | De 0 a 8 fotos **nuevas**, JPG, PNG o WebP de 5 MB como máximo cada una, en orden. Una parte `fotos` por archivo. |
+| `foto_principal` | Obligatoria. `existente:<id>` (una foto de `fotos_conservar`) o `nueva:<índice 1..n>` (una de las nuevas). |
+
+`datos`:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 10,
+  "estado_material": "buen_estado",
+  "fotos_conservar": ["<id de F2>"]
+}
+```
+
+`fotos_conservar` es el array ordenado de ids de las fotos actuales que se quedan (vacío si se cambian todas).
+
+```js
+const formulario = new FormData();
+formulario.append('datos', JSON.stringify({ ...datos, fotos_conservar: idsConservados }));
+for (const archivo of fotosNuevas) formulario.append('fotos', archivo);
+formulario.append('foto_principal', principal); // 'existente:<id>' o 'nueva:<n>'
+fetch(`/api/anuncios/${id}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` }, body: formulario });
+```
+
+- `200 { "anuncio": anuncio }`. No cambia `estado` ni `publicado_en`; `actualizado_en` se renueva siempre, aunque no cambie ningún dato.
+- Fotos (CA8, CA12): el orden final es primero las de `fotos_conservar` en su orden y después las nuevas, con `orden` 1..n. Las conservadas mantienen su `id` y su URL; las que no están en `fotos_conservar` se borran de `anuncio_fotos` y de Storage; las nuevas se suben a `<centro_id>/<anuncio_id>/<foto_id>.<ext>`.
+- Se pueden editar los anuncios `activo`, `pausado` y `reservado`.
+- Reglas y mensajes: los mismos que `POST /api/anuncios` («Tabla de campos» de E03). `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por cada campo incorrecto; no se modifica nada ni se sube ninguna foto.
+  - `details.datos` «Faltan los datos del anuncio.»: falta la parte `datos`, no es JSON o el cuerpo no es multipart.
+  - `details.fotos`: total final (conservadas + nuevas) 0 → «Añade al menos una foto.»; más de 8 → «Puedes añadir 8 fotos como máximo.»; tipo o tamaño de una nueva, como al publicar.
+  - `details.fotos_conservar` «Alguna foto no pertenece a este anuncio.»: falta, no es un array de ids distintos o algún id no es una foto de este anuncio (CA13). La pertenencia se comprueba contra la base de datos después del resto de validaciones.
+  - `details.foto_principal` «La foto principal no es válida.»: falta, no tiene el formato `existente:<id>` / `nueva:<n>` o no apunta a una foto final.
+- Las claves de `datos` `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID (con un `:id` que no es UUID, antes de leer el cuerpo).
+- `409 ANUNCIO_NO_EDITABLE`, `message` «Este anuncio ya no se puede editar.», si está `entregado`. Se comprueba antes de subir las fotos y otra vez dentro de la transacción, con el anuncio bloqueado: si otra persona del centro lo marca como entregado mientras se edita, también 409.
+- `413 PETICION_DEMASIADO_GRANDE`: la petición entera supera 40 MB.
+- Atomicidad (CA16): datos y fotos se guardan en una transacción. Si algo falla, el anuncio y sus fotos quedan como estaban y se borran las nuevas ya subidas (`503 ALMACENAMIENTO_NO_DISPONIBLE`, `503 BASE_DATOS_NO_DISPONIBLE` o `500 ERROR_INTERNO`, como al publicar). Las fotos quitadas se borran de Storage solo después de confirmar la transacción.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`.
+- US-14 añadirá `modalidad` y `precio_unitario_centimos` a `datos`.
 
 ## Rutas privadas y confirmación del email (US-02)
 
