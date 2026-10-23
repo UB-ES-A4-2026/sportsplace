@@ -2,6 +2,11 @@ import { ApiError } from '../errors.js';
 
 const UNIQUE_VIOLATION = '23505';
 
+// US-07: columnas que devuelven GET y PATCH /api/centros/mio (CA17).
+const PERFIL = `id, nombre, email, localidad, direccion, codigo_postal, telefono,
+  descripcion, email_contacto, web, creado_en`;
+const EDITABLES = ['nombre', 'descripcion', 'telefono', 'email_contacto', 'web'];
+
 export function emailAlreadyRegistered() {
   return new ApiError(409, 'EMAIL_YA_REGISTRADO', 'Ya existe una cuenta con este email.');
 }
@@ -45,6 +50,40 @@ export function createCentrosRepository(database) {
          WHERE usuario_id = $1 AND email_confirmado_en IS NULL`,
         [usuarioId, confirmadoEn],
       );
+    },
+
+    // US-07: centro al que pertenece el usuario, o null si no tiene ninguno.
+    // En este sprint es el de centros.usuario_id; US-84 lo amplía a miembros.
+    async centroDelUsuario(usuarioId) {
+      try {
+        const { rows } = await database.query(
+          `SELECT ${PERFIL} FROM public.centros WHERE usuario_id = $1`,
+          [usuarioId],
+        );
+        return rows[0] ?? null;
+      } catch (error) {
+        console.error(`No se pudo leer el centro: ${error?.code ?? 'error desconocido'}`);
+        throw databaseUnavailable();
+      }
+    },
+
+    // US-07: guarda los campos recibidos (ya validados) y siempre actualiza
+    // actualizado_en (CA21). Los que no llegan no cambian.
+    async actualizarPerfil(usuarioId, cambios) {
+      const campos = EDITABLES.filter((campo) => campo in cambios);
+      const asignaciones = campos.map((campo, indice) => `${campo} = $${indice + 2}`);
+      try {
+        const { rows } = await database.query(
+          `UPDATE public.centros SET ${[...asignaciones, 'actualizado_en = now()'].join(', ')}
+           WHERE usuario_id = $1
+           RETURNING ${PERFIL}`,
+          [usuarioId, ...campos.map((campo) => cambios[campo])],
+        );
+        return rows[0] ?? null;
+      } catch (error) {
+        console.error(`No se pudo actualizar el perfil del centro: ${error?.code ?? 'error desconocido'}`);
+        throw databaseUnavailable();
+      }
     },
   };
 }
