@@ -4,6 +4,8 @@ Responsables: Anass y Alex (backend), revisado con Lucía y Marta (frontend). Sp
 
 Este documento es el acuerdo entre backend y frontend para las historias del Sprint 0: US-01, US-02, US-03 y US-67. Si un endpoint cambia, se actualiza aquí en la misma pull request.
 
+T04-1 añade la configuración del correo de recuperación de US-04. Sus endpoints y pantallas se incorporan en T04-2 y T04-3; la plantilla por sí sola no completa el flujo.
+
 ## Decisiones
 
 | Decisión | Elegido | Motivo |
@@ -185,6 +187,43 @@ Privada. Sin cuerpo.
 - `401 NO_AUTENTICADO` si la sesión ya no era válida. El frontend lo trata igual que un cierre correcto.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
+
+## Configuración del correo de recuperación (T04-1 / US-04)
+
+Responsable: Carlos. Referencias: [tarea #90](https://github.com/UB-ES-A4-2026/sportsplace/issues/90), [historia #89](https://github.com/UB-ES-A4-2026/sportsplace/issues/89) y [US-04, CA10 y CA11](especificacion/E01-E02-registro-y-perfil.md). No necesita cambios en la tabla `centros` ni variables nuevas en la web.
+
+### Aplicar en Supabase
+
+1. Abrir el proyecto del entorno que se va a probar. En **Authentication → URL Configuration**, comprobar **Site URL**: `http://localhost:5173` para el entorno local. El enlace usa ese valor; debe corresponder a la web de ese entorno. No cambiarlo por la URL de la API.
+2. En **Authentication → Emails → Reset password**, fijar el asunto exacto **Cambia tu contraseña de Sportsplace** y copiar el contenido de [recuperar-contrasena.html](../supabase/templates/recuperar-contrasena.html). Guardar y volver a abrir para comprobar la persistencia.
+3. En la configuración del proveedor **Email**, fijar **Email OTP Expiration** a **3600 segundos**. Guardar y recargar para verificarlo. Es una configuración del proveedor de email, compartida con otros enlaces de Auth; registrar su valor junto con la plantilla.
+4. En **Authentication → Emails → SMTP Settings**, conservar el SMTP personalizado existente. La [validación del Sprint 0](sprint-0-validacion-devops.md#resultado-de-la-revisión-manual-comunicada-por-carlos) registra Gmail con puerto 465 y recepción real. Comprobar que sigue habilitado sin mostrar ni reemplazar su contraseña de aplicación. No sustituirlo por el servicio de correo de prueba de Supabase.
+
+El botón debe decir **Cambiar contraseña** y tener exactamente este destino en la plantilla:
+
+```html
+{{ .SiteURL }}/restablecer-contrasena?token_hash={{ .TokenHash }}&type=recovery
+```
+
+No sustituir `.TokenHash` por `.Token` ni por `.ConfirmationURL`: el navegador abre la página de Sportsplace y el backend de T04-2 verifica el token de tipo `recovery`. No se muestra ni se guarda el enlace real en logs o evidencias públicas.
+
+### Probar el correo real
+
+1. Usar una cuenta de pruebas existente cuyo buzón controle la persona que realiza la comprobación. No repetir su registro ni eliminarla para forzar el envío. Tener disponible la web correspondiente a **Site URL**.
+2. Desde **Authentication → Users**, abrir esa cuenta y usar la acción de enviar recuperación de contraseña una sola vez. Cuando T04-2 y T04-3 estén integradas en la historia, repetir la validación mediante el formulario `/recuperar-contrasena` para probar el flujo de la aplicación. Una prueba directa desde el panel solo acredita la configuración y la entrega del correo.
+3. Comprobar en el buzón la recepción del asunto **Cambia tu contraseña de Sportsplace**, el botón **Cambiar contraseña**, la indicación de caducidad de una hora y el destino de la web con ruta `/restablecer-contrasena`, `token_hash` no vacío y `type=recovery`. Registrar hora de petición y recepción, sin dirección del buzón, token, contraseña ni URL completa.
+4. Con T04-2 y T04-3 disponibles, QA valida el cambio de contraseña y los restantes CA de US-04. Para CA11, probar enlaces distintos a los 59 y 61 minutos: el primero funciona y el segundo devuelve `ENLACE_INVALIDO`. No solicitar un nuevo enlace para una cuenta mientras se mide el anterior: solo sirve el último (CA13). No atribuir estas comprobaciones a una inspección estática de la plantilla.
+5. Adjuntar a la issue o PR la fecha, entorno, commit, valor de caducidad comprobado y resultado de recepción. La tarea requiere configuración aplicada, correo real probado, revisión ajena y fusión de su PR en `story/US-04-recuperar-contrasena-olvido`.
+
+### Estado de la configuración
+
+Verificado el **23/10/2026** en `sportsplace-dev`, con la sesión de Carlos:
+
+- Plantilla **Reset password** guardada; asunto y HTML coinciden con el archivo versionado después de recargar el panel.
+- **Email OTP expiration = 3600 s**, ya configurado al abrir el proveedor Email.
+- **Site URL = http://localhost:5173** y SMTP personalizado habilitado con puerto **465**, conservados.
+
+**Pendiente:** acreditar la recepción de un correo real en un buzón de pruebas controlado, revisión ajena e integración. La comprobación del panel no acredita la entrega del correo ni los casos de caducidad de 59/61 minutos. Los endpoints y pantallas de recuperación requieren T04-2 y T04-3.
 
 ## Rutas privadas y confirmación del email (US-02)
 
