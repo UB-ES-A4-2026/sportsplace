@@ -3,10 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { after, before, beforeEach, test } from 'node:test';
 import { anuncioNoEncontrado } from '../src/repositories/anuncios.js';
 import { databaseUnavailable } from '../src/repositories/centros.js';
-import { postJson, startApi } from './helpers.js';
+import { fotoJpg, formularioAnuncio, startApi } from './helpers.js';
 
 // US-12: POST /api/anuncios y GET /api/anuncios/:id (CA15-CA24).
-// Los dobles simulan Supabase Auth (tokens) y la tabla anuncios con su propiedad.
+// Los dobles simulan Supabase Auth (tokens), la tabla anuncios con su propiedad
+// y Storage. Desde US-13 se publica en multipart con al menos una foto; los
+// casos de las fotos están en anuncios-fotos-api.test.js.
 const usuarios = {
   'token-a': { id: 'usuario-a', email: 'a@example.com', email_confirmado: true },
   'token-b': { id: 'usuario-b', email: 'b@example.com', email_confirmado: true },
@@ -19,13 +21,18 @@ let filas;
 let creaciones;
 let caida;
 const fakeAnuncios = {
-  async crear(usuarioId, datos) {
+  async centroDe(usuarioId) {
+    if (caida) throw databaseUnavailable();
+    return centroDe[usuarioId];
+  },
+  async crear({ id, centroId, datos, fotos }) {
     if (caida) throw databaseUnavailable();
     creaciones.push(datos);
     const ahora = '2026-11-03T10:15:00.000Z';
     const anuncio = {
-      id: randomUUID(), centro_id: centroDe[usuarioId], ...datos,
-      modalidad: 'donacion', precio_unitario_centimos: null, estado: 'activo', fotos: [],
+      id, centro_id: centroId, ...datos,
+      modalidad: 'donacion', precio_unitario_centimos: null, estado: 'activo',
+      fotos: fotos.map((foto) => ({ id: foto.id, url: `https://storage.test/${foto.ruta}`, orden: foto.orden, es_principal: foto.es_principal })),
       publicado_en: ahora, creado_en: ahora, actualizado_en: ahora,
     };
     filas.push(anuncio);
@@ -39,8 +46,10 @@ const fakeAnuncios = {
   },
 };
 
+const fakeFotos = { subir: async () => {}, borrar: async () => {} };
+
 let api;
-before(async () => { api = await startApi({ auth: fakeAuth, anuncios: fakeAnuncios }); });
+before(async () => { api = await startApi({ auth: fakeAuth, anuncios: fakeAnuncios, fotos: fakeFotos }); });
 after(() => api.close());
 beforeEach(() => {
   filas = [];
@@ -57,7 +66,12 @@ const valido = {
   estado_material: 'buen_estado',
 };
 const conToken = (token) => ({ Authorization: `Bearer ${token}` });
-const publicar = (cuerpo, token = 'token-a') => postJson(`${api.baseUrl}/api/anuncios`, cuerpo, conToken(token));
+const enviar = (url, datos, token) => fetch(url, {
+  method: 'POST',
+  headers: token ? conToken(token) : {},
+  body: formularioAnuncio({ datos, fotos: [{ contenido: fotoJpg }] }),
+});
+const publicar = (datos, token = 'token-a') => enviar(`${api.baseUrl}/api/anuncios`, datos, token);
 const ver = (id, token = 'token-a') => fetch(`${api.baseUrl}/api/anuncios/${id}`, { headers: conToken(token) });
 
 test('US-12 CA15/CA16/E2E-1: publicar con datos correctos responde 201 con el anuncio y su Location', async () => {
@@ -91,14 +105,10 @@ test('US-12 CA17: con campos incorrectos responde 400 con todos los errores y no
   assert.deepEqual(creaciones, []);
 });
 
-test('US-12 CA18: un cuerpo que no es JSON da JSON_INVALIDO; `[]` da los seis campos obligatorios', async () => {
-  const roto = await fetch(`${api.baseUrl}/api/anuncios`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...conToken('token-a') },
-    body: '{"titulo": ',
-  });
+test('US-12 CA18 y US-13 CA15: `datos` que no es JSON da details.datos; `[]` da los seis campos obligatorios', async () => {
+  const roto = await publicar('{"titulo": ');
   assert.equal(roto.status, 400);
-  assert.equal((await roto.json()).error.code, 'JSON_INVALIDO');
+  assert.deepEqual((await roto.json()).error.details, { datos: 'Faltan los datos del anuncio.' });
 
   const lista = await publicar([]);
   assert.equal(lista.status, 400);
@@ -108,12 +118,8 @@ test('US-12 CA18: un cuerpo que no es JSON da JSON_INVALIDO; `[]` da los seis ca
   assert.deepEqual(creaciones, []);
 });
 
-test('US-12: unidades escritas como 3.0 en el JSON se rechazan', async () => {
-  const response = await fetch(`${api.baseUrl}/api/anuncios`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...conToken('token-a') },
-    body: JSON.stringify(valido).replace('"unidades_disponibles":12', '"unidades_disponibles":3.0'),
-  });
+test('US-12: unidades escritas como 3.0 en el JSON de `datos` se rechazan', async () => {
+  const response = await publicar(JSON.stringify(valido).replace('"unidades_disponibles":12', '"unidades_disponibles":3.0'));
 
   assert.equal(response.status, 400);
   assert.deepEqual((await response.json()).error.details, {
@@ -122,7 +128,7 @@ test('US-12: unidades escritas como 3.0 en el JSON se rechazan', async () => {
 });
 
 test('US-12 CA19: sin token, con un token no válido o sin confirmar el email no se publica', async () => {
-  const sinToken = await postJson(`${api.baseUrl}/api/anuncios`, valido);
+  const sinToken = await enviar(`${api.baseUrl}/api/anuncios`, valido);
   assert.equal(sinToken.status, 401);
   assert.equal((await sinToken.json()).error.code, 'NO_AUTENTICADO');
 
@@ -142,9 +148,9 @@ test('US-12 CA19: con la base de datos caída responde 503 BASE_DATOS_NO_DISPONI
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error.code, 'BASE_DATOS_NO_DISPONIBLE');
 
-  const sinBase = await startApi({ auth: fakeAuth });
+  const sinBase = await startApi({ auth: fakeAuth, fotos: fakeFotos });
   try {
-    const sinConfigurar = await postJson(`${sinBase.baseUrl}/api/anuncios`, valido, conToken('token-a'));
+    const sinConfigurar = await enviar(`${sinBase.baseUrl}/api/anuncios`, valido, 'token-a');
     assert.equal(sinConfigurar.status, 503);
     assert.equal((await sinConfigurar.json()).error.code, 'BASE_DATOS_NO_DISPONIBLE');
   } finally {

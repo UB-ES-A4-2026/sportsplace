@@ -7,14 +7,16 @@ import { healthRouter } from './routes/health.js';
 import { marcarEnterosConDecimales } from './validation/anuncios.js';
 
 // `auth` es el servicio de autenticación (Supabase Auth en producción y un
-// doble en las pruebas); `centros` y `anuncios`, los repositorios de sus tablas.
+// doble en las pruebas); `centros` y `anuncios`, los repositorios de sus tablas;
+// `fotos`, el bucket de Storage de las fotos de los anuncios (US-13).
 // Cualquiera puede ser null si falta su configuración.
-export function createApp({ auth = null, centros = null, anuncios = null } = {}) {
+export function createApp({ auth = null, centros = null, anuncios = null, fotos = null } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('auth', auth);
   app.set('centros', centros);
   app.set('anuncios', anuncios);
+  app.set('fotos', fotos);
 
   app.use((request, response, next) => {
     response.set('Cache-Control', 'no-store');
