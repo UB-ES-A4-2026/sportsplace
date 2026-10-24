@@ -223,16 +223,23 @@ Verificado el **23/10/2026** en `sportsplace-dev`, con la sesión de Carlos:
 - **Email OTP expiration = 3600 s**, ya configurado al abrir el proveedor Email.
 - **Site URL = http://localhost:5173** y SMTP personalizado habilitado con puerto **465**, conservados.
 
-Prueba real del **23/10/2026 a las 20:23:59 (Europe/Madrid)**: la petición de
-recuperación devuelve **500** y el registro de Auth indica que Gmail rechaza
-la autenticación SMTP con **535 / 5.7.8 BadCredentials**. No se recibió el correo
-en el buzón de pruebas. Actualizar la contraseña de aplicación en los ajustes SMTP
-del panel y repetir la comprobación de recepción; no añadirla al repositorio.
+La incidencia SMTP quedó resuelta al guardar una **contraseña de aplicación de
+Google** en el panel. Los intentos previos devolvían 535 (credenciales rechazadas)
+y 534 (contraseña de aplicación requerida); no se publicó esa credencial.
 
-**Pendiente:** reparar la credencial SMTP, acreditar la recepción del correo,
-revisión ajena e integración. La comprobación del panel no acredita la entrega
-del correo ni los casos de caducidad de 59/61 minutos. Los endpoints y pantallas
-de recuperación requieren T04-2 y T04-3.
+La última solicitud, realizada el **23/10/2026 a las 22:14 (Europe/Madrid)**,
+produjo un correo recibido a las **22:14** en el buzón de pruebas. La inspección
+del mensaje el **24/10/2026** verificó:
+
+- Asunto **Cambia tu contraseña de Sportsplace** y botón **Cambiar contraseña**.
+- Texto **El enlace caduca en 1 hora.**
+- Destino en `http://localhost:5173`, ruta `/restablecer-contrasena`, parámetro
+  `token_hash` no vacío y `type=recovery`, sin registrar el token ni la URL completa.
+
+Esta evidencia acredita la entrega real y el contenido de la plantilla de T04-1.
+No se utilizó el enlace ni se cambió la contraseña de una cuenta. Los endpoints,
+pantallas y casos de caducidad de 59/61 minutos requieren T04-2 y T04-3.
+**Pendiente:** aprobación del último commit e integración mediante merge commit.
 
 ## Rutas privadas y confirmación del email (US-02)
 
