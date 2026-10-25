@@ -46,7 +46,7 @@ async function entrarPorApi(email, password) {
     body: JSON.stringify({ email, password }),
   });
   expect(response.status).toBe(200);
-  return (await response.json()).access_token;
+  return (await response.json()).sesion.access_token;
 }
 
 function publicar(token, fotos, fotoPrincipal) {
