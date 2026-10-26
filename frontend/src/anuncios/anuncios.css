@@ -32,3 +32,27 @@
 .aviso-exito { color: #14472f; background: #e3f3e8; }
 .aviso-error { color: #7d2c24; background: #fbeae7; }
 @media (max-width: 560px) { .aviso { top: 12px; right: 12px; left: 12px; max-width: none; } }
+
+/* Ficha propia del anuncio (US-12 T12-4) */
+.enlace-volver { display: inline-block; margin-bottom: 18px; font-size: 14px; font-weight: 650; text-decoration: none; }
+.enlace-volver:hover { text-decoration: underline; }
+.ficha-cabecera { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; }
+.ficha-cabecera h1 { overflow-wrap: anywhere; }
+.etiqueta-estado { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.etiqueta-verde { color: #14472f; background: #dff1e5; }
+.etiqueta-gris { color: #4a5651; background: #e6ebe8; }
+.etiqueta-naranja { color: #7a3f06; background: #fde9d2; }
+.etiqueta-azul { color: #1d3f72; background: #e0eafa; }
+.etiqueta-morado { color: #4d2d7a; background: #ece4f8; }
+.ficha-datos { width: 100%; max-width: 560px; margin-top: 28px; border-collapse: collapse; font-size: 15px; }
+.ficha-datos th, .ficha-datos td { padding: 10px 0; border-bottom: 1px solid #dfe7df; text-align: left; vertical-align: top; }
+.ficha-datos th { width: 50%; padding-right: 16px; color: #587068; font-weight: 600; }
+.ficha-descripcion { margin-top: 28px; }
+.ficha-descripcion h2 { margin-bottom: 10px; font-size: 17px; }
+.ficha-descripcion p { margin: 0; color: #2f4a42; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
+.ficha-fechas { margin: 24px 0 0; color: #7a8b81; font-size: 13px; }
+.ficha-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.ficha-acciones:empty { display: none; }
+.boton-enlace { display: inline-block; margin-top: 22px; padding: 12px 18px; border-radius: 8px; color: #fff; background: #174f46; font-size: 14px; font-weight: 650; text-decoration: none; }
+.pagina .boton-enlace { color: #fff; }
+.boton-enlace:hover { background: #256455; }

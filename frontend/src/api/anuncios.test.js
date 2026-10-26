@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { crearAnuncio } from './anuncios.js';
+import { crearAnuncio, obtenerAnuncio } from './anuncios.js';
 
 describe('crearAnuncio', () => {
   test('CA15-CA16: POST /anuncios con el cuerpo en JSON y devuelve el `anuncio` de la respuesta', async () => {
@@ -20,5 +20,19 @@ describe('crearAnuncio', () => {
   test('si la API falla, el error llega al formulario', async () => {
     const error = new Error('fallo');
     await assert.rejects(crearAnuncio({}, async () => { throw error; }), error);
+  });
+});
+
+describe('obtenerAnuncio', () => {
+  test('CA20: GET /anuncios/:id (id escapado) y devuelve el `anuncio`', async () => {
+    const llamadas = [];
+    const anuncio = { id: 'x' };
+    const signal = new AbortController().signal;
+    const resultado = await obtenerAnuncio('no es/uuid', { signal }, async (ruta, opciones) => {
+      llamadas.push({ ruta, opciones });
+      return { anuncio };
+    });
+    assert.deepEqual(llamadas, [{ ruta: '/anuncios/no%20es%2Fuuid', opciones: { signal } }]);
+    assert.equal(resultado, anuncio);
   });
 });

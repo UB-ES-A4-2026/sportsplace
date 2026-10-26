@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router';
 import Layout from './components/Layout.jsx';
+import AnuncioPage from './pages/AnuncioPage.jsx';
 import RutaPrivada from './components/RutaPrivada.jsx';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage.jsx';
 import EntrarPage from './pages/EntrarPage.jsx';
@@ -20,6 +21,7 @@ export default function App() {
         <Route element={<RutaPrivada />}>
           <Route path="panel" element={<PanelPage />} />
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
+          <Route path="anuncios/:id" element={<AnuncioPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>
