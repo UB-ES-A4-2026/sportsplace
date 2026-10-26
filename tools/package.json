@@ -12,7 +12,8 @@
     "test": "node --test",
     "test-env:up": "node scripts/e2e-environment.js up",
     "test-env:seed": "node scripts/e2e-environment.js seed",
-    "test-env:down": "node scripts/e2e-environment.js down"
+    "test-env:down": "node scripts/e2e-environment.js down",
+    "deploy:check": "node scripts/check-deployment.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
