@@ -195,10 +195,10 @@ test('US-16: con la base de datos caída o sin configurar responde 503', async (
   }
 });
 
-test('US-16: las rutas de US-12 siguen igual (GET /:id no acepta POST)', async () => {
+test('US-16: POST sobre /:id sigue sin estar permitido', async () => {
   const response = await fetch(`${api.baseUrl}/api/anuncios/${randomUUID()}`, {
     method: 'POST', headers: { Authorization: 'Bearer token-a' },
   });
   assert.equal(response.status, 405);
-  assert.equal(response.headers.get('allow'), 'GET');
+  assert.equal(response.headers.get('allow'), 'GET, DELETE');
 });

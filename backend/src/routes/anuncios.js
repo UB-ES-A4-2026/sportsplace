@@ -39,8 +39,15 @@ export function anunciosRouter() {
     router.all(`/:id/${accion}`, methodNotAllowed(['POST']));
   }
 
+  // US-70 (CA7-CA12): retirada lógica. La fila no se borra: pasa a `retirado`
+  // con retirado_en y desde entonces cualquier ruta responde 404 (CA11).
+  router.delete('/:id', async (request, response) => {
+    await getAnuncios(request).transicionar(request.usuario.id, request.params.id, ACCIONES.retirar);
+    response.status(204).end();
+  });
+
   router.all('/', methodNotAllowed(['POST']));
-  router.all('/:id', methodNotAllowed(['GET']));
+  router.all('/:id', methodNotAllowed(['GET', 'DELETE']));
 
   return router;
 }
