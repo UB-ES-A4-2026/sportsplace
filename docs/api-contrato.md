@@ -4,6 +4,8 @@ Responsables: Anass y Alex (backend), revisado con Lucía y Marta (frontend). Sp
 
 Este documento es el acuerdo entre backend y frontend para las historias del Sprint 0: US-01, US-02, US-03 y US-67. Si un endpoint cambia, se actualiza aquí en la misma pull request.
 
+T04-1 añade la configuración del correo de recuperación de US-04. Sus endpoints y pantallas se incorporan en T04-2 y T04-3; la plantilla por sí sola no completa el flujo.
+
 ## Decisiones
 
 | Decisión | Elegido | Motivo |
@@ -73,6 +75,30 @@ Cualquier error de la API tiene esta forma:
 
 `expires_at` está en segundos Unix. El `access_token` dura una hora; antes de que caduque, el frontend usa `POST /api/auth/refresh`.
 
+`anuncio` (E03, «Objeto `anuncio`» de `docs/especificacion/E03-publicacion-de-material.md`):
+
+```json
+{
+  "id": "uuid",
+  "centro_id": "uuid",
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado",
+  "modalidad": "donacion",
+  "precio_unitario_centimos": null,
+  "estado": "activo",
+  "fotos": [],
+  "publicado_en": "2026-11-03T10:15:00.000Z",
+  "creado_en": "2026-11-03T10:15:00.000Z",
+  "actualizado_en": "2026-11-03T10:15:00.000Z"
+}
+```
+
+Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anuncios salen como `modalidad: "donacion"`, `precio_unitario_centimos: null` y `fotos: []` (US-12, CA30).
+
 ## Endpoints
 
 | Método y ruta | Historia | Privada | Responsable backend |
@@ -85,6 +111,8 @@ Cualquier error de la API tiene esta forma:
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
+| `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 
 ### `GET /api/health`
 
@@ -185,6 +213,89 @@ Privada. Sin cuerpo.
 - `401 NO_AUTENTICADO` si la sesión ya no era válida. El frontend lo trata igual que un cierre correcto.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
+
+### `POST /api/anuncios` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo JSON:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado"
+}
+```
+
+- `201 { "anuncio": anuncio }` con la cabecera `Location: /api/anuncios/<id>`. El anuncio se crea `activo`, del centro de la sesión, con `publicado_en` = `creado_en` = `actualizado_en`.
+- Reglas y mensajes: «Tabla de campos» de E03. Los textos se recortan de espacios y las longitudes se cuentan en caracteres Unicode. `unidades_disponibles` solo acepta un entero JSON entre 1 y 9999: `"3"`, `3.0` o `2.5` se rechazan.
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por **cada** campo incorrecto. No se crea nada. Un cuerpo JSON que no es un objeto (p. ej. `[]`) devuelve los seis campos obligatorios; un cuerpo que no es JSON, `400 JSON_INVALIDO`.
+- Las claves `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- US-13 cambiará el cuerpo a `multipart/form-data` (fotos) y US-14 añadirá `modalidad` y `precio_unitario_centimos`.
+
+### `GET /api/anuncios/:id` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`.
+
+- `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+## Configuración del correo de recuperación (T04-1 / US-04)
+
+Responsable: Carlos. Referencias: [tarea #90](https://github.com/UB-ES-A4-2026/sportsplace/issues/90), [historia #89](https://github.com/UB-ES-A4-2026/sportsplace/issues/89) y [US-04, CA10 y CA11](especificacion/E01-E02-registro-y-perfil.md). No necesita cambios en la tabla `centros` ni variables nuevas en la web.
+
+### Aplicar en Supabase
+
+1. Abrir el proyecto del entorno que se va a probar. En **Authentication → URL Configuration**, comprobar **Site URL**: `http://localhost:5173` para el entorno local. El enlace usa ese valor; debe corresponder a la web de ese entorno. No cambiarlo por la URL de la API.
+2. En **Authentication → Emails → Reset password**, fijar el asunto exacto **Cambia tu contraseña de Sportsplace** y copiar el contenido de [recuperar-contrasena.html](../supabase/templates/recuperar-contrasena.html). Guardar y volver a abrir para comprobar la persistencia.
+3. En la configuración del proveedor **Email**, fijar **Email OTP Expiration** a **3600 segundos**. Guardar y recargar para verificarlo. Es una configuración del proveedor de email, compartida con otros enlaces de Auth; registrar su valor junto con la plantilla.
+4. En **Authentication → Emails → SMTP Settings**, conservar el SMTP personalizado existente. La [validación del Sprint 0](sprint-0-validacion-devops.md#resultado-de-la-revisión-manual-comunicada-por-carlos) registra Gmail con puerto 465 y recepción real. Comprobar que sigue habilitado sin mostrar ni reemplazar su contraseña de aplicación. No sustituirlo por el servicio de correo de prueba de Supabase.
+
+El botón debe decir **Cambiar contraseña** y tener exactamente este destino en la plantilla:
+
+```html
+{{ .SiteURL }}/restablecer-contrasena?token_hash={{ .TokenHash }}&type=recovery
+```
+
+No sustituir `.TokenHash` por `.Token` ni por `.ConfirmationURL`: el navegador abre la página de Sportsplace y el backend de T04-2 verifica el token de tipo `recovery`. No se muestra ni se guarda el enlace real en logs o evidencias públicas.
+
+### Probar el correo real
+
+1. Usar una cuenta de pruebas existente cuyo buzón controle la persona que realiza la comprobación. No repetir su registro ni eliminarla para forzar el envío. Tener disponible la web correspondiente a **Site URL**.
+2. Desde **Authentication → Users**, abrir esa cuenta y usar la acción de enviar recuperación de contraseña una sola vez. Cuando T04-2 y T04-3 estén integradas en la historia, repetir la validación mediante el formulario `/recuperar-contrasena` para probar el flujo de la aplicación. Una prueba directa desde el panel solo acredita la configuración y la entrega del correo.
+3. Comprobar en el buzón la recepción del asunto **Cambia tu contraseña de Sportsplace**, el botón **Cambiar contraseña**, la indicación de caducidad de una hora y el destino de la web con ruta `/restablecer-contrasena`, `token_hash` no vacío y `type=recovery`. Registrar hora de petición y recepción, sin dirección del buzón, token, contraseña ni URL completa.
+4. Con T04-2 y T04-3 disponibles, QA valida el cambio de contraseña y los restantes CA de US-04. Para CA11, probar enlaces distintos a los 59 y 61 minutos: el primero funciona y el segundo devuelve `ENLACE_INVALIDO`. No solicitar un nuevo enlace para una cuenta mientras se mide el anterior: solo sirve el último (CA13). No atribuir estas comprobaciones a una inspección estática de la plantilla.
+5. Adjuntar a la issue o PR la fecha, entorno, commit, valor de caducidad comprobado y resultado de recepción. La tarea requiere configuración aplicada, correo real probado, revisión ajena y fusión de su PR en `story/US-04-recuperar-contrasena-olvido`.
+
+### Estado de la configuración
+
+Verificado el **23/10/2026** en `sportsplace-dev`, con la sesión de Carlos:
+
+- Plantilla **Reset password** guardada; asunto y HTML coinciden con el archivo versionado después de recargar el panel.
+- **Email OTP expiration = 3600 s**, ya configurado al abrir el proveedor Email.
+- **Site URL = http://localhost:5173** y SMTP personalizado habilitado con puerto **465**, conservados.
+
+La incidencia SMTP quedó resuelta al guardar una **contraseña de aplicación de
+Google** en el panel. Los intentos previos devolvían 535 (credenciales rechazadas)
+y 534 (contraseña de aplicación requerida); no se publicó esa credencial.
+
+La última solicitud, realizada el **23/10/2026 a las 22:14 (Europe/Madrid)**,
+produjo un correo recibido a las **22:14** en el buzón de pruebas. La inspección
+del mensaje el **24/10/2026** verificó:
+
+- Asunto **Cambia tu contraseña de Sportsplace** y botón **Cambiar contraseña**.
+- Texto **El enlace caduca en 1 hora.**
+- Destino en `http://localhost:5173`, ruta `/restablecer-contrasena`, parámetro
+  `token_hash` no vacío y `type=recovery`, sin registrar el token ni la URL completa.
+
+Esta evidencia acredita la entrega real y el contenido de la plantilla de T04-1.
+No se utilizó el enlace ni se cambió la contraseña de una cuenta. Los endpoints,
+pantallas y casos de caducidad de 59/61 minutos requieren T04-2 y T04-3.
+**Pendiente:** aprobación del último commit e integración mediante merge commit.
 
 ## Rutas privadas y confirmación del email (US-02)
 
