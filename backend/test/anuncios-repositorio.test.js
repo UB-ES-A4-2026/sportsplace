@@ -12,6 +12,8 @@ const fila = {
   deporte: 'futbol',
   unidades_disponibles: 12,
   estado_material: 'buen_estado',
+  modalidad: 'venta',
+  precio_unitario_centimos: 850,
   estado: 'activo',
   publicado_en: new Date('2026-11-03T10:15:00Z'),
   creado_en: new Date('2026-11-03T10:15:00Z'),
@@ -32,10 +34,10 @@ function fakeDatabase({ rows = [fila], error } = {}) {
 
 const datos = {
   titulo: fila.titulo, descripcion: fila.descripcion, categoria: 'balones', deporte: 'futbol',
-  unidades_disponibles: 12, estado_material: 'buen_estado',
+  unidades_disponibles: 12, estado_material: 'buen_estado', modalidad: 'venta', precio_unitario_centimos: 850,
 };
 
-test('US-12 «Objeto anuncio»: la fila se devuelve con fechas ISO y, en esta rama, como donación sin fotos (CA30)', () => {
+test('US-12/US-14 «Objeto anuncio»: la fila se devuelve con fechas ISO, su modalidad y precio, y sin fotos (CA30)', () => {
   assert.deepEqual(aAnuncio(fila), {
     id: fila.id,
     centro_id: 'c1',
@@ -45,8 +47,8 @@ test('US-12 «Objeto anuncio»: la fila se devuelve con fechas ISO y, en esta ra
     deporte: 'futbol',
     unidades_disponibles: 12,
     estado_material: 'buen_estado',
-    modalidad: 'donacion',
-    precio_unitario_centimos: null,
+    modalidad: 'venta',
+    precio_unitario_centimos: 850,
     estado: 'activo',
     fotos: [],
     publicado_en: '2026-11-03T10:15:00.000Z',
@@ -55,14 +57,14 @@ test('US-12 «Objeto anuncio»: la fila se devuelve con fechas ISO y, en esta ra
   });
 });
 
-test('US-12 CA13/CA22: crear inserta en el centro del usuario, activo y publicado ahora', async () => {
+test('US-12 CA13/CA22 y US-14 CA11: crear inserta en el centro del usuario, activo, con modalidad y precio en céntimos', async () => {
   const database = fakeDatabase();
   const anuncio = await createAnunciosRepository(database).crear('u1', datos);
 
   assert.equal(anuncio.id, fila.id);
   const [{ sql, values }] = database.log;
-  assert.match(sql, /^INSERT INTO public\.anuncios \(.*\) SELECT c\.id, \$2, \$3, \$4, \$5, \$6, \$7, 'activo', now\(\) FROM public\.centros c WHERE c\.usuario_id = \$1 RETURNING/);
-  assert.deepEqual(values, ['u1', fila.titulo, fila.descripcion, 'balones', 'futbol', 12, 'buen_estado']);
+  assert.match(sql, /^INSERT INTO public\.anuncios \(.*\) SELECT c\.id, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, 'activo', now\(\) FROM public\.centros c WHERE c\.usuario_id = \$1 RETURNING/);
+  assert.deepEqual(values, ['u1', fila.titulo, fila.descripcion, 'balones', 'futbol', 12, 'buen_estado', 'venta', 850]);
 });
 
 test('US-12: si la cuenta no tiene centro, crear falla en lugar de inventarlo', async () => {
