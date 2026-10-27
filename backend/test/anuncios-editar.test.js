@@ -299,6 +299,47 @@ test('US-15 CA5/E2E-2: errores de campos y de fotos se devuelven juntos y no se 
   sinCambios();
 });
 
+test('US-15 CA19: cambiar de venta a donación guarda precio_unitario_centimos = null', async () => {
+  for (const datos of [
+    { ...conTodas, modalidad: 'donacion', precio_unitario_centimos: null },
+    { ...conTodas, modalidad: 'donacion', precio_unitario_centimos: undefined },
+  ]) {
+    filas[0].modalidad = 'venta';
+    filas[0].precio_unitario_centimos = 850;
+    const response = await editar({ datos });
+
+    assert.equal(response.status, 200);
+    const { anuncio } = await response.json();
+    assert.equal(anuncio.modalidad, 'donacion');
+    assert.equal(anuncio.precio_unitario_centimos, null);
+    assert.equal(ediciones.at(-1).datos.precio_unitario_centimos, null);
+    assert.equal(filas[0].precio_unitario_centimos, null);
+  }
+});
+
+test('US-15 E2E-1: cambiar el precio a 7,00 € guarda 700 céntimos y sigue en venta', async () => {
+  const response = await editar();
+
+  assert.equal(response.status, 200);
+  const { anuncio } = await response.json();
+  assert.equal(anuncio.modalidad, 'venta');
+  assert.equal(anuncio.precio_unitario_centimos, 700);
+});
+
+test('US-15 CA5: modalidad y precio siguen las reglas de US-14 y no se modifica nada', async () => {
+  const casos = [
+    [{ modalidad: undefined }, { modalidad: 'Elige si es venta o donación.' }],
+    [{ modalidad: 'regalo' }, { modalidad: 'La modalidad no es válida.' }],
+    [{ precio_unitario_centimos: null }, { precio_unitario_centimos: 'Indica el precio por unidad.' }],
+    [{ precio_unitario_centimos: 0 }, { precio_unitario_centimos: 'El precio debe estar entre 0,01 € y 99.999,99 €.' }],
+    [{ modalidad: 'donacion' }, { precio_unitario_centimos: 'Una donación no puede tener precio.' }],
+  ];
+  for (const [cambio, details] of casos) {
+    assert.deepEqual(await detallesDe(await editar({ datos: { ...conTodas, ...cambio } })), details);
+  }
+  sinCambios();
+});
+
 test('US-15 CA5: `datos` es el anuncio completo, no un parche parcial', async () => {
   const response = await editar({ datos: { unidades_disponibles: 10, fotos_conservar: [F1] } });
 
@@ -581,9 +622,9 @@ test('US-15 CA7-CA9/CA16: editar actualiza datos y fotos en una transacción y d
   assert.match(sqls[1], /^SELECT a\.estado FROM public\.anuncios a JOIN public\.centros c .* FOR UPDATE OF a$/);
   assert.match(sqls[1], /c\.usuario_id = \$1/);
   assert.match(sqls[1], /a\.estado <> 'retirado'/);
-  assert.match(sqls[2], /^UPDATE public\.anuncios SET titulo = \$2, descripcion = \$3, categoria = \$4, deporte = \$5, unidades_disponibles = \$6, estado_material = \$7, actualizado_en = now\(\) WHERE id = \$1/);
+  assert.match(sqls[2], /^UPDATE public\.anuncios SET titulo = \$2, descripcion = \$3, categoria = \$4, deporte = \$5, unidades_disponibles = \$6, estado_material = \$7, modalidad = \$8, precio_unitario_centimos = \$9, actualizado_en = now\(\) WHERE id = \$1/);
   assert.doesNotMatch(sqls[2], /SET[^]*\b(estado|publicado_en) =/);
-  assert.deepEqual(database.log[2].values, [ID, valido.titulo, valido.descripcion, 'balones', 'futbol', 10, 'buen_estado']);
+  assert.deepEqual(database.log[2].values, [ID, valido.titulo, valido.descripcion, 'balones', 'futbol', 10, 'buen_estado', 'venta', 700]);
   assert.match(sqls[3], /^DELETE FROM public\.anuncio_fotos WHERE anuncio_id = \$1/);
   assert.match(sqls[4], /^INSERT INTO public\.anuncio_fotos/);
   // CA8: F2 conserva id, ruta, tipo, bytes y creado_en; solo cambian orden y principal.

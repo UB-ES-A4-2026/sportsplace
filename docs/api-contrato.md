@@ -115,7 +115,7 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
-| `PATCH /api/anuncios/:id` | US-15 | Sí (email confirmado) | Alex |
+| `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 
 ### `GET /api/health`
 
@@ -306,6 +306,8 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Modifica un anuncio del centr
   "deporte": "futbol",
   "unidades_disponibles": 10,
   "estado_material": "buen_estado",
+  "modalidad": "venta",
+  "precio_unitario_centimos": 700,
   "fotos_conservar": ["<id de F2>"]
 }
 ```
@@ -323,7 +325,8 @@ fetch(`/api/anuncios/${id}`, { method: 'PATCH', headers: { Authorization: `Beare
 - `200 { "anuncio": anuncio }`. No cambia `estado` ni `publicado_en`; `actualizado_en` se renueva siempre, aunque no cambie ningún dato.
 - Fotos (CA8, CA12): el orden final es primero las de `fotos_conservar` en su orden y después las nuevas, con `orden` 1..n. Las conservadas mantienen su `id` y su URL; las que no están en `fotos_conservar` se borran de `anuncio_fotos` y de Storage; las nuevas se suben a `<centro_id>/<anuncio_id>/<foto_id>.<ext>`.
 - Se pueden editar los anuncios `activo`, `pausado` y `reservado`.
-- Reglas y mensajes: los mismos que `POST /api/anuncios` («Tabla de campos» de E03). `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por cada campo incorrecto; no se modifica nada ni se sube ninguna foto.
+- Modalidad y precio (US-14): mismas reglas que al publicar. Al pasar de venta a donación, `precio_unitario_centimos` se guarda como `null` (CA19); se puede enviar `null` o no enviarlo.
+- Reglas y mensajes: los mismos que `POST /api/anuncios` («Tabla de campos» de E03 y tabla de modalidad y precio). `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por cada campo incorrecto; no se modifica nada ni se sube ninguna foto.
   - `details.datos` «Faltan los datos del anuncio.»: falta la parte `datos`, no es JSON o el cuerpo no es multipart.
   - `details.fotos`: total final (conservadas + nuevas) 0 → «Añade al menos una foto.»; más de 8 → «Puedes añadir 8 fotos como máximo.»; tipo o tamaño de una nueva, como al publicar.
   - `details.fotos_conservar` «Alguna foto no pertenece a este anuncio.»: falta, no es un array de ids distintos o algún id no es una foto de este anuncio (CA13). La pertenencia se comprueba contra la base de datos después del resto de validaciones.
@@ -334,7 +337,6 @@ fetch(`/api/anuncios/${id}`, { method: 'PATCH', headers: { Authorization: `Beare
 - `413 PETICION_DEMASIADO_GRANDE`: la petición entera supera 40 MB.
 - Atomicidad (CA16): datos y fotos se guardan en una transacción. Si algo falla, el anuncio y sus fotos quedan como estaban y se borran las nuevas ya subidas (`503 ALMACENAMIENTO_NO_DISPONIBLE`, `503 BASE_DATOS_NO_DISPONIBLE` o `500 ERROR_INTERNO`, como al publicar). Las fotos quitadas se borran de Storage solo después de confirmar la transacción.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`.
-- US-14 añadirá `modalidad` y `precio_unitario_centimos` a `datos`.
 
 ## Rutas privadas y confirmación del email (US-02)
 

@@ -177,8 +177,8 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
       return { centroId: rows[0].centro_id, fotoIds: rows[0].foto_ids };
     },
 
-    // US-15 (CA7-CA9, CA12-CA17, CA20): sustituye los datos y las fotos del
-    // anuncio en una transacción, sin tocar `estado` ni `publicado_en` y
+    // US-15 (CA7-CA9, CA12-CA17, CA19, CA20): sustituye los datos (con la
+    // modalidad y el precio de US-14) y las fotos del anuncio en una transacción, sin tocar `estado` ni `publicado_en` y
     // renovando `actualizado_en` aunque no cambie nada. `fotos` es la lista
     // final en orden: las conservadas solo llevan `id`, `orden` y
     // `es_principal`; las nuevas, además, `ruta`, `tipo_mime` y `bytes`.
@@ -206,12 +206,14 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
           const { rows } = await client.query(
             `UPDATE public.anuncios
              SET titulo = $2, descripcion = $3, categoria = $4, deporte = $5,
-                 unidades_disponibles = $6, estado_material = $7, actualizado_en = now()
+                 unidades_disponibles = $6, estado_material = $7,
+                 modalidad = $8, precio_unitario_centimos = $9, actualizado_en = now()
              WHERE id = $1
              RETURNING ${COLUMNAS}`,
             [
               id, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
               datos.unidades_disponibles, datos.estado_material,
+              datos.modalidad, datos.precio_unitario_centimos,
             ],
           );
 
