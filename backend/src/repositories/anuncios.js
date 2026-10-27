@@ -1,4 +1,5 @@
 import { ApiError } from '../errors.js';
+import { transicionNoPermitida } from '../services/transiciones-anuncio.js';
 import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -85,6 +86,38 @@ export function createAnunciosRepository(database) {
       );
       if (rows.length === 0) throw anuncioNoEncontrado();
       return aAnuncio(rows[0]);
+    },
+
+    // E03 «Estados del anuncio y transiciones» (US-16; después US-17 y US-70).
+    // Cambia el estado en un único UPDATE que solo actúa si el estado actual está
+    // en `desde`: con dos peticiones a la vez, la segunda ya no lo encuentra y
+    // recibe 409 (US-16 CA10). Renueva actualizado_en y no toca ningún otro dato
+    // ni publicado_en (US-16 CA5). entregado_en y retirado_en solo tienen valor
+    // en su estado, como exigen los CHECK de la tabla.
+    async transicionar(usuarioId, id, { desde, hacia }) {
+      if (typeof id !== 'string' || !UUID.test(id)) throw anuncioNoEncontrado();
+      const centro = 'SELECT c.id FROM public.centros c WHERE c.usuario_id = $1';
+      const { rows } = await consultar(
+        `UPDATE public.anuncios
+         SET estado = $3::text,
+             actualizado_en = now(),
+             entregado_en = CASE WHEN $3::text = 'entregado' THEN now() END,
+             retirado_en = CASE WHEN $3::text = 'retirado' THEN now() END
+         WHERE id = $2 AND centro_id = (${centro}) AND estado = ANY($4::text[])
+         RETURNING ${COLUMNAS}`,
+        [usuarioId, id, hacia, [...desde]],
+      );
+      if (rows.length > 0) return aAnuncio(rows[0]);
+
+      // No ha cambiado nada: o no es un anuncio visible del centro (404, como en
+      // «Propiedad») o su estado no permite la acción (409 con el estado actual).
+      const { rows: [actual] } = await consultar(
+        `SELECT estado FROM public.anuncios
+         WHERE id = $2 AND centro_id = (${centro}) AND estado <> 'retirado'`,
+        [usuarioId, id],
+      );
+      if (!actual) throw anuncioNoEncontrado();
+      throw transicionNoPermitida(actual.estado);
     },
   };
 }

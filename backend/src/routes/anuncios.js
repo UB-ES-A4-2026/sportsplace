@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { methodNotAllowed } from '../errors.js';
 import { getAnuncios, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
+import { ACCIONES } from '../services/transiciones-anuncio.js';
 import { validarAnuncio } from '../validation/anuncios.js';
 
 // E03: todas las rutas de anuncios son privadas y exigen el email confirmado.
@@ -20,6 +21,23 @@ export function anunciosRouter() {
     const anuncio = await getAnuncios(request).obtener(request.usuario.id, request.params.id);
     response.json({ anuncio });
   });
+
+  // E03: cambio de estado sin cuerpo; responde 200 { anuncio } o 404/409.
+  // US-17 reutiliza `transicion` con reservar, quitar-reserva y entregar.
+  const transicion = (accion) => async (request, response) => {
+    const anuncio = await getAnuncios(request).transicionar(
+      request.usuario.id,
+      request.params.id,
+      ACCIONES[accion],
+    );
+    response.json({ anuncio });
+  };
+
+  // US-16 (CA6-CA9): pausar y reactivar.
+  for (const accion of ['pausar', 'reactivar']) {
+    router.post(`/:id/${accion}`, transicion(accion));
+    router.all(`/:id/${accion}`, methodNotAllowed(['POST']));
+  }
 
   router.all('/', methodNotAllowed(['POST']));
   router.all('/:id', methodNotAllowed(['GET']));
