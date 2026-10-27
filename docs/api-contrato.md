@@ -51,6 +51,7 @@ Cualquier error de la API tiene esta forma:
 | 404 | `NO_ENCONTRADO` | La ruta o el recurso no existe. |
 | 405 | `METODO_NO_PERMITIDO` | Método HTTP no admitido en esa ruta. |
 | 409 | `EMAIL_YA_REGISTRADO` | Ya existe una cuenta con ese email. |
+| 409 | `TRANSICION_NO_PERMITIDA` | El estado actual del anuncio no permite esa acción; `details.estado_actual` dice cuál es (E03, US-16). |
 | 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo supera 100 kB. |
 | 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
@@ -73,6 +74,30 @@ Cualquier error de la API tiene esta forma:
 
 `expires_at` está en segundos Unix. El `access_token` dura una hora; antes de que caduque, el frontend usa `POST /api/auth/refresh`.
 
+`anuncio` (E03, «Objeto `anuncio`» de `docs/especificacion/E03-publicacion-de-material.md`):
+
+```json
+{
+  "id": "uuid",
+  "centro_id": "uuid",
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado",
+  "modalidad": "donacion",
+  "precio_unitario_centimos": null,
+  "estado": "activo",
+  "fotos": [],
+  "publicado_en": "2026-11-03T10:15:00.000Z",
+  "creado_en": "2026-11-03T10:15:00.000Z",
+  "actualizado_en": "2026-11-03T10:15:00.000Z"
+}
+```
+
+Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anuncios salen como `modalidad: "donacion"`, `precio_unitario_centimos: null` y `fotos: []` (US-12, CA30).
+
 ## Endpoints
 
 | Método y ruta | Historia | Privada | Responsable backend |
@@ -85,6 +110,10 @@ Cualquier error de la API tiene esta forma:
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
+| `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios/:id/pausar` | US-16 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios/:id/reactivar` | US-16 | Sí (email confirmado) | Anass |
 
 ### `GET /api/health`
 
@@ -185,6 +214,57 @@ Privada. Sin cuerpo.
 - `401 NO_AUTENTICADO` si la sesión ya no era válida. El frontend lo trata igual que un cierre correcto.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
+
+### `POST /api/anuncios` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo JSON:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado"
+}
+```
+
+- `201 { "anuncio": anuncio }` con la cabecera `Location: /api/anuncios/<id>`. El anuncio se crea `activo`, del centro de la sesión, con `publicado_en` = `creado_en` = `actualizado_en`.
+- Reglas y mensajes: «Tabla de campos» de E03. Los textos se recortan de espacios y las longitudes se cuentan en caracteres Unicode. `unidades_disponibles` solo acepta un entero JSON entre 1 y 9999: `"3"`, `3.0` o `2.5` se rechazan.
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por **cada** campo incorrecto. No se crea nada. Un cuerpo JSON que no es un objeto (p. ej. `[]`) devuelve los seis campos obligatorios; un cuerpo que no es JSON, `400 JSON_INVALIDO`.
+- Las claves `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- US-13 cambiará el cuerpo a `multipart/form-data` (fotos) y US-14 añadirá `modalidad` y `precio_unitario_centimos`.
+
+### `GET /api/anuncios/:id` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`.
+
+- `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### Cambios de estado de un anuncio (E03)
+
+Siguen la tabla «Estados del anuncio y transiciones» de E03. Cada cambio es un único `UPDATE ... WHERE id = … AND centro_id = <centro de la sesión> AND estado IN (<estados de origen>)`: si el estado actual no está en la lista no se cambia nada, así que dos peticiones simultáneas no pueden saltarse la regla (una recibe `200` y la otra `409`). El servicio común está en `backend/src/services/transiciones-anuncio.js` (tabla de acciones) y en `transicionar` del repositorio de anuncios; US-17 y US-70 añaden ahí sus acciones.
+
+Un cambio de estado renueva `actualizado_en` y no modifica ningún otro campo ni `publicado_en`.
+
+Errores comunes a todas las transiciones:
+
+- `409 TRANSICION_NO_PERMITIDA`, `message` «Esta acción no está disponible en el estado actual del anuncio.», con `details: { "estado_actual": "<estado>" }`, si el estado actual no permite la acción. Repetir una acción no es idempotente (pausar un anuncio ya pausado → `409`).
+- `404 NO_ENCONTRADO` «Anuncio no encontrado.», igual que en `GET /api/anuncios/:id` (otro centro, inexistente, retirado o id que no es UUID).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- `405 METODO_NO_PERMITIDO` (cabecera `Allow: POST`) con cualquier otro método, por ejemplo `GET`.
+
+### `POST /api/anuncios/:id/pausar` (US-16)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo (si llega uno, se ignora). `activo` → `pausado`; `200 { "anuncio": anuncio }` con el anuncio ya pausado.
+
+### `POST /api/anuncios/:id/reactivar` (US-16)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. `pausado` → `activo`; `200 { "anuncio": anuncio }`.
 
 ## Rutas privadas y confirmación del email (US-02)
 
