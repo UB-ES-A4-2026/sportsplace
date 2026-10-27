@@ -151,7 +151,7 @@ describe('Desplegables', () => {
 });
 
 describe('cuerpoDelAnuncio (US-12 CA15 y US-14 CA3, CA5, CA8, CA12, CA13)', () => {
-  const { precio, modalidad, ...base } = CORRECTO;
+  const base = Object.fromEntries(Object.entries(CORRECTO).filter(([campo]) => !['modalidad', 'precio'].includes(campo)));
 
   test('venta: los seis campos recortados + modalidad y precio en céntimos enteros', () => {
     assert.deepEqual(cuerpoDelAnuncio({ ...CORRECTO, descripcion: `  ${CORRECTO.descripcion}\n` }), {

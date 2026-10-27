@@ -6,6 +6,7 @@ import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL } from '../anuncios/valores.js';
 import { validarModalidadPrecio } from '../validacion/modalidadPrecio.js';
 import {
   CAMPOS_CON_ERROR,
+  CAMPOS_MODALIDAD_PRECIO,
   cuerpoDelAnuncio,
   DESCRIPCION_MAX,
   haCambiado,
@@ -79,7 +80,8 @@ export default function FormularioAnuncio({
     // Al marcar «Venta» el campo aparece vacío: el aviso de precio llega al enviar o al escribir, no antes.
     if (campo === 'modalidad' && siguientes.precio.trim() === '') delete nuevos.precio_unitario_centimos;
     setErrores((anteriores) => {
-      const { modalidad, precio_unitario_centimos: precio, ...resto } = anteriores;
+      const resto = { ...anteriores };
+      for (const clave of CAMPOS_MODALIDAD_PRECIO) delete resto[clave];
       return { ...resto, ...nuevos };
     });
   }
