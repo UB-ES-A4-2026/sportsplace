@@ -91,6 +91,7 @@ test('US-12 · E2E-1 · publicar con datos correctos', async ({ page, request, c
   await expect(page.getByText('Anuncio publicado.')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: VALIDO.titulo })).toBeVisible();
   await expect(page.getByText('Activo', { exact: true })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Unidades disponibles/ })).toContainText('12');
   await expect(page.getByText(`Publicado el ${hoy()}`)).toBeVisible();
 
   const id = page.url().split('/').pop();
@@ -197,7 +198,7 @@ test('US-12 · E2E-5 · anuncio de otro centro y API directa', async ({ page, re
   await page.goto(`/anuncios/${anuncio.id}`);
   await expect(page.getByText('Anuncio no encontrado')).toBeVisible();
   await expect(page.getByText('Este anuncio no existe o ya no está disponible.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Volver a mis anuncios' })).toBeVisible(); // o link
+  await expect(page.getByRole('link', { name: 'Volver a mis anuncios' })).toBeVisible();
 
   // API con el centro B: ajeno, inexistente y no UUID dan el mismo 404.
   const authB = { Authorization: `Bearer ${tokenB}` };
@@ -217,7 +218,7 @@ test('US-12 · E2E-5 · anuncio de otro centro y API directa', async ({ page, re
   expect(error.code).toBe('DATOS_INVALIDOS');
   expect(error.message).toBe('Revisa los campos marcados.');
   expect(Object.keys(error.details).sort()).toEqual(
-    ['categoria', 'descripcion', 'deporte', 'estado_material', 'titulo', 'unidades_disponibles'],
+    ['categoria', 'descripcion', 'deporte', 'estado_material', 'titulo', 'unidades_disponibles'].sort(),
   );
 
   // CA21: estado y centro_id del cuerpo se ignoran.
@@ -316,12 +317,28 @@ test.describe('US-12 · CA28 · unidades', () => {
     });
   }
 
-  // «2,5» en la web: pendiente de la duda 1 de casos-US-12.md (input type="number").
-  test.fixme('web: 2,5', async () => {});
+  // «2,5» y «2.5» se escriben con el teclado: fill() falla en un input type="number" (respuesta de la #48).
+  // «2,5» falla en Chromium: el campo descarta la coma, queda 25 y se publica. Fallo abierto y enlazado
+  // en la #48; el test se activa (quitar el fixme) cuando se corrija el formulario.
+  for (const escrito of ['2,5', '2.5']) {
+    const caso = escrito === '2,5' ? test.fixme : test;
+    caso(`web: ${escrito} (escrito con el teclado)`, async ({ page, cuentas }) => {
+      await entrar(page, cuentas.centroA, cuentas.password);
+      await page.goto('/anuncios/nuevo');
+      await rellenar(page, { ...VALIDO, unidades: '' });
+      const publicaciones = contarPublicaciones(page);
+      await campos(page).unidades.click();
+      await page.keyboard.type(escrito);
+      await campos(page).publicar.click();
+      await expect(page.getByText('Las unidades deben ser un número entero entre 1 y 9999.')).toBeVisible();
+      await expect(page).toHaveURL('/anuncios/nuevo');
+      expect(publicaciones.n).toBe(0);
+    });
+  }
 
   test('API: valores no enteros o fuera de rango', async ({ request, cuentas }) => {
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
-    for (const valor of [2.5, '3', 0, 10000]) {
+    for (const valor of [2.5, '2,5', '3', 0, 10000]) {
       const res = await request.post('/api/anuncios', {
         headers: { Authorization: `Bearer ${token}` },
         data: { ...VALIDO_API, unidades_disponibles: valor },
