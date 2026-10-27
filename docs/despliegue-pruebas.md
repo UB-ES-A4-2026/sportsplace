@@ -96,6 +96,6 @@ Para completar #86 falta registrar:
 - Un flujo de autenticación de prueba autorizado; health no demuestra que funcione.
 - Evidencia de un despliegue provocado por la integración de un commit en dev,
   con su commit, CI, fecha y versión publicada.
-- PR hacia la historia US-12, aprobación ajena y fusión mediante merge commit.
+- PR #127 hacia `dev`, aprobación ajena y fusión mediante merge commit.
 
 Hasta entonces se utiliza `Refs #86` y no se declara la tarea terminada.
