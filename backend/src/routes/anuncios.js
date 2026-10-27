@@ -23,7 +23,6 @@ export function anunciosRouter() {
   });
 
   // E03: cambio de estado sin cuerpo; responde 200 { anuncio } o 404/409.
-  // US-17 reutiliza `transicion` con reservar, quitar-reserva y entregar.
   const transicion = (accion) => async (request, response) => {
     const anuncio = await getAnuncios(request).transicionar(
       request.usuario.id,
@@ -33,8 +32,9 @@ export function anunciosRouter() {
     response.json({ anuncio });
   };
 
-  // US-16 (CA6-CA9): pausar y reactivar.
-  for (const accion of ['pausar', 'reactivar']) {
+  // US-16 (CA6-CA9): pausar y reactivar. US-17 (CA7, CA8): reservar,
+  // quitar-reserva y entregar.
+  for (const accion of ['pausar', 'reactivar', 'reservar', 'quitar-reserva', 'entregar']) {
     router.post(`/:id/${accion}`, transicion(accion));
     router.all(`/:id/${accion}`, methodNotAllowed(['POST']));
   }
