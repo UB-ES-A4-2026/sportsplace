@@ -11,8 +11,8 @@ import { fotoJpg, fotoPng, formularioAnuncio, startApi } from './helpers.js';
 
 // US-15: PATCH /api/anuncios/:id en multipart (CA5, CA7-CA17, CA20). El doble
 // de la API simula la tabla anuncios con sus fotos y su propiedad; el de
-// Storage, el bucket; el del repositorio, la base de datos. Mientras US-14 no
-// esté en dev, `datos` no lleva modalidad ni precio (US-12, CA30).
+// Storage, el bucket; el del repositorio, la base de datos. `datos` lleva la
+// modalidad y el precio de US-14 (CA5, CA19).
 const usuarios = {
   'token-a': { id: 'usuario-a', email: 'a@example.com', email_confirmado: true },
   'token-b': { id: 'usuario-b', email: 'b@example.com', email_confirmado: true },
@@ -96,8 +96,8 @@ beforeEach(() => {
     deporte: 'futbol',
     unidades_disponibles: 12,
     estado_material: 'buen_estado',
-    modalidad: 'donacion',
-    precio_unitario_centimos: null,
+    modalidad: 'venta',
+    precio_unitario_centimos: 850,
     estado: 'activo',
     fotos: [
       { id: F1, ruta: rutaDe(F1), orden: 1, es_principal: true },
@@ -124,6 +124,8 @@ const valido = {
   deporte: 'futbol',
   unidades_disponibles: 10,
   estado_material: 'buen_estado',
+  modalidad: 'venta',
+  precio_unitario_centimos: 700,
 };
 const conTodas = { ...valido, fotos_conservar: [F1, F2] };
 const nueva = { contenido: fotoJpg, tipo: 'image/jpeg', nombre: 'nueva.jpg' };
@@ -149,6 +151,7 @@ async function detallesDe(response) {
 function sinCambios() {
   assert.deepEqual(ediciones, []);
   assert.equal(filas[0].unidades_disponibles, 12);
+  assert.equal(filas[0].precio_unitario_centimos, 850);
   assert.deepEqual(subidas, []);
   assert.deepEqual([...objetos.keys()], [rutaDe(F1), rutaDe(F2, 'png')]);
 }
@@ -300,7 +303,7 @@ test('US-15 CA5: `datos` es el anuncio completo, no un parche parcial', async ()
   const response = await editar({ datos: { unidades_disponibles: 10, fotos_conservar: [F1] } });
 
   assert.deepEqual(Object.keys(await detallesDe(response)).sort(), [
-    'categoria', 'deporte', 'descripcion', 'estado_material', 'titulo',
+    'categoria', 'deporte', 'descripcion', 'estado_material', 'modalidad', 'titulo',
   ]);
   sinCambios();
 });
@@ -485,6 +488,8 @@ const fila = {
   deporte: 'futbol',
   unidades_disponibles: 10,
   estado_material: 'buen_estado',
+  modalidad: 'venta',
+  precio_unitario_centimos: 700,
   estado: 'reservado',
   publicado_en: new Date(PUBLICADO),
   creado_en: new Date(PUBLICADO),

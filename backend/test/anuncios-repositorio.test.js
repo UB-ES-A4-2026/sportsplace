@@ -12,6 +12,8 @@ const fila = {
   deporte: 'futbol',
   unidades_disponibles: 12,
   estado_material: 'buen_estado',
+  modalidad: 'venta',
+  precio_unitario_centimos: 850,
   estado: 'activo',
   publicado_en: new Date('2026-11-03T10:15:00Z'),
   creado_en: new Date('2026-11-03T10:15:00Z'),
@@ -54,10 +56,10 @@ const fotoPreparada = (orden, es_principal) => ({
 
 const datos = {
   titulo: fila.titulo, descripcion: fila.descripcion, categoria: 'balones', deporte: 'futbol',
-  unidades_disponibles: 12, estado_material: 'buen_estado',
+  unidades_disponibles: 12, estado_material: 'buen_estado', modalidad: 'venta', precio_unitario_centimos: 850,
 };
 
-test('US-12 «Objeto anuncio»: la fila se devuelve con fechas ISO y, en esta rama, como donación (CA30)', () => {
+test('US-12/US-14 «Objeto anuncio»: la fila se devuelve con fechas ISO, su modalidad y precio', () => {
   assert.deepEqual(aAnuncio(fila), {
     id: fila.id,
     centro_id: 'c1',
@@ -67,8 +69,8 @@ test('US-12 «Objeto anuncio»: la fila se devuelve con fechas ISO y, en esta ra
     deporte: 'futbol',
     unidades_disponibles: 12,
     estado_material: 'buen_estado',
-    modalidad: 'donacion',
-    precio_unitario_centimos: null,
+    modalidad: 'venta',
+    precio_unitario_centimos: 850,
     estado: 'activo',
     fotos: [],
     publicado_en: '2026-11-03T10:15:00.000Z',
@@ -97,8 +99,8 @@ test('US-12 CA13/CA22 y US-13 CA19: crear guarda el anuncio activo y sus fotos e
 
   assert.deepEqual(database.log.map(({ sql }) => sql.split(' ')[0]), ['BEGIN', 'INSERT', 'INSERT', 'COMMIT']);
   const [, anuncioSql, fotosSql] = database.log;
-  assert.match(anuncioSql.sql, /^INSERT INTO public\.anuncios \(.*\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, 'activo', now\(\)\) RETURNING/);
-  assert.deepEqual(anuncioSql.values, [fila.id, 'c1', fila.titulo, fila.descripcion, 'balones', 'futbol', 12, 'buen_estado']);
+  assert.match(anuncioSql.sql, /^INSERT INTO public\.anuncios \(.*\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, 'activo', now\(\)\) RETURNING/);
+  assert.deepEqual(anuncioSql.values, [fila.id, 'c1', fila.titulo, fila.descripcion, 'balones', 'futbol', 12, 'buen_estado', 'venta', 850]);
   assert.match(fotosSql.sql, /^INSERT INTO public\.anuncio_fotos \(id, anuncio_id, ruta, tipo_mime, bytes, orden, es_principal\)/);
   assert.deepEqual(fotosSql.values, [
     fila.id,

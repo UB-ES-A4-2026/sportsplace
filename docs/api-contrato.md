@@ -87,8 +87,8 @@ Cualquier error de la API tiene esta forma:
   "deporte": "futbol",
   "unidades_disponibles": 12,
   "estado_material": "buen_estado",
-  "modalidad": "donacion",
-  "precio_unitario_centimos": null,
+  "modalidad": "venta",
+  "precio_unitario_centimos": 850,
   "estado": "activo",
   "fotos": [
     { "id": "uuid", "url": "https://<proyecto>.supabase.co/storage/v1/object/public/anuncios/<centro_id>/<anuncio_id>/<foto_id>.jpg", "orden": 1, "es_principal": true }
@@ -99,7 +99,7 @@ Cualquier error de la API tiene esta forma:
 }
 ```
 
-Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una tiene `es_principal: true`; `url` es la URL pública del bucket `anuncios`, que responde sin sesión (US-13). Mientras US-14 no esté en `dev`, todos los anuncios salen como `modalidad: "donacion"` y `precio_unitario_centimos: null` (US-12, CA30).
+Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una tiene `es_principal: true`; `url` es la URL pública del bucket `anuncios`, que responde sin sesión (US-13). `modalidad` es `venta` o `donacion` (US-14); `precio_unitario_centimos` es el precio por unidad en céntimos enteros (850 = 8,50 €) y es `null` en una donación.
 
 ## Endpoints
 
@@ -113,7 +113,7 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
-| `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios` | US-12, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 | `PATCH /api/anuncios/:id` | US-15 | Sí (email confirmado) | Alex |
 
@@ -217,7 +217,7 @@ Privada. Sin cuerpo.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
 
-### `POST /api/anuncios` (US-12, US-13)
+### `POST /api/anuncios` (US-12, US-13, US-14)
 
 Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo `multipart/form-data` (US-13 CA12) con estas partes:
 
@@ -236,9 +236,13 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo `multipart/form-data` 
   "categoria": "balones",
   "deporte": "futbol",
   "unidades_disponibles": 12,
-  "estado_material": "buen_estado"
+  "estado_material": "buen_estado",
+  "modalidad": "venta",
+  "precio_unitario_centimos": 850
 }
 ```
+
+En una donación, `"modalidad": "donacion"` y `precio_unitario_centimos` no se envía o vale `null`.
 
 Desde el navegador se construye con `FormData` (sin fijar a mano el `Content-Type`, que lleva el `boundary`):
 
@@ -252,8 +256,19 @@ fetch('/api/anuncios', { method: 'POST', headers: { Authorization: `Bearer ${tok
 
 - `201 { "anuncio": anuncio }` con la cabecera `Location: /api/anuncios/<id>`. El anuncio se crea `activo`, del centro de la sesión, con `publicado_en` = `creado_en` = `actualizado_en`, y `fotos` con n elementos (`orden` 1..n, una con `es_principal: true`).
 - Reglas y mensajes: «Tabla de campos» de E03. Los textos se recortan de espacios y las longitudes se cuentan en caracteres Unicode. `unidades_disponibles` solo acepta un entero JSON entre 1 y 9999: `"3"`, `3.0` o `2.5` se rechazan.
+- Modalidad y precio (US-14, CA9), en `details`:
+
+| Caso | Clave | Mensaje |
+|---|---|---|
+| Falta `modalidad` | `modalidad` | «Elige si es venta o donación.» |
+| `modalidad` distinta de `venta`/`donacion` (p. ej. `"regalo"`, `"Venta"`) | `modalidad` | «La modalidad no es válida.» |
+| Venta sin precio o con `null` | `precio_unitario_centimos` | «Indica el precio por unidad.» |
+| Venta con un precio que no es un entero JSON entre 1 y 9.999.999 (`0`, `10000000`, `8.5`, `850.0`, `"850"`) | `precio_unitario_centimos` | «El precio debe estar entre 0,01 € y 99.999,99 €.» |
+| Donación con cualquier precio distinto de `null` | `precio_unitario_centimos` | «Una donación no puede tener precio.» |
+
+  Si la modalidad falta o no es válida, el precio no se valida (su regla depende de la modalidad).
 - `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por **cada** campo incorrecto, incluidas las fotos (US-13 CA14). No se crea nada ni se sube ninguna foto.
-  - `details.datos` «Faltan los datos del anuncio.»: falta la parte `datos`, no es JSON o supera 100 kB. También si el cuerpo no es multipart (por ejemplo, JSON). Un `datos` JSON que no es un objeto (p. ej. `[]`) devuelve los seis campos obligatorios.
+  - `details.datos` «Faltan los datos del anuncio.»: falta la parte `datos`, no es JSON o supera 100 kB. También si el cuerpo no es multipart (por ejemplo, JSON). Un `datos` JSON que no es un objeto (p. ej. `[]`) devuelve los siete campos obligatorios.
   - `details.fotos`: 0 fotos → «Añade al menos una foto.»; más de 8 → «Puedes añadir 8 fotos como máximo.»; algún archivo que no es JPG, PNG o WebP → «Solo se admiten fotos JPG, PNG o WebP.»; alguno de más de 5.242.880 bytes → «Cada foto debe pesar 5 MB como máximo.» (si hay varios problemas, el primero de esta lista).
   - El tipo se decide por el contenido (cabecera binaria: JPEG `FF D8 FF`, PNG `89 50 4E 47`, WebP `RIFF....WEBP`), nunca por la extensión ni por el `Content-Type` de la parte (US-13 CA13).
   - `details.foto_principal` «La foto principal no es válida.»: `foto_principal` no es un entero o está fuera de 1..n.
@@ -262,7 +277,6 @@ fetch('/api/anuncios', { method: 'POST', headers: { Authorization: `Bearer ${tok
 - Fotos en Supabase Storage, bucket `anuncios`, ruta `<centro_id>/<anuncio_id>/<foto_id>.<jpg|png|webp>`, sin modificar. El nombre original del archivo no se guarda. Solo el servidor escribe en el bucket, con `SUPABASE_SERVICE_ROLE_KEY`.
 - Creación atómica (US-13 CA20): si falla la subida de cualquier foto o la base de datos, no queda ni el anuncio ni ninguna foto (el servidor borra las ya subidas). `503 ALMACENAMIENTO_NO_DISPONIBLE` si falla Storage, `503 BASE_DATOS_NO_DISPONIBLE` si falla PostgreSQL y `500 ERROR_INTERNO` si la base de datos rechaza datos ya validados.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`: se comprueban antes de leer el cuerpo.
-- US-14 añadirá `modalidad` y `precio_unitario_centimos` a `datos`.
 
 ### `GET /api/anuncios/:id` (US-12)
 
