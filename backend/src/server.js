@@ -1,5 +1,6 @@
 import { createAppServer } from './app.js';
 import { createDatabase } from './database.js';
+import { createAnunciosRepository } from './repositories/anuncios.js';
 import { createCentrosRepository } from './repositories/centros.js';
 import { createSupabaseAuth } from './services/supabase-auth.js';
 
@@ -35,7 +36,8 @@ if (process.env.DATABASE_URL?.trim()) {
 }
 
 const centros = database ? createCentrosRepository(database) : null;
-const server = createAppServer({ auth, centros });
+const anuncios = database ? createAnunciosRepository(database) : null;
+const server = createAppServer({ auth, centros, anuncios });
 
 server.on('error', (error) => {
   console.error(`Unable to start Sportsplace API: ${error.message}`);
