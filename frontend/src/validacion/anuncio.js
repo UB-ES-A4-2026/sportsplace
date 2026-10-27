@@ -1,4 +1,5 @@
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL } from '../anuncios/valores.js';
+import { datosModalidadPrecio, validarModalidadPrecio } from './modalidadPrecio.js';
 
 // Validación del formulario de anuncio (E03, «Tabla de campos»; US-12 CA5-CA8 y CA26-CA29).
 // Los mensajes son exactamente los de la especificación: la API devuelve los mismos en `details`.
@@ -14,6 +15,14 @@ export const CAMPOS_ANUNCIO = [
   'estado_material',
 ];
 
+// Campos de la sección «Modalidad y precio» (US-14). Las claves son las de la API (`details` de un 400).
+// En el formulario, el precio escrito vive en `valores.precio` y el error cuelga de `precio_unitario_centimos`.
+export const CAMPOS_MODALIDAD_PRECIO = ['modalidad', 'precio_unitario_centimos'];
+
+// Todos los campos que pueden tener error, en el orden del formulario: el foco va al primero (CA7)
+// y de un 400 se muestran los de esta lista (CA12).
+export const CAMPOS_CON_ERROR = [...CAMPOS_ANUNCIO, ...CAMPOS_MODALIDAD_PRECIO];
+
 export const TITULO_MAX = 80;
 export const DESCRIPCION_MAX = 1000;
 
@@ -24,6 +33,8 @@ export const VALORES_VACIOS = Object.freeze({
   deporte: '',
   unidades_disponibles: '',
   estado_material: '',
+  modalidad: '',
+  precio: '',
 });
 
 const ENTERO = /^\d+$/;
@@ -96,17 +107,19 @@ export function validarCampo(campo, valor, opciones) {
 }
 
 // Valida todos los campos a la vez (CA7). Devuelve un objeto campo → mensaje; vacío si todo es correcto.
+// Incluye «Modalidad y precio» (US-14): el precio solo se valida con «Venta» marcada.
 export function validarAnuncio(valores, { unidadesIlegibles = false } = {}) {
   const errores = {};
   for (const campo of CAMPOS_ANUNCIO) {
     const error = validarCampo(campo, valores[campo], { ilegible: unidadesIlegibles });
     if (error) errores[campo] = error;
   }
-  return errores;
+  return { ...errores, ...validarModalidadPrecio(valores) };
 }
 
 // Cuerpo de POST /api/anuncios (US-12 CA15): textos recortados y unidades como entero JSON.
-// Hasta que US-13 y US-14 estén en `dev`, no lleva fotos ni modalidad/precio (CA30).
+// Con US-14 lleva `modalidad` y, solo en una venta, `precio_unitario_centimos` en céntimos enteros (CA5, CA8).
+// Las fotos las añadirá US-13.
 export function cuerpoDelAnuncio(valores) {
   return {
     titulo: valores.titulo.trim(),
@@ -115,6 +128,7 @@ export function cuerpoDelAnuncio(valores) {
     deporte: valores.deporte,
     unidades_disponibles: Number(String(valores.unidades_disponibles).trim()),
     estado_material: valores.estado_material,
+    ...datosModalidadPrecio(valores),
   };
 }
 
@@ -123,13 +137,14 @@ export function cuerpoDelAnuncio(valores) {
 // Comparar con los iniciales deja el componente listo para un formulario que ya viene relleno (US-15, US-19).
 export function haCambiado(valores, iniciales = VALORES_VACIOS, { unidadesIlegibles = false } = {}) {
   return unidadesIlegibles
-    || CAMPOS_ANUNCIO.some((campo) => String(valores[campo] ?? '') !== String(iniciales[campo] ?? ''));
+    || [...CAMPOS_ANUNCIO, 'modalidad', 'precio']
+      .some((campo) => String(valores[campo] ?? '') !== String(iniciales[campo] ?? ''));
 }
 
 // Se queda con los mensajes de `details` de un 400 DATOS_INVALIDOS que corresponden a campos del formulario (CA12).
 export function erroresDelServidor(details) {
   if (!details || typeof details !== 'object') return {};
   return Object.fromEntries(
-    CAMPOS_ANUNCIO.filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
+    CAMPOS_CON_ERROR.filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
   );
 }
