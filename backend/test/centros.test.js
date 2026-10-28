@@ -41,7 +41,7 @@ test('registrar guarda el centro, crea la cuenta y enlaza usuario_id en una tran
 
   assert.deepEqual(usuario, { id: 'u1' });
   assert.equal(database.log[0], 'BEGIN');
-  assert.match(database.log[1].sql, /^INSERT INTO public\.centros .* TRUE, now\(\)\) RETURNING id$/);
+  assert.match(database.log[1].sql, /^INSERT INTO public\.centros .* TRUE, now\(\) FROM \(SELECT 1\) AS fila LEFT JOIN public\.codigos_postales cp ON cp\.codigo_postal = \$5 RETURNING id$/);
   assert.deepEqual(database.log[1].values, ['Club', 'centro@example.com', 'Barcelona', null, '08001', null]);
   assert.deepEqual(database.log[2], {
     sql: 'UPDATE public.centros SET usuario_id = $1 WHERE id = $2',

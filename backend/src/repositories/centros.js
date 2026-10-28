@@ -27,15 +27,20 @@ export function createCentrosRepository(database) {
   return {
     // US-01: crea el centro y su cuenta en la misma transacción. Si la cuenta
     // no se puede crear, el centro no se guarda; el índice único del email
-    // impide dos altas simultáneas con el mismo email.
+    // impide dos altas simultáneas con el mismo email. Si el código postal está
+    // en codigos_postales, copia también provincia y coordenadas (US-68, CA7).
     async registrar(centro, crearCuenta) {
       try {
         return await database.transaction(async (client) => {
           const { rows } = await client.query(
             `INSERT INTO public.centros (
                nombre, email, localidad, direccion, codigo_postal, telefono,
+               provincia, latitud, longitud,
                politica_privacidad_aceptada, politica_privacidad_aceptada_en
-             ) VALUES ($1, $2, $3, $4, $5, $6, TRUE, now())
+             )
+             SELECT $1, $2, $3, $4, $5, $6, cp.provincia, cp.latitud, cp.longitud, TRUE, now()
+             FROM (SELECT 1) AS fila
+             LEFT JOIN public.codigos_postales cp ON cp.codigo_postal = $5
              RETURNING id`,
             [centro.nombre, centro.email, centro.localidad, centro.direccion, centro.codigo_postal, centro.telefono],
           );
