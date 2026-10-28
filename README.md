@@ -579,6 +579,8 @@ La CLI mantiene el historial de las migraciones aplicadas. Los siguientes cambio
 
 Las pruebas SQL están en [supabase/tests/centros.sql](supabase/tests/centros.sql). Se ejecutan en una base de pruebas después de aplicar la migración, con un usuario administrador y los roles `anon` y `authenticated`. Verifican las restricciones y los permisos dentro de una transacción que termina en `ROLLBACK`, sin conservar centros de prueba.
 
+La tabla `codigos_postales` (US-68) se carga con la migración `20261028100100_semilla_codigos_postales.sql`, generada a partir de los códigos postales de España de [GeoNames](https://www.geonames.org/) bajo licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Sus pruebas están en [supabase/tests/codigos_postales.sql](supabase/tests/codigos_postales.sql).
+
 La evidencia local y los criterios todavía pendientes se registran en [TR-03: validación](docs/TR-03-validacion.md). TR-03 podrá cerrarse cuando se confirme el acceso del equipo, se revise y aplique el esquema al Supabase compartido, la migración esté integrada en el repositorio y el servidor compruebe la conexión real con ese proyecto.
 
 ## Seguimiento
