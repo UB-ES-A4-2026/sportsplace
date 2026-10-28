@@ -25,7 +25,7 @@ const fakeAnuncios = {
     const ahora = '2026-11-03T10:15:00.000Z';
     const anuncio = {
       id: randomUUID(), centro_id: centroDe[usuarioId], ...datos,
-      modalidad: 'donacion', precio_unitario_centimos: null, estado: 'activo', fotos: [],
+      estado: 'activo', fotos: [],
       publicado_en: ahora, creado_en: ahora, actualizado_en: ahora,
     };
     filas.push(anuncio);
@@ -55,6 +55,7 @@ const valido = {
   deporte: 'futbol',
   unidades_disponibles: 12,
   estado_material: 'buen_estado',
+  modalidad: 'donacion',
 };
 const conToken = (token) => ({ Authorization: `Bearer ${token}` });
 const publicar = (cuerpo, token = 'token-a') => postJson(`${api.baseUrl}/api/anuncios`, cuerpo, conToken(token));
@@ -71,7 +72,7 @@ test('US-12 CA15/CA16/E2E-1: publicar con datos correctos responde 201 con el an
   assert.equal(anuncio.centro_id, 'centro-a');
   assert.equal(anuncio.titulo, 'Balones de fútbol talla 5');
   assert.equal(anuncio.unidades_disponibles, 12);
-  assert.deepEqual(creaciones, [valido]);
+  assert.deepEqual(creaciones, [{ ...valido, precio_unitario_centimos: null }]);
 });
 
 test('US-12 CA17: con campos incorrectos responde 400 con todos los errores y no crea nada', async () => {
@@ -91,7 +92,7 @@ test('US-12 CA17: con campos incorrectos responde 400 con todos los errores y no
   assert.deepEqual(creaciones, []);
 });
 
-test('US-12 CA18: un cuerpo que no es JSON da JSON_INVALIDO; `[]` da los seis campos obligatorios', async () => {
+test('US-12 CA18: un cuerpo que no es JSON da JSON_INVALIDO; `[]` da todos los campos obligatorios', async () => {
   const roto = await fetch(`${api.baseUrl}/api/anuncios`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...conToken('token-a') },
@@ -103,7 +104,7 @@ test('US-12 CA18: un cuerpo que no es JSON da JSON_INVALIDO; `[]` da los seis ca
   const lista = await publicar([]);
   assert.equal(lista.status, 400);
   assert.deepEqual(Object.keys((await lista.json()).error.details), [
-    'titulo', 'descripcion', 'categoria', 'deporte', 'unidades_disponibles', 'estado_material',
+    'titulo', 'descripcion', 'categoria', 'deporte', 'unidades_disponibles', 'estado_material', 'modalidad',
   ]);
   assert.deepEqual(creaciones, []);
 });
@@ -161,7 +162,7 @@ test('US-12 CA21: estado, centro_id, id y publicado_en del cuerpo se ignoran', a
   const { anuncio } = await response.json();
   assert.equal(anuncio.estado, 'activo');
   assert.equal(anuncio.centro_id, 'centro-a');
-  assert.deepEqual(creaciones, [valido]);
+  assert.deepEqual(creaciones, [{ ...valido, precio_unitario_centimos: null }]);
 });
 
 test('US-12 CA20: el centro ve la ficha de su anuncio', async () => {

@@ -12,8 +12,8 @@ export function anuncioNoEncontrado() {
 const fecha = (valor) => (valor === null || valor === undefined ? null : new Date(valor).toISOString());
 
 // Fila de la tabla → objeto `anuncio` de la API («Base común»).
-// CA30: hasta que US-13 y US-14 estén en dev, la rama de US-12 no tiene fotos
-// ni modalidad/precio: el anuncio se devuelve como donación, sin precio ni fotos.
+// CA30 de US-12: hasta que US-13 esté en dev, el anuncio se devuelve sin fotos.
+// La modalidad y el precio ya son los de la fila (US-14).
 export function aAnuncio(fila) {
   return {
     id: fila.id,
@@ -24,8 +24,8 @@ export function aAnuncio(fila) {
     deporte: fila.deporte,
     unidades_disponibles: fila.unidades_disponibles,
     estado_material: fila.estado_material,
-    modalidad: 'donacion',
-    precio_unitario_centimos: null,
+    modalidad: fila.modalidad,
+    precio_unitario_centimos: fila.precio_unitario_centimos,
     estado: fila.estado,
     fotos: [],
     publicado_en: fecha(fila.publicado_en),
@@ -35,7 +35,8 @@ export function aAnuncio(fila) {
 }
 
 const COLUMNAS = `id, centro_id, titulo, descripcion, categoria, deporte,
-  unidades_disponibles, estado_material, estado, publicado_en, creado_en, actualizado_en`;
+  unidades_disponibles, estado_material, modalidad, precio_unitario_centimos,
+  estado, publicado_en, creado_en, actualizado_en`;
 
 export function createAnunciosRepository(database) {
   async function consultar(sql, values) {
@@ -48,22 +49,25 @@ export function createAnunciosRepository(database) {
   }
 
   return {
-    // US-12: crea el anuncio del centro de la sesión, siempre `activo` (CA13, CA21, CA22).
+    // US-12: crea el anuncio del centro de la sesión, siempre `activo` (CA13, CA21, CA22),
+    // con su modalidad y su precio en céntimos (US-14, CA11).
     // El centro se busca por usuario_id en la misma consulta; publicado_en,
     // creado_en y actualizado_en toman la misma hora del servidor (now()).
     async crear(usuarioId, datos) {
       const { rows } = await consultar(
         `INSERT INTO public.anuncios (
            centro_id, titulo, descripcion, categoria, deporte,
-           unidades_disponibles, estado_material, estado, publicado_en
+           unidades_disponibles, estado_material, modalidad, precio_unitario_centimos,
+           estado, publicado_en
          )
-         SELECT c.id, $2, $3, $4, $5, $6, $7, 'activo', now()
+         SELECT c.id, $2, $3, $4, $5, $6, $7, $8, $9, 'activo', now()
          FROM public.centros c
          WHERE c.usuario_id = $1
          RETURNING ${COLUMNAS}`,
         [
           usuarioId, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
           datos.unidades_disponibles, datos.estado_material,
+          datos.modalidad, datos.precio_unitario_centimos,
         ],
       );
       // Una cuenta sin centro no debería existir (US-01 crea los dos juntos).
@@ -76,7 +80,8 @@ export function createAnunciosRepository(database) {
       if (typeof id !== 'string' || !UUID.test(id)) throw anuncioNoEncontrado();
       const { rows } = await consultar(
         `SELECT a.id, a.centro_id, a.titulo, a.descripcion, a.categoria, a.deporte,
-                a.unidades_disponibles, a.estado_material, a.estado,
+                a.unidades_disponibles, a.estado_material,
+                a.modalidad, a.precio_unitario_centimos, a.estado,
                 a.publicado_en, a.creado_en, a.actualizado_en
          FROM public.anuncios a
          JOIN public.centros c ON c.id = a.centro_id
