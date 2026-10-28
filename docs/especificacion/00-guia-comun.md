@@ -35,6 +35,7 @@ Cada criterio es una frase comprobable con el resultado exacto: textos entre «�
 
 **Flujos e2e**
 E2E-1 (camino feliz), E2E-2… (errores y casos límite). Pasos numerados: datos de entrada concretos → acción → resultado esperado en pantalla y en la base de datos.
+Los e2e de error de servidor o de red no paran la API: en Playwright se intercepta la petición con `page.route` y se responde `503` con el `code` que toque (o se aborta con `route.abort()` para simular la red caída). Así se pueden automatizar en el CI.
 
 **Tareas**
 - Txx-1 · Base de datos: …
