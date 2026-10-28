@@ -3,9 +3,9 @@
 Responsable: Carlos. [Tarea #86](https://github.com/UB-ES-A4-2026/sportsplace/issues/86),
 historia US-12. **Estado: servicio Render Free creado y primer despliegue disponible
 por HTTPS; `deploy:check` correcto el 29/10/2026.** La imagen está integrada en `dev`
-mediante la PR #127. Quedan pendientes las comprobaciones funcionales de PostgreSQL
-y Auth, la integración de esta documentación y la evidencia de un nuevo despliegue
-automático tras CI.
+mediante la PR #127. La conexión PostgreSQL con TLS está acreditada por los logs del
+servidor. Quedan pendientes el flujo de Auth, la integración de esta documentación
+y la evidencia de un nuevo despliegue automático tras CI.
 La [decisión de #86](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6476683628)
 establece un único Web Service para web y API, despliegue desde `dev` después del
 CI y aceptación del arranque en frío.
@@ -37,6 +37,17 @@ Esta comprobación no acredita conexión PostgreSQL, Auth ni criterios funcional
 El despliegue registrado es de tipo **First Deploy**: acredita la publicación del
 servicio, no una integración posterior en `dev`. La política automática está
 configurada, pero esa segunda evidencia queda pendiente de la PR de documentación.
+
+En los [logs del servicio](https://dashboard.render.com/web/srv-dbh7tt3bc2fs73fr1i20/logs),
+el proceso publicado registró el 29/10/2026 a las 00:02:58 (Europe/Madrid):
+
+```text
+Conexión PostgreSQL: correcta.
+```
+
+Ese mensaje se emite después de `database.check()` al arrancar: acredita una
+consulta `SELECT 1` desde Render con la verificación TLS y el CA configurados.
+No acredita el esquema completo ni sustituye una prueba funcional de Auth.
 
 ## Qué se despliega
 
@@ -189,7 +200,7 @@ La preparación de la imagen ya está integrada mediante la
 - [x] Servicio Render Free creado y URL HTTPS real documentada en esta rama.
 - [x] Variables y CA configurados en Render, sin publicar sus valores.
 - [x] Comprobación HTTP contra la URL real correcta, con código de salida `0`.
-- [ ] Conexión PostgreSQL real desde el servicio con TLS verificado.
+- [x] Conexión PostgreSQL real desde el servicio con TLS verificado, acreditada en los logs.
 - [ ] Un flujo de autenticación de prueba autorizado; health no demuestra que funcione.
 - [ ] Evidencia de un despliegue provocado por la integración de un commit en dev,
   con su commit, CI, fecha y versión publicada.
