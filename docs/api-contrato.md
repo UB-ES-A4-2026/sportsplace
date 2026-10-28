@@ -4,7 +4,7 @@ Responsables: Anass y Alex (backend), revisado con Lucía y Marta (frontend). Sp
 
 Este documento es el acuerdo entre backend y frontend para las historias del Sprint 0: US-01, US-02, US-03 y US-67. Si un endpoint cambia, se actualiza aquí en la misma pull request.
 
-T04-1 añade la configuración del correo de recuperación de US-04. Sus endpoints y pantallas se incorporan en T04-2 y T04-3; la plantilla por sí sola no completa el flujo.
+T04-1 añade la configuración del correo de recuperación de US-04. T04-2 añade sus endpoints (`POST /api/auth/recuperar-contrasena` y `/restablecer-contrasena`) y T04-3 sus pantallas; la plantilla por sí sola no completa el flujo.
 
 ## Decisiones
 
@@ -46,7 +46,7 @@ Cualquier error de la API tiene esta forma:
 |---|---|---|
 | 400 | `DATOS_INVALIDOS` | Faltan campos o tienen un formato incorrecto. |
 | 400 | `JSON_INVALIDO` | El cuerpo no es JSON válido. |
-| 400 | `ENLACE_INVALIDO` | El enlace de confirmación no existe, ya se ha usado o ha caducado. |
+| 400 | `ENLACE_INVALIDO` | El enlace de confirmación o de recuperación de la contraseña (US-04) no existe, ya se ha usado o ha caducado. |
 | 401 | `NO_AUTENTICADO` | Falta el token, ha caducado o la sesión se ha cerrado. |
 | 401 | `CREDENCIALES_INCORRECTAS` | Email o contraseña incorrectos (no se dice cuál). |
 | 403 | `EMAIL_NO_CONFIRMADO` | La cuenta todavía no ha confirmado su email. |
@@ -107,6 +107,8 @@ Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anu
 | `POST /api/auth/registro` | US-01 | No | Anass |
 | `POST /api/auth/confirmar` | US-02 | No | Anass y Alex |
 | `POST /api/auth/reenviar-confirmacion` | US-66 | No | Anass |
+| `POST /api/auth/recuperar-contrasena` | US-04 | No | Anass |
+| `POST /api/auth/restablecer-contrasena` | US-04 | No | Anass |
 | `POST /api/auth/login` | US-03 | No | Alex |
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
@@ -172,6 +174,33 @@ Para cuando el enlace de confirmación ha caducado o se ha perdido el email. La 
 - La respuesta es la misma si el email no tiene cuenta o ya está confirmado, para no revelar qué emails están registrados. El frontend muestra siempre un mensaje del tipo "Si hay una cuenta pendiente con ese email, te hemos enviado un enlace nuevo".
 - `400 DATOS_INVALIDOS` con `details.email` si falta el email o su formato no es válido (misma regla que en el registro).
 - `429 DEMASIADOS_INTENTOS` si se piden enlaces demasiado seguidos (Supabase limita los reenvíos); `503 AUTH_NO_DISPONIBLE`.
+
+### `POST /api/auth/recuperar-contrasena` (US-04)
+
+Pública. Pide el email «Cambia tu contraseña de Sportsplace» (plantilla *Reset password* de T04-1), que enlaza a `/restablecer-contrasena?token_hash=…&type=recovery`.
+
+```json
+{ "email": "piscina@clubnatacio.cat" }
+```
+
+- `204` sin cuerpo, **exista o no la cuenta**: la respuesta (código, cuerpo y cabeceras) es idéntica para un email registrado, uno no registrado y uno sin confirmar (CA23). El email se recorta y se pasa a minúsculas antes de enviarlo (CA25).
+- `400 DATOS_INVALIDOS` con `details.email`: misma regla y mensajes que en el registro («El email es obligatorio.», «El email no es válido.», máximo 254 caracteres).
+- `400 JSON_INVALIDO`, `429 DEMASIADOS_INTENTOS`, `503 AUTH_NO_DISPONIBLE`.
+
+### `POST /api/auth/restablecer-contrasena` (US-04)
+
+Pública. La página `/restablecer-contrasena` envía el `token_hash` del enlace y la contraseña nueva (la web ya ha comprobado que las dos contraseñas coinciden):
+
+```json
+{ "token_hash": "...", "password": "Natacio2026!" }
+```
+
+- `204` sin cuerpo y **sin sesión**: después se entra con `POST /api/auth/login` (US-04 CA5).
+- El servidor hace `verifyOtp({ type: 'recovery', token_hash })`, cambia la contraseña con la sesión de recuperación de ese usuario y cierra **todas** sus sesiones (`signOut` con `scope: 'global'`): sus `refresh_token` dan `401 NO_AUTENTICADO` y la contraseña anterior da `401 CREDENCIALES_INCORRECTAS` (CA14). Elegir la misma contraseña que la anterior se acepta (CA26).
+- `400 DATOS_INVALIDOS`: `details.token_hash` «Falta el token del enlace.» y/o `details.password` con los mensajes del registro («La contraseña es obligatoria.», «La contraseña debe tener al menos 8 caracteres.», «La contraseña es demasiado larga.»; 8 caracteres a 72 bytes, sin recortar espacios). Si Supabase rechaza la contraseña por débil, `details.password` «La contraseña es demasiado débil.».
+- `400 ENLACE_INVALIDO` «El enlace para cambiar la contraseña no es válido o ha caducado.»: enlace usado (solo sirve una vez), caducado (3600 s), sustituido por uno pedido después o inventado (CA11-CA13).
+- `400 JSON_INVALIDO`, `429 DEMASIADOS_INTENTOS`, `503 AUTH_NO_DISPONIBLE`.
+- El `token_hash` no se escribe en los logs del servidor (CA24).
 
 ### `POST /api/auth/login` (US-03)
 
