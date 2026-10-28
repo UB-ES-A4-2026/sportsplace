@@ -18,8 +18,10 @@ Sprint 1: [pruebas e2e con Playwright (T12-7)](docs/pruebas-e2e.md) y
 [base de pruebas aislada y semilla de QA (T12-8)](docs/base-pruebas.md).
 
 T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pruebas.md).
-La imagen está preparada para web y API en el mismo origen. **URL pública y
-despliegue automático: pendientes de concretar el alojamiento y validarlo.**
+El alojamiento acordado es **Render, plan gratuito**, con un único Web Service
+para la web y la API mediante el `Dockerfile` de la raíz. El servicio desplegará
+`dev` con **Auto-Deploy: After CI Checks Pass**; se acepta el arranque en frío.
+**URL HTTPS y validación del despliegue remoto: pendientes de configurar el servicio.**
 
 ## Tecnologías
 
