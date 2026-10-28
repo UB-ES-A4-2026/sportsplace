@@ -17,6 +17,10 @@ Validación de infraestructura del sprint: [validación DevOps](docs/sprint-0-va
 Sprint 1: [pruebas e2e con Playwright (T12-7)](docs/pruebas-e2e.md) y
 [base de pruebas aislada y semilla de QA (T12-8)](docs/base-pruebas.md).
 
+T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pruebas.md).
+La imagen está preparada para web y API en el mismo origen. **URL pública y
+despliegue automático: pendientes de concretar el alojamiento y validarlo.**
+
 ## Tecnologías
 
 - Frontend: React con Vite, en JavaScript.

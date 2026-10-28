@@ -206,7 +206,7 @@ E2E-3 · Valores límite
 3. Pulsa «Publicar» → se publica con 9999 unidades.
 
 E2E-4 · Error de servidor
-1. Con la API parada, rellena el formulario correcto y pulsa «Publicar».
+1. Con `POST /api/anuncios` interceptado para que responda `503 BASE_DATOS_NO_DISPONIBLE` (o con la red abortada), rellena el formulario correcto y pulsa «Publicar».
 2. Resultado: aviso rojo «No se ha podido completar la acción. Inténtalo de nuevo.», sigue en `/anuncios/nuevo` con todos los datos. BD sin cambios.
 
 E2E-5 · Anuncio de otro centro y API directa
@@ -737,7 +737,7 @@ E2E-4 · Acción en fila
 1. Fila activa → «Más ▾» → «Pausar» → la fila muestra «Pausado» sin recargar.
 
 E2E-5 · Error y reintento
-1. API parada → «No se ha podido cargar.» → arranca la API → «Reintentar» → lista.
+1. `GET /api/anuncios/mios` interceptado para que responda `503` → «No se ha podido cargar.» → se quita la intercepción → «Reintentar» → lista.
 
 E2E-6 · Aislamiento
 1. `GET /api/anuncios/mios` con token de B → solo los de B; `total` correcto.
