@@ -1,11 +1,42 @@
 # T12-6 · Entorno de pruebas desplegado
 
 Responsable: Carlos. [Tarea #86](https://github.com/UB-ES-A4-2026/sportsplace/issues/86),
-historia US-12. **Estado: imagen integrada en `dev` mediante la PR #127; alojamiento
-acordado en Render Free. Servicio, URL HTTPS y validación remota pendientes.**
+historia US-12. **Estado: servicio Render Free creado y primer despliegue disponible
+por HTTPS; `deploy:check` correcto el 29/10/2026.** La imagen está integrada en `dev`
+mediante la PR #127. Quedan pendientes las comprobaciones funcionales de PostgreSQL
+y Auth, la integración de esta documentación y la evidencia de un nuevo despliegue
+automático tras CI.
 La [decisión de #86](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6476683628)
 establece un único Web Service para web y API, despliegue desde `dev` después del
-CI y aceptación del arranque en frío. No hay todavía un despliegue remoto acreditado.
+CI y aceptación del arranque en frío.
+
+## Servicio publicado y evidencia HTTP
+
+| Dato | Valor |
+|---|---|
+| URL HTTPS | [https://sportsplace-pruebas.onrender.com](https://sportsplace-pruebas.onrender.com) |
+| Servicio | `sportsplace-pruebas` |
+| Alojamiento | Render Free, Frankfurt (EU Central). |
+| Workspace / proyecto | `My Workspace` / `My project`. |
+| Rama | `dev` |
+| Auto-Deploy guardado | `After CI Checks Pass` |
+| Commit del primer despliegue | [`e1adad1`](https://github.com/UB-ES-A4-2026/sportsplace/commit/e1adad1238d3a051e52ccd247fca5e816de0abcb) |
+| CI del commit | [Los cinco jobs correctos](https://github.com/UB-ES-A4-2026/sportsplace/actions/runs/40760662549). |
+| Primer despliegue | 29/10/2026, 00:02, Europe/Madrid; estado `Live`. |
+| Panel de Render | [Servicio y despliegues](https://dashboard.render.com/web/srv-dbh7tt3bc2fs73fr1i20/deploys). Requiere acceso al workspace. |
+
+Comprobación ejecutada contra la URL real, con Node.js 24 y código de salida `0`:
+
+```text
+npm --prefix tools run deploy:check -- https://sportsplace-pruebas.onrender.com
+
+Despliegue HTTP verificado: web compilada, rutas SPA, API y assets en el mismo origen.
+Esta comprobación no acredita conexión PostgreSQL, Auth ni criterios funcionales de QA.
+```
+
+El despliegue registrado es de tipo **First Deploy**: acredita la publicación del
+servicio, no una integración posterior en `dev`. La política automática está
+configurada, pero esa segunda evidencia queda pendiente de la PR de documentación.
 
 ## Qué se despliega
 
@@ -128,7 +159,7 @@ Desde un clon actualizado de `dev`, con Node.js 24, sustituir el marcador por el
 origen HTTPS real del servicio, sin rutas ni parámetros:
 
 ```bash
-npm --prefix tools run deploy:check -- https://NOMBRE-REAL.onrender.com
+npm --prefix tools run deploy:check -- https://sportsplace-pruebas.onrender.com
 ```
 
 No necesita `npm ci` ni credenciales: utiliza módulos incluidos en Node. Conservar
@@ -153,16 +184,16 @@ Las migraciones al Supabase compartido siguen el procedimiento de
 Anass/Alex y ejecución coordinada. El arranque del contenedor no aplica SQL.
 
 La preparación de la imagen ya está integrada mediante la
-[PR #127](https://github.com/UB-ES-A4-2026/sportsplace/pull/127). Para completar #86
-falta registrar:
+[PR #127](https://github.com/UB-ES-A4-2026/sportsplace/pull/127). Seguimiento de #86:
 
-- Cuenta/proyecto de Render, nombre del servicio Free y **URL HTTPS real en el README**.
-- Variables privadas y CA configurados, sin publicar sus valores.
-- La misma comprobación HTTP contra esa URL y conexión PostgreSQL real con TLS.
-- Un flujo de autenticación de prueba autorizado; health no demuestra que funcione.
-- Evidencia de un despliegue provocado por la integración de un commit en dev,
+- [x] Servicio Render Free creado y URL HTTPS real documentada en esta rama.
+- [x] Variables y CA configurados en Render, sin publicar sus valores.
+- [x] Comprobación HTTP contra la URL real correcta, con código de salida `0`.
+- [ ] Conexión PostgreSQL real desde el servicio con TLS verificado.
+- [ ] Un flujo de autenticación de prueba autorizado; health no demuestra que funcione.
+- [ ] Evidencia de un despliegue provocado por la integración de un commit en dev,
   con su commit, CI, fecha y versión publicada.
-- PR de documentación hacia `dev`, aprobación ajena y fusión mediante merge commit.
+- [ ] PR de documentación hacia `dev`, aprobación ajena y fusión mediante merge commit.
 
 Hasta entonces se utiliza `Refs #86` y no se declara la tarea terminada.
 
