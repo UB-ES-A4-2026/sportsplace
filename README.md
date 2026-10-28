@@ -4,18 +4,22 @@ Proyecto universitario de una plataforma de compraventa de material deportivo en
 
 ## Estado del proyecto
 
-El proyecto está en el Sprint 0: preparación del repositorio, entorno de desarrollo, decisiones técnicas y primeras funcionalidades de registro y acceso.
-
-Historias seleccionadas para este sprint:
+El Sprint 0 está entregado en `main` (21/10/2026). Historias completadas:
 
 - US-01: registrar un centro en la plataforma.
 - US-02: confirmar el email tras el registro.
 - US-03: iniciar sesión con email y contraseña.
+- US-66: pedir un enlace de confirmación nuevo.
 - US-67: cerrar sesión.
 
-La implementación y validación de estas historias se siguen en el Kanban.
+Validación de infraestructura del sprint: [validación DevOps](docs/sprint-0-validacion-devops.md).
 
-La comprobación de infraestructura del **20/10/2026** utiliza `story/US-01-registro` en `e755687`, con #28 (API de registro) y #30 (estructura web) integradas. Esto no completa US-01: faltan el formulario integrado y la validación conjunta de QA. Resultados, protecciones y bloqueos: [validación DevOps](docs/sprint-0-validacion-devops.md).
+Sprint 1: [pruebas e2e con Playwright (T12-7)](docs/pruebas-e2e.md) y
+[base de pruebas aislada y semilla de QA (T12-8)](docs/base-pruebas.md).
+
+T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pruebas.md).
+La imagen está preparada para web y API en el mismo origen. **URL pública y
+despliegue automático: pendientes de concretar el alojamiento y validarlo.**
 
 ## Tecnologías
 
@@ -49,10 +53,19 @@ El autor puede fusionar su pull request cuando se cumplan todos los requisitos d
 
 - Los identificadores, títulos, puntos y criterios de aceptación deben mantenerse coherentes en Excel, Trello y GitHub.
 - Cada tarea debe tener una o varias personas responsables y un resultado verificable.
-- Las historias usan su identificador original, por ejemplo US-01. Las tareas técnicas usan el suyo, por ejemplo TR-01.
-- Las tareas técnicas no son elementos sueltos del backlog: forman parte de la historia que las necesita. Las TR iniciales (repositorio, entorno, base de datos, CI, estructura de la API y de la web) son tareas de la primera historia. Solo aparece una TR independiente en el backlog si el Product Owner la da como tal. En GitHub, cada issue de tarea se añade como *sub-issue* de la issue de su historia.
+- Las historias usan su identificador original, por ejemplo US-01.
+- No se crean TR. Todo el trabajo técnico (entorno, base de datos, CI, estructura, configuración) es una **tarea** de la historia que lo necesita.
+- El Kanban de GitHub es el homólogo del de Trello y contiene **tareas**, no historias. Cada tarea es una issue con su propio ID en el título (por ejemplo, `T12-3 · Formulario de alta de producto (web)`) y es *sub-issue* de la issue de su historia.
 - El número de una issue de GitHub, como #5, no sustituye al identificador de la historia o tarea.
 - Frontend y backend pueden trabajar en tareas y pull requests diferentes de una misma historia.
+
+### Cómo se escriben historias y criterios
+
+Cada historia debe poder implementarse igual por cualquier persona o agente a partir de su texto, sin decidir nada por su cuenta.
+
+- **Historia:** lo que vive el usuario, desde el primer clic del flujo (por ejemplo, desde que pulsa «Registrarse» en la página de inicio), no solo la pantalla final.
+- **Boceto:** cada historia con interfaz enlaza un sketch o mockup de sus pantallas.
+- **Criterios de aceptación:** todo lo técnico y toda decisión, concretado al detalle. Botones y enlaces (texto exacto y a qué pantalla llevan), campos (tipo, obligatorio, longitud y formato, por ejemplo contraseña de mínimo 8 caracteres), mensajes de error y de éxito, rutas de la API, estados y redirecciones. Si algo no está en los criterios, no se hace; si falta, se pregunta y se añade antes de empezar.
 
 ### Estrategia de ramas
 
@@ -62,10 +75,10 @@ Trabajamos con dos ramas permanentes, `main` y `dev`, y con ramas temporales por
 main                                  versiones entregables (builds)
  └── dev                              integración, siempre funcional
       ├── story/US-01-registro        una historia de usuario completa
-      │    ├── feature/US-01-registro-api
-      │    ├── feature/US-01-registro-web
-      │    └── chore/TR-04-ci-github-actions   tarea técnica de la historia
-      └── chore/TR-08-...             TR independiente, solo si la da el PO
+      │    ├── feature/T01-3-registro-api
+      │    ├── feature/T01-4-registro-web
+      │    └── chore/T01-5-ci-github-actions    tarea técnica de la historia
+      └── fix/T03-4-...                   corrección de algo ya integrado
 ```
 
 `main` y `dev` están protegidas: solo reciben cambios mediante pull request con al menos una aprobación de otra persona, conversaciones resueltas y CI en verde. La protección se aplica también a los administradores.
@@ -82,7 +95,7 @@ main                                  versiones entregables (builds)
 
 `dev` es la rama sana del proyecto: en todo momento arranca, pasa el CI y lo que contiene funciona de punta a punta.
 
-- Solo recibe historias completas, correcciones y las TR independientes que haya dado el Product Owner, siempre mediante pull request.
+- Solo recibe historias completas y correcciones, siempre mediante pull request.
 - Una historia entra en `dev` únicamente cuando frontend, backend, base de datos y pruebas están terminados y se cumplen todos sus criterios de aceptación. No se fusiona en `dev` una parte suelta de una historia.
 - Si `dev` deja de funcionar, arreglarlo tiene prioridad sobre el trabajo nuevo.
 
@@ -98,10 +111,10 @@ Cada historia de usuario tiene una rama que sale de `dev` y reúne todo su traba
 
 Una historia se divide en tareas. Una tarea es cualquier parte del trabajo necesaria para completarla: frontend, backend, base de datos, pruebas, documentación o configuración. Cada tarea tiene su propia rama, que sale de la rama de la historia, y su pull request hacia ella. Por ejemplo, en US-01:
 
-- `chore/TR-06-estructura-api`: estructura del servidor (tarea técnica).
-- `feature/TR-05-estructura-web`: estructura de la web (tarea técnica).
-- `feature/US-01-registro-api`: API y validaciones del servidor.
-- `feature/US-01-registro-web`: formulario e interfaz.
+- `chore/T01-1-estructura-api`: estructura del servidor.
+- `chore/T01-2-estructura-web`: estructura de la web.
+- `feature/T01-3-registro-api`: API y validaciones del servidor.
+- `feature/T01-4-registro-web`: formulario e interfaz.
 
 Cada rama tiene su responsable y su pull request hacia `story/US-01-registro`. Así la historia se monta completa en su propia rama y a `dev` solo llega cuando todo está implementado y probado.
 
@@ -113,17 +126,20 @@ Si una historia necesita código de otra (por ejemplo, US-03 necesita la estruct
 2. Se actualiza la rama de la historia desde `dev` (`git merge origin/dev`) y después cada rama de tarea desde su `story/`.
 3. Mientras tanto, las pull requests de la historia que espera se abren hacia su `story/` como **borrador** (*draft*) e indican de qué historia dependen. Hasta que se actualicen pueden mostrar también los cambios de la otra historia.
 
-El nombre sigue el formato `categoria/ID-descripcion`. La categoría indica el tipo de cambio y el ID identifica la historia o tarea original de Excel/Trello.
+Los nombres distinguen historias de tareas, para que una tarea nunca parezca una historia:
+
+- **Historia:** `story/US-12-descripcion`. Solo su PR hacia `dev` lleva `US-12` en el título.
+- **Tarea:** `categoria/T12-3-descripcion`, donde `T12-3` es la tarea 3 de US-12. Su issue y su PR se titulan con ese ID (`T12-3: formulario de alta (web)`), nunca con `US-12`.
 
 | Categoría | Sale de y vuelve a | Cuándo utilizarla | Ejemplo |
 |---|---|---|---|
 | `story/` | `dev` | Reunir todo el trabajo de una historia de usuario. | `story/US-01-registro` |
-| `feature/` | su `story/` | Añadir una funcionalidad o una parte de ella. | `feature/US-01-registro-web` |
-| `test/` | su `story/` | Añadir o mejorar pruebas de una historia. | `test/US-03-pruebas-login` |
-| `refactor/` | su `story/` o `dev` | Reorganizar código manteniendo su comportamiento. | `refactor/US-03-servicio-login` |
-| `fix/` | su `story/` o `dev` | Corregir un comportamiento incorrecto: desde su historia si aún no está en `dev`, desde `dev` si ya está integrada. | `fix/US-03-error-login` |
-| `chore/` | su `story/` (o `dev` si es una TR independiente del PO) | Tarea técnica: herramientas, dependencias, Docker, CI o mantenimiento del repositorio. | `chore/TR-04-ci-github-actions` |
-| `docs/` | su `story/` (o `dev` si es una TR independiente del PO) | Cambiar exclusivamente documentación. | `docs/TR-01-reglas-trabajo` |
+| `feature/` | su `story/` | Añadir una funcionalidad o una parte de ella. | `feature/T01-4-registro-web` |
+| `test/` | su `story/` | Añadir o mejorar pruebas de una historia. | `test/T03-3-pruebas-login` |
+| `refactor/` | su `story/` o `dev` | Reorganizar código manteniendo su comportamiento. | `refactor/T03-5-servicio-login` |
+| `fix/` | su `story/` o `dev` | Corregir un comportamiento incorrecto: desde su historia si aún no está en `dev`, desde `dev` si ya está integrada. | `fix/T03-6-error-login` |
+| `chore/` | su `story/` | Tarea técnica: herramientas, dependencias, Docker, CI o mantenimiento del repositorio. | `chore/T01-5-ci-github-actions` |
+| `docs/` | su `story/` (o `dev` si es documentación del proceso) | Cambiar exclusivamente documentación. | `docs/T01-6-contrato-api` |
 
 Las categorías son una convención del equipo. Cualquier miembro puede utilizar cualquiera de ellas según la tarea que tenga asignada.
 
@@ -131,20 +147,20 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 
 #### Reglas de nombres y alcance
 
-- Conservar el ID original: `US-01`, `TR-01`, etc.
+- `US-xx` solo en ramas `story/`; las ramas de tarea usan el ID de la tarea (`T12-3`).
 - Escribir la descripción en minúsculas, con guiones y sin espacios ni tildes.
 - Crear cada rama desde su base actualizada, según la tabla anterior.
 - Mantener un cambio coherente y revisable por rama.
 - No crear ramas permanentes por persona, área o sprint: las únicas permanentes son `main` y `dev`.
-- Conservar `main` y `dev`. Eliminar solo ramas temporales después de fusionar su pull request y cuando ninguna otra PR las utilice como base. La rama `story/` se elimina tras fusionarse en `dev`, cuando ya no tenga PR dependientes.
+- Conservar todas las ramas: `main`, `dev`, las `story/` y las ramas de trabajo. No se eliminan después de fusionarse, para que sigan visibles en el historial (Network).
 
 #### Resumen del flujo
 
 | Pull request | Quién la abre | Requisitos | Cómo se fusiona |
 |---|---|---|---|
-| `feature/`, `chore/`, `docs/`, `test/` → `story/...` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
-| `story/...` → `dev` | Quien cierra la historia | 1 aprobación, CI en verde, historia probada de punta a punta y validada por QA. | **Squash and merge** |
-| `chore/`, `docs/`, `fix/` → `dev` (TR independiente del PO o corrección) | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Squash and merge** |
+| `feature/`, `chore/`, `docs/`, `test/` → `story/...` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Create a merge commit** |
+| `story/...` → `dev` | Quien cierra la historia | 1 aprobación, CI en verde, historia probada de punta a punta y validada por QA. | **Create a merge commit** |
+| `docs/`, `fix/` → `dev` (documentación del proceso o corrección) | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Create a merge commit** |
 | `dev` → `main` | Carlos | Acuerdo del equipo, CI en verde y `dev` probada. | **Create a merge commit** |
 
 ### Procedimiento para desarrollar una tarea
@@ -165,7 +181,7 @@ git push -u origin story/US-03-login
 ```bash
 git switch story/US-03-login
 git pull --ff-only
-git switch -c feature/US-03-login-api
+git switch -c feature/T03-1-login-api
 ```
 
 5. Implementar el cambio y realizar las comprobaciones que correspondan.
@@ -176,15 +192,15 @@ git status
 git add ruta/del/archivo
 git diff --cached
 git commit -m "US-03: implementar acceso con email y contraseña"
-git push -u origin feature/US-03-login-api
+git push -u origin feature/T03-1-login-api
 ```
 
 7. Abrir una pull request hacia `story/US-03-login` y mover la tarea a **En revisión**.
 8. Solicitar revisión a otra persona del equipo y atender sus comentarios.
-9. Tras la aprobación y las comprobaciones, fusionar mediante **Squash and merge** y eliminar la rama temporal utilizada cuando ninguna otra PR dependa de ella.
+9. Tras la aprobación y las comprobaciones, fusionar mediante **Create a merge commit**. No se borra la rama: debe seguir visible en el historial (Network).
 10. Cuando todas las partes de la historia estén fusionadas en su rama `story/`, probar la historia completa y abrir la pull request `story/US-03-login` → `dev`.
 
-Todas las tareas de una historia (frontend, backend, `chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella. Solo una TR independiente dada por el Product Owner sale de `dev` y vuelve a `dev`.
+Todas las tareas de una historia (frontend, backend, `chore/`, `docs/`) siguen los mismos pasos: salen de la rama `story/` y su pull request va hacia ella.
 
 Si la rama base cambia durante el desarrollo, incorporar sus cambios desde la rama de trabajo, con los cambios propios ya guardados en commits. Una rama de trabajo se actualiza desde su `story/`, y una `story/` desde `dev`:
 
@@ -225,8 +241,8 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 2. El revisor entra en **Files changed**, revisa los cambios y las comprobaciones descritas.
 3. Si todo está correcto, pulsa **Review changes → Approve → Submit review**. Si necesita correcciones, utiliza **Request changes** y explica qué debe cambiar.
 4. El autor atiende los comentarios y solicita otra revisión cuando corresponda.
-5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Squash and merge** y confirma la fusión. La pull request `dev` → `main` es la única que se fusiona con **Create a merge commit**.
-6. Se elimina únicamente la rama temporal con **Delete branch**, cuando ninguna otra PR la utilice como base. Se conservan `main` y `dev`, también después de publicar una entrega.
+5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Create a merge commit** y confirma la fusión. No se usa **Squash and merge** ni **Rebase and merge**: el profesor pidió que las ramas no desaparezcan del historial (Network), y el squash provocó los conflictos de la integración del Sprint 0.
+6. No se pulsa **Delete branch**: se conservan todas las ramas, también `main` y `dev` después de publicar una entrega.
 
 Un comentario normal no cuenta como aprobación. El autor no puede aprobar su propia pull request.
 
@@ -251,7 +267,7 @@ Fusionar una tarea parcial de frontend o backend en la rama `story/` no completa
 
 ## Arranque y comprobaciones
 
-### Qué incluye TR-02
+### Qué incluye el entorno de desarrollo
 
 La base de desarrollo incluye una web React y una API de comprobación que arrancan juntas. La pantalla inicial verifica que puede comunicarse con el servidor mediante `/api/health`.
 
