@@ -95,7 +95,7 @@ test('US-07: centroDelUsuario busca el centro por usuario_id', async () => {
   const encontrado = await createCentrosRepository(database).centroDelUsuario('u1');
 
   assert.deepEqual(encontrado, { id: 'centro-1' });
-  assert.match(database.log[0].sql, /^SELECT id, nombre, email, .* creado_en FROM public\.centros WHERE usuario_id = \$1$/);
+  assert.match(database.log[0].sql, /^SELECT id, nombre, email, .* creado_en, .* FROM public\.centros WHERE usuario_id = \$1$/);
   assert.deepEqual(database.log[0].values, ['u1']);
 });
 
@@ -126,4 +126,52 @@ test('US-07: los errores de PostgreSQL al leer o editar el perfil se ocultan com
   for (const promesa of [repositorio.centroDelUsuario('u1'), repositorio.actualizarPerfil('u1', { nombre: 'Club' })]) {
     await assert.rejects(promesa, (error) => error.status === 503 && !error.message.includes('secreta'));
   }
+});
+
+test('US-68 CA13: centroDelUsuario devuelve provincia y coordenadas como números', async () => {
+  const database = fakeDatabase();
+  await createCentrosRepository(database).centroDelUsuario('u1');
+
+  assert.match(database.log[0].sql, /provincia, latitud::float8 AS latitud, longitud::float8 AS longitud FROM/);
+});
+
+test('US-68 CA7: actualizarUbicacion copia provincia y coordenadas del código postal en una sola sentencia', async () => {
+  const database = { log: [], async query(sql, values) {
+    this.log.push({ sql: sql.replace(/\s+/g, ' ').trim(), values });
+    return { rows: [{ codigo_conocido: true, id: 'centro-1', provincia: 'Barcelona' }] };
+  } };
+  const centro = await createCentrosRepository(database).actualizarUbicacion('u1', {
+    direccion: null, codigo_postal: '08025', localidad: 'Barcelona',
+  });
+
+  assert.deepEqual(centro, { id: 'centro-1', provincia: 'Barcelona' });
+  assert.equal(database.log.length, 1);
+  assert.match(database.log[0].sql, /AS cp_longitud FROM public\.codigos_postales WHERE codigo_postal = \$3/);
+  assert.match(database.log[0].sql, /provincia = cp_provincia, latitud = cp_latitud, longitud = cp_longitud, actualizado_en = now\(\) FROM cp WHERE usuario_id = \$1/);
+  assert.deepEqual(database.log[0].values, ['u1', null, '08025', 'Barcelona']);
+});
+
+test('US-68 CA5: actualizarUbicacion con un código que no está en la tabla → 400 CODIGO_POSTAL_DESCONOCIDO', async () => {
+  const repositorio = createCentrosRepository({
+    query: async () => ({ rows: [{ codigo_conocido: false, id: null }] }),
+  });
+
+  await assert.rejects(
+    repositorio.actualizarUbicacion('u1', { direccion: null, codigo_postal: '52998', localidad: 'Melilla' }),
+    (error) => error instanceof ApiError && error.status === 400 && error.code === 'CODIGO_POSTAL_DESCONOCIDO'
+      && error.details.codigo_postal === 'No conocemos este código postal. Revísalo.',
+  );
+});
+
+test('US-68: actualizarUbicacion devuelve null si la cuenta no tiene centro y oculta los errores como 503', async (t) => {
+  const sinCentro = createCentrosRepository({ query: async () => ({ rows: [{ codigo_conocido: true, id: null }] }) });
+  assert.equal(await sinCentro.actualizarUbicacion('u3', { direccion: null, codigo_postal: '08025', localidad: 'B' }), null);
+
+  t.mock.method(console, 'error', () => {});
+  const fallo = Object.assign(new Error('password=secreta'), { code: '08006' });
+  const caido = createCentrosRepository({ query: async () => { throw fallo; } });
+  await assert.rejects(
+    caido.actualizarUbicacion('u1', { direccion: null, codigo_postal: '08025', localidad: 'B' }),
+    (error) => error.status === 503 && !error.message.includes('secreta'),
+  );
 });

@@ -2,9 +2,11 @@ import { ApiError } from '../errors.js';
 
 const UNIQUE_VIOLATION = '23505';
 
-// US-07: columnas que devuelven GET y PATCH /api/centros/mio (CA17).
+// US-07: columnas que devuelven GET y PATCH /api/centros/mio (CA17). US-68 añade
+// provincia y coordenadas (CA13); NUMERIC se devuelve como número, no como texto.
 const PERFIL = `id, nombre, email, localidad, direccion, codigo_postal, telefono,
-  descripcion, email_contacto, web, creado_en`;
+  descripcion, email_contacto, web, creado_en,
+  provincia, latitud::float8 AS latitud, longitud::float8 AS longitud`;
 const EDITABLES = ['nombre', 'descripcion', 'telefono', 'email_contacto', 'web'];
 
 export function emailAlreadyRegistered() {
@@ -13,6 +15,12 @@ export function emailAlreadyRegistered() {
 
 export function databaseUnavailable() {
   return new ApiError(503, 'BASE_DATOS_NO_DISPONIBLE', 'No se ha podido guardar la información. Inténtalo más tarde.');
+}
+
+export function codigoPostalDesconocido() {
+  return new ApiError(400, 'CODIGO_POSTAL_DESCONOCIDO', 'No conocemos este código postal. Revísalo.', {
+    codigo_postal: 'No conocemos este código postal. Revísalo.',
+  });
 }
 
 export function createCentrosRepository(database) {
@@ -84,6 +92,38 @@ export function createCentrosRepository(database) {
         console.error(`No se pudo actualizar el perfil del centro: ${error?.code ?? 'error desconocido'}`);
         throw databaseUnavailable();
       }
+    },
+
+    // US-68 (CA7, CA8, CA18, CA19): guarda la ubicación ya validada y copia
+    // provincia, latitud y longitud del código postal en la misma sentencia.
+    // Si el código no está en codigos_postales no se cambia nada (CA5).
+    async actualizarUbicacion(usuarioId, { direccion, codigo_postal: codigoPostal, localidad }) {
+      let rows;
+      try {
+        ({ rows } = await database.query(
+          `WITH cp AS (
+             SELECT provincia AS cp_provincia, latitud AS cp_latitud, longitud AS cp_longitud
+             FROM public.codigos_postales WHERE codigo_postal = $3
+           ), actualizado AS (
+             UPDATE public.centros
+             SET direccion = $2, codigo_postal = $3, localidad = $4,
+                 provincia = cp_provincia, latitud = cp_latitud, longitud = cp_longitud,
+                 actualizado_en = now()
+             FROM cp
+             WHERE usuario_id = $1
+             RETURNING ${PERFIL}
+           )
+           SELECT EXISTS (SELECT 1 FROM cp) AS codigo_conocido, actualizado.*
+           FROM (SELECT 1) AS fila LEFT JOIN actualizado ON TRUE`,
+          [usuarioId, direccion, codigoPostal, localidad],
+        ));
+      } catch (error) {
+        console.error(`No se pudo guardar la ubicación del centro: ${error?.code ?? 'error desconocido'}`);
+        throw databaseUnavailable();
+      }
+      const { codigo_conocido: codigoConocido, ...centro } = rows[0] ?? {};
+      if (!codigoConocido) throw codigoPostalDesconocido();
+      return centro.id ? centro : null;
     },
   };
 }
