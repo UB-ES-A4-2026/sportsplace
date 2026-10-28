@@ -1,6 +1,14 @@
-import { cloneElement, useCallback, useRef, useState } from 'react';
+import { cloneElement, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ErrorApi } from '../api/cliente.js';
+import {
+  anadirFotos,
+  FOTOS_VACIAS,
+  marcarPrincipal,
+  quitarFoto,
+  subidaLenta,
+  validarFotos,
+} from '../anuncios/fotos.js';
 import { resultadoDelEnvio } from '../anuncios/publicar.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL } from '../anuncios/valores.js';
 import {
@@ -16,12 +24,13 @@ import {
 } from '../validacion/anuncio.js';
 import Aviso from './Aviso.jsx';
 import DialogoConfirmacion from './DialogoConfirmacion.jsx';
+import SeccionFotos from './SeccionFotos.jsx';
 
 // Formulario de anuncio reutilizable (US-12 T12-3; lo reutilizarán US-15, US-19 y US-90).
 // Campos, reglas y mensajes de la «Tabla de campos» de E03. Valida todo al enviar, revalida cada campo
 // al cambiarlo tras el primer intento, muestra los `details` de un 400 bajo su campo y conserva los datos si falla.
 //
-// - `onEnviar(cuerpo)`: hace la petición y, si va bien, navega. Si lanza un ErrorApi, el formulario muestra el error.
+// - `onEnviar(cuerpo, fotos)`: hace la petición y, si va bien, navega. Si lanza un ErrorApi, el formulario muestra el error.
 // - `dialogoSalir`: { titulo, texto, confirmar, cancelar } del diálogo que abre «Cancelar» con datos (CA9).
 // - `destinoCancelar`: adónde lleva «Cancelar» (o «Salir» en el diálogo).
 export default function FormularioAnuncio({
@@ -37,6 +46,8 @@ export default function FormularioAnuncio({
   const enviandoAhora = useRef(false);
   const [valores, setValores] = useState(valoresIniciales);
   const [unidadesIlegibles, setUnidadesIlegibles] = useState(false);
+  const [fotos, setFotos] = useState(FOTOS_VACIAS);
+  const [mensajesFotos, setMensajesFotos] = useState([]);
   const [errores, setErrores] = useState({});
   const [intentado, setIntentado] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -44,8 +55,15 @@ export default function FormularioAnuncio({
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const cerrarAviso = useCallback(() => setAviso(null), []);
 
+  // Las miniaturas son URLs de objeto: se liberan al quitar la foto y al salir del formulario.
+  const vistas = useRef(new Set());
+  useEffect(() => {
+    const abiertas = vistas.current;
+    return () => abiertas.forEach((vista) => URL.revokeObjectURL(vista));
+  }, []);
+
   function enfocarPrimerError(lista) {
-    const campo = CAMPOS_ANUNCIO.find((nombre) => lista[nombre]);
+    const campo = [...CAMPOS_ANUNCIO, 'fotos'].find((nombre) => lista[nombre]);
     if (campo) formulario.current?.elements.namedItem(campo)?.focus();
   }
 
@@ -73,6 +91,41 @@ export default function FormularioAnuncio({
     actualizar('unidades_disponibles', evento.target.value, ilegible);
   }
 
+  // CA4: tras el primer intento, el error de la sección se actualiza al añadir o quitar fotos.
+  function revalidarFotos(siguientes) {
+    if (!intentado) return;
+    const error = validarFotos(siguientes).fotos;
+    setErrores((anteriores) => {
+      const resto = { ...anteriores };
+      if (error) resto.fotos = error;
+      else delete resto.fotos;
+      return resto;
+    });
+  }
+
+  function anadirLasFotos(archivos) {
+    const crearVista = (archivo) => {
+      const vista = URL.createObjectURL(archivo);
+      vistas.current.add(vista);
+      return vista;
+    };
+    const resultado = anadirFotos(fotos, archivos, { crearVista });
+    setFotos(resultado.estado);
+    setMensajesFotos(resultado.mensajes);
+    revalidarFotos(resultado.estado);
+  }
+
+  function quitarLaFoto(id) {
+    const { estado, quitada } = quitarFoto(fotos, id);
+    if (quitada?.vista) {
+      URL.revokeObjectURL(quitada.vista);
+      vistas.current.delete(quitada.vista);
+    }
+    setFotos(estado);
+    setMensajesFotos([]);
+    revalidarFotos(estado);
+  }
+
   async function enviar(evento) {
     evento.preventDefault();
     // CA10: un segundo clic mientras se envía no hace otra petición.
@@ -80,7 +133,7 @@ export default function FormularioAnuncio({
 
     // CA7: se validan todos los campos a la vez; con errores, foco en el primero y ninguna petición.
     setIntentado(true);
-    const erroresLocales = validarAnuncio(valores, { unidadesIlegibles });
+    const erroresLocales = { ...validarAnuncio(valores, { unidadesIlegibles }), ...validarFotos(fotos) };
     setErrores(erroresLocales);
     if (Object.keys(erroresLocales).length > 0) {
       enfocarPrimerError(erroresLocales);
@@ -91,7 +144,7 @@ export default function FormularioAnuncio({
     setEnviando(true);
     setAviso(null);
     try {
-      await onEnviar(cuerpoDelAnuncio(valores));
+      await onEnviar(cuerpoDelAnuncio(valores), fotos);
     } catch (fallo) {
       if (!(fallo instanceof ErrorApi)) throw fallo;
       const resultado = resultadoDelEnvio(fallo);
@@ -109,7 +162,9 @@ export default function FormularioAnuncio({
 
   // CA9: sin tocar, «Cancelar» sale directamente; con datos, pregunta antes.
   function cancelar() {
-    if (haCambiado(valores, valoresIniciales, { unidadesIlegibles })) setDialogoAbierto(true);
+    if (haCambiado(valores, valoresIniciales, { unidadesIlegibles, hayFotos: fotos.fotos.length > 0 })) {
+      setDialogoAbierto(true);
+    }
     else navigate(destinoCancelar);
   }
 
@@ -149,7 +204,18 @@ export default function FormularioAnuncio({
             opciones={ESTADOS_MATERIAL} />
         </CampoAnuncio>
 
-        {/* [Depende de US-13] sección «Fotos» · [Depende de US-14] sección «Modalidad y precio» */}
+        <SeccionFotos
+          estado={fotos}
+          mensajes={mensajesFotos}
+          error={errores.fotos}
+          subiendo={enviando && subidaLenta(fotos)}
+          deshabilitado={enviando}
+          onAnadir={anadirLasFotos}
+          onQuitar={quitarLaFoto}
+          onPrincipal={(id) => setFotos((anteriores) => marcarPrincipal(anteriores, id))}
+        />
+
+        {/* [Depende de US-14] sección «Modalidad y precio» */}
 
         <div className="formulario-botones">
           <button type="button" className="boton-secundario" onClick={cancelar}>Cancelar</button>

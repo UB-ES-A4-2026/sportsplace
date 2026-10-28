@@ -106,7 +106,7 @@ export function validarAnuncio(valores, { unidadesIlegibles = false } = {}) {
 }
 
 // Cuerpo de POST /api/anuncios (US-12 CA15): textos recortados y unidades como entero JSON.
-// Hasta que US-13 y US-14 estén en `dev`, no lleva fotos ni modalidad/precio (CA30).
+// Las fotos no van aquí: viajan como partes aparte del multipart (US-13 CA12). Modalidad/precio llegan con US-14.
 export function cuerpoDelAnuncio(valores) {
   return {
     titulo: valores.titulo.trim(),
@@ -121,15 +121,19 @@ export function cuerpoDelAnuncio(valores) {
 // ¿Se ha tocado el formulario? Decide si «Cancelar» abre el diálogo «¿Salir sin publicar?» (US-12 CA9).
 // En «Publicar anuncio» los valores iniciales están vacíos, así que equivale a «algún campo tiene valor».
 // Comparar con los iniciales deja el componente listo para un formulario que ya viene relleno (US-15, US-19).
-export function haCambiado(valores, iniciales = VALORES_VACIOS, { unidadesIlegibles = false } = {}) {
+// `hayFotos`: ya se ha añadido alguna foto (US-13 CA9), que también cuenta como dato escrito.
+export function haCambiado(valores, iniciales = VALORES_VACIOS, { unidadesIlegibles = false, hayFotos = false } = {}) {
   return unidadesIlegibles
+    || hayFotos
     || CAMPOS_ANUNCIO.some((campo) => String(valores[campo] ?? '') !== String(iniciales[campo] ?? ''));
 }
 
-// Se queda con los mensajes de `details` de un 400 DATOS_INVALIDOS que corresponden a campos del formulario (CA12).
+// Se queda con los mensajes de `details` de un 400 DATOS_INVALIDOS que corresponden a campos del formulario (CA12)
+// o a la sección de fotos (`fotos`, US-13).
 export function erroresDelServidor(details) {
   if (!details || typeof details !== 'object') return {};
+  const campos = [...CAMPOS_ANUNCIO, 'fotos'];
   return Object.fromEntries(
-    CAMPOS_ANUNCIO.filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
+    campos.filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
   );
 }
