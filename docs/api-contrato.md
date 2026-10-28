@@ -73,6 +73,30 @@ Cualquier error de la API tiene esta forma:
 
 `expires_at` está en segundos Unix. El `access_token` dura una hora; antes de que caduque, el frontend usa `POST /api/auth/refresh`.
 
+`anuncio` (E03, «Objeto `anuncio`» de `docs/especificacion/E03-publicacion-de-material.md`):
+
+```json
+{
+  "id": "uuid",
+  "centro_id": "uuid",
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado",
+  "modalidad": "donacion",
+  "precio_unitario_centimos": null,
+  "estado": "activo",
+  "fotos": [],
+  "publicado_en": "2026-11-03T10:15:00.000Z",
+  "creado_en": "2026-11-03T10:15:00.000Z",
+  "actualizado_en": "2026-11-03T10:15:00.000Z"
+}
+```
+
+Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anuncios salen como `modalidad: "donacion"`, `precio_unitario_centimos: null` y `fotos: []` (US-12, CA30).
+
 ## Endpoints
 
 | Método y ruta | Historia | Privada | Responsable backend |
@@ -85,6 +109,9 @@ Cualquier error de la API tiene esta forma:
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
+| `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
+| `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 
 ### `GET /api/health`
 
@@ -185,6 +212,73 @@ Privada. Sin cuerpo.
 - `401 NO_AUTENTICADO` si la sesión ya no era válida. El frontend lo trata igual que un cierre correcto.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
+
+### `POST /api/anuncios` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo JSON:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado"
+}
+```
+
+- `201 { "anuncio": anuncio }` con la cabecera `Location: /api/anuncios/<id>`. El anuncio se crea `activo`, del centro de la sesión, con `publicado_en` = `creado_en` = `actualizado_en`.
+- Reglas y mensajes: «Tabla de campos» de E03. Los textos se recortan de espacios y las longitudes se cuentan en caracteres Unicode. `unidades_disponibles` solo acepta un entero JSON entre 1 y 9999: `"3"`, `3.0` o `2.5` se rechazan.
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por **cada** campo incorrecto. No se crea nada. Un cuerpo JSON que no es un objeto (p. ej. `[]`) devuelve los seis campos obligatorios; un cuerpo que no es JSON, `400 JSON_INVALIDO`.
+- Las claves `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- US-13 cambiará el cuerpo a `multipart/form-data` (fotos) y US-14 añadirá `modalidad` y `precio_unitario_centimos`.
+
+### `GET /api/anuncios/:id` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`.
+
+- `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `GET /api/anuncios/mios` (US-18)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del centro de la sesión, paginada: `GET /api/anuncios/mios?pagina=1&por_pagina=20`.
+
+- `pagina`: entero mayor que 0, por defecto 1. `por_pagina`: entero de 1 a 50, por defecto 20.
+- `200`:
+
+```json
+{
+  "anuncios": [
+    {
+      "id": "uuid",
+      "titulo": "Balones de fútbol talla 5",
+      "categoria": "balones",
+      "deporte": "futbol",
+      "unidades_disponibles": 12,
+      "modalidad": "donacion",
+      "precio_unitario_centimos": null,
+      "estado": "activo",
+      "foto_principal_url": null,
+      "publicado_en": "2026-11-03T10:15:00.000Z",
+      "actualizado_en": "2026-11-03T10:15:00.000Z"
+    }
+  ],
+  "total": 21,
+  "pagina": 1,
+  "por_pagina": 20
+}
+```
+
+- Incluye los anuncios en `borrador`, `activo`, `pausado`, `reservado` y `entregado`; nunca los `retirado` ni los de otros centros. `total` cuenta los mismos.
+- Orden: `actualizado_en` descendente y, a igualdad, `id` descendente.
+- Si `pagina` es mayor que la última, se devuelve la última y `pagina` trae su número (con 0 anuncios, la 1). La web debe usar ese valor (CA10).
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «Debe ser un número entero mayor que 0.» y/o `details.por_pagina` «Debe ser un número entre 1 y 50.». Solo se aceptan dígitos: `2.5`, `-1`, `abc`, un valor vacío o el parámetro repetido se rechazan.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- Mientras US-13 y US-14 no estén en `dev`, `foto_principal_url` es `null`, `modalidad` es `"donacion"` y `precio_unitario_centimos` es `null` (US-12, CA30).
 
 ## Rutas privadas y confirmación del email (US-02)
 
