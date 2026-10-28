@@ -89,3 +89,41 @@ test('marcarEmailConfirmado solo rellena la fecha la primera vez', async () => {
     values: ['u1', '2026-10-09T10:00:00Z'],
   }]);
 });
+
+test('US-07: centroDelUsuario busca el centro por usuario_id', async () => {
+  const database = fakeDatabase();
+  const encontrado = await createCentrosRepository(database).centroDelUsuario('u1');
+
+  assert.deepEqual(encontrado, { id: 'centro-1' });
+  assert.match(database.log[0].sql, /^SELECT id, nombre, email, .* creado_en FROM public\.centros WHERE usuario_id = \$1$/);
+  assert.deepEqual(database.log[0].values, ['u1']);
+});
+
+test('US-07 CA18 y CA21: actualizarPerfil solo cambia los campos recibidos y actualizado_en', async () => {
+  const database = fakeDatabase();
+  await createCentrosRepository(database).actualizarPerfil('u1', { web: null, nombre: 'Club' });
+
+  assert.match(
+    database.log[0].sql,
+    /^UPDATE public\.centros SET nombre = \$2, web = \$3, actualizado_en = now\(\) WHERE usuario_id = \$1 RETURNING id, /,
+  );
+  assert.deepEqual(database.log[0].values, ['u1', 'Club', null]);
+});
+
+test('US-07 CA21: un PATCH vacío también actualiza actualizado_en', async () => {
+  const database = fakeDatabase();
+  await createCentrosRepository(database).actualizarPerfil('u1', {});
+
+  assert.match(database.log[0].sql, /^UPDATE public\.centros SET actualizado_en = now\(\) WHERE usuario_id = \$1 /);
+  assert.deepEqual(database.log[0].values, ['u1']);
+});
+
+test('US-07: los errores de PostgreSQL al leer o editar el perfil se ocultan como 503', async (t) => {
+  t.mock.method(console, 'error', () => {});
+  const fallo = Object.assign(new Error('password=secreta'), { code: '08006' });
+  const repositorio = createCentrosRepository({ query: async () => { throw fallo; } });
+
+  for (const promesa of [repositorio.centroDelUsuario('u1'), repositorio.actualizarPerfil('u1', { nombre: 'Club' })]) {
+    await assert.rejects(promesa, (error) => error.status === 503 && !error.message.includes('secreta'));
+  }
+});
