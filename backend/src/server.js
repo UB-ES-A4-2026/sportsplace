@@ -45,7 +45,13 @@ if (process.env.DATABASE_URL?.trim()) {
 
 const centros = database ? createCentrosRepository(database) : null;
 const anuncios = database ? createAnunciosRepository(database, { urlFoto }) : null;
-const server = createAppServer({ auth, centros, anuncios, fotos });
+const server = createAppServer({
+  auth,
+  centros,
+  anuncios,
+  fotos,
+  webRoot: process.env.STATIC_WEB_DIR?.trim() || null,
+});
 
 server.on('error', (error) => {
   console.error(`Unable to start Sportsplace API: ${error.message}`);

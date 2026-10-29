@@ -4,13 +4,20 @@ import { errorHandler, notFoundHandler } from './errors.js';
 import { anunciosRouter } from './routes/anuncios.js';
 import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
+import { staticWeb } from './static-web.js';
 import { marcarEnterosConDecimales } from './validation/anuncios.js';
 
 // `auth` es el servicio de autenticación (Supabase Auth en producción y un
 // doble en las pruebas); `centros` y `anuncios`, los repositorios de sus tablas;
 // `fotos`, el bucket de Storage de las fotos de los anuncios (US-13).
 // Cualquiera puede ser null si falta su configuración.
-export function createApp({ auth = null, centros = null, anuncios = null, fotos = null } = {}) {
+export function createApp({
+  auth = null,
+  centros = null,
+  anuncios = null,
+  fotos = null,
+  webRoot = null,
+} = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('auth', auth);
@@ -27,6 +34,8 @@ export function createApp({ auth = null, centros = null, anuncios = null, fotos 
   app.use(healthRouter());
   app.use('/api/auth', authRouter());
   app.use('/api/anuncios', anunciosRouter());
+
+  if (webRoot !== null) app.use(staticWeb(webRoot));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
