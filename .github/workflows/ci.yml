@@ -41,6 +41,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm test --if-present
       - run: npm run build
 
   tools:
@@ -59,3 +60,67 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+
+  deployment-image:
+    name: Imagen de despliegue (T12-6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Construir web y API de producción sin secretos
+        run: docker build --tag sportsplace-deploy-ci .
+      - name: Arrancar la imagen
+        run: docker run --detach --name sportsplace-deploy-ci --env PORT=10000 --publish 127.0.0.1:4301:10000 sportsplace-deploy-ci
+      - name: Comprobar web, rutas SPA y API por el mismo origen
+        run: npm --prefix tools run deploy:check -- http://127.0.0.1:4301
+      - name: Mostrar diagnóstico si falla
+        if: failure()
+        run: docker logs sportsplace-deploy-ci
+      - name: Detener el contenedor de esta comprobación
+        if: always()
+        run: docker rm --force sportsplace-deploy-ci
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            tools/package-lock.json
+            e2e/package-lock.json
+      - run: npm --prefix backend ci
+      - run: npm --prefix frontend ci
+      - run: npm --prefix tools ci
+      - run: npm --prefix e2e ci
+      - run: npm --prefix e2e run lint
+      - run: npm --prefix e2e run test:unit
+      - name: Instalar Chromium y dependencias del navegador
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+      - name: Preparar Supabase local aislado, migraciones y semilla (T12-8)
+        run: npm --prefix tools run test-env:up
+      - name: Probar web y API contra la base de pruebas
+        run: npm --prefix e2e test
+      - name: Guardar informe y evidencia de fallos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Detener solo el entorno de pruebas
+        if: always()
+        run: npm --prefix tools run test-env:down
