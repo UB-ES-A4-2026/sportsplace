@@ -9,6 +9,10 @@ const VALIDO = {
   deporte: 'Fútbol',
   unidades: '12',
   estado: 'Buen estado',
+  // US-14: `modalidad` es obligatoria y NOT NULL desde la migración de T14-1, así que
+  // todo caso de US-12 que llegue a publicar tiene que elegirla. Se usa «Donación»
+  // porque no arrastra el campo de precio, que es asunto de los E2E de US-14.
+  modalidad: 'Donación',
 };
 
 const VALIDO_API = {
@@ -18,6 +22,7 @@ const VALIDO_API = {
   deporte: 'futbol',
   unidades_disponibles: 12,
   estado_material: 'buen_estado',
+  modalidad: 'donacion',
 };
 
 const ERROR_GENERICO = 'No se ha podido completar la acción. Inténtalo de nuevo.';
@@ -40,6 +45,8 @@ function campos(page) {
     deporte: page.getByLabel('Deporte'),
     unidades: page.getByLabel('Unidades disponibles'),
     estado: page.getByLabel('Estado del material'),
+    // US-14 (T14-3): «Modalidad» son dos radios en fila, «Venta» y «Donación».
+    modalidad: (etiqueta) => page.getByRole('radio', { name: etiqueta, exact: true }),
     publicar: page.getByRole('button', { name: /^Publicar$|^Publicando…$/ }),
     cancelar: page.getByRole('button', { name: 'Cancelar' }),
   };
@@ -53,6 +60,7 @@ async function rellenar(page, datos = VALIDO) {
   await c.deporte.selectOption({ label: datos.deporte });
   await c.unidades.fill(datos.unidades);
   await c.estado.selectOption({ label: datos.estado });
+  await c.modalidad(datos.modalidad).check();
 }
 
 // Cuenta las peticiones POST /api/anuncios que hace el navegador.
@@ -217,8 +225,10 @@ test('US-12 · E2E-5 · anuncio de otro centro y API directa', async ({ page, re
   const { error } = await malo.json();
   expect(error.code).toBe('DATOS_INVALIDOS');
   expect(error.message).toBe('Revisa los campos marcados.');
+  // `modalidad` entra en la lista desde US-14 (CA1, CA8): al faltar en el cuerpo,
+  // la validación de T14-2 la devuelve junto a los demás campos.
   expect(Object.keys(error.details).sort()).toEqual(
-    ['categoria', 'descripcion', 'deporte', 'estado_material', 'titulo', 'unidades_disponibles'].sort(),
+    ['categoria', 'descripcion', 'deporte', 'estado_material', 'modalidad', 'titulo', 'unidades_disponibles'].sort(),
   );
 
   // CA21: estado y centro_id del cuerpo se ignoran.
