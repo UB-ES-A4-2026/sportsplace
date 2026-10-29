@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { ErrorApi } from '../api/cliente.js';
 import { useAuth } from '../auth/useAuth.js';
+import Aviso from '../components/Aviso.jsx';
 import Campo from '../components/Campo.jsx';
 import { validarLogin } from '../validacion/login.js';
 
@@ -11,6 +12,10 @@ const VALORES_INICIALES = { email: '', password: '' };
 export default function EntrarPage() {
   const { usuario, iniciarSesion } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  // US-04 CA5: «Contraseña cambiada. Ya puedes entrar con la nueva.» llega en `state.aviso` desde /restablecer-contrasena.
+  const [aviso, setAviso] = useState(() => location.state?.aviso ?? null);
+  const cerrarAviso = useCallback(() => setAviso(null), []);
   const [valores, setValores] = useState(VALORES_INICIALES);
   const [errores, setErrores] = useState({});
   const [errorGeneral, setErrorGeneral] = useState('');
@@ -24,6 +29,11 @@ export default function EntrarPage() {
       formulario.current?.querySelector('[aria-invalid="true"]')?.focus();
     }
   }, [intentosFallidos]);
+
+  // El aviso se muestra una vez: se quita del historial para que no vuelva a salir al recargar.
+  useEffect(() => {
+    if (location.state?.aviso) navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   // Con la sesión iniciada se va a la página que se quería abrir, o a la zona privada.
   if (usuario) return <Navigate to={location.state?.desde ?? '/panel'} replace />;
@@ -76,26 +86,30 @@ export default function EntrarPage() {
   }
 
   return (
-    <section className="pagina" aria-labelledby="titulo">
-      <h1 id="titulo">Entrar</h1>
-      <p className="intro-text">Accede a la cuenta de tu centro con tu email y tu contraseña.</p>
+    <>
+      <Aviso aviso={aviso} onCerrar={cerrarAviso} />
+      <section className="pagina" aria-labelledby="titulo">
+        <h1 id="titulo">Entrar</h1>
+        <p className="intro-text">Accede a la cuenta de tu centro con tu email y tu contraseña.</p>
 
-      <form ref={formulario} className="formulario" onSubmit={enviar} noValidate>
-        {errorGeneral && <p className="alerta" role="alert">{errorGeneral}</p>}
+        <form ref={formulario} className="formulario" onSubmit={enviar} noValidate>
+          {errorGeneral && <p className="alerta" role="alert">{errorGeneral}</p>}
 
-        <Campo id="email" etiqueta="Email" obligatorio type="email" autoComplete="email"
-          value={valores.email} onChange={cambiar} error={errores.email} />
-        <Campo id="password" etiqueta="Contraseña" obligatorio type="password"
-          autoComplete="current-password" value={valores.password} onChange={cambiar} error={errores.password} />
+          <Campo id="email" etiqueta="Email" obligatorio type="email" autoComplete="email"
+            value={valores.email} onChange={cambiar} error={errores.email} />
+          <Campo id="password" etiqueta="Contraseña" obligatorio type="password"
+            autoComplete="current-password" value={valores.password} onChange={cambiar} error={errores.password} />
+          <p className="formulario-enlace"><Link to="/recuperar-contrasena">¿Has olvidado la contraseña?</Link></p>
 
-        <button type="submit" disabled={enviando}>
-          {enviando ? 'Entrando…' : 'Entrar'}
-        </button>
+          <button type="submit" disabled={enviando}>
+            {enviando ? 'Entrando…' : 'Entrar'}
+          </button>
 
-        <p className="formulario-pie">
-          ¿Todavía no tienes cuenta? <Link to="/registro">Registra tu centro</Link>
-        </p>
-      </form>
-    </section>
+          <p className="formulario-pie">
+            ¿Todavía no tienes cuenta? <Link to="/registro">Registra tu centro</Link>
+          </p>
+        </form>
+      </section>
+    </>
   );
 }

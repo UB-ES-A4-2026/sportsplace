@@ -68,6 +68,7 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 .alerta { margin: 0; padding: 12px 14px; border-radius: 8px; color: #7d2c24; background: #fbeae7; font-size: 14px; font-weight: 600; }
 .formulario button { justify-self: start; margin-top: 6px; }
 .formulario-pie { margin: 0; color: #587068; font-size: 14px; }
+.formulario-enlace { margin: -10px 0 0; font-size: 14px; text-align: right; }
 @media (max-width: 560px) { .campos-en-fila { grid-template-columns: 1fr; } }
 .menu .enlace { margin: 0; padding: 0 0 2px; border-radius: 0; color: #587068; background: none; font-size: inherit; font-weight: 600; border-bottom: 2px solid transparent; }
 .menu .enlace:hover { color: #174f46; background: none; }

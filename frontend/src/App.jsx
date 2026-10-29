@@ -8,7 +8,9 @@ import InicioPage from './pages/InicioPage.jsx';
 import NoEncontradaPage from './pages/NoEncontradaPage.jsx';
 import PanelPage from './pages/PanelPage.jsx';
 import PublicarAnuncioPage from './pages/PublicarAnuncioPage.jsx';
+import RecuperarContrasenaPage from './pages/RecuperarContrasenaPage.jsx';
 import RegistroPage from './pages/RegistroPage.jsx';
+import RestablecerContrasenaPage from './pages/RestablecerContrasenaPage.jsx';
 
 export default function App() {
   return (
@@ -18,6 +20,8 @@ export default function App() {
         <Route path="registro" element={<RegistroPage />} />
         <Route path="confirmar-email" element={<ConfirmarEmailPage />} />
         <Route path="entrar" element={<EntrarPage />} />
+        <Route path="recuperar-contrasena" element={<RecuperarContrasenaPage />} />
+        <Route path="restablecer-contrasena" element={<RestablecerContrasenaPage />} />
         <Route element={<RutaPrivada />}>
           <Route path="panel" element={<PanelPage />} />
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
