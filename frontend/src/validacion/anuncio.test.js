@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
   CAMPOS_ANUNCIO,
+  CAMPOS_CON_ERROR,
   cuerpoDelAnuncio,
   erroresDelServidor,
   haCambiado,
@@ -18,6 +19,8 @@ const CORRECTO = {
   deporte: 'futbol',
   unidades_disponibles: '12',
   estado_material: 'buen_estado',
+  modalidad: 'venta',
+  precio: '8,50',
 };
 
 const repetir = (n, caracter = 'a') => caracter.repeat(n);
@@ -27,9 +30,9 @@ describe('validarAnuncio', () => {
     assert.deepEqual(validarAnuncio(CORRECTO), {});
   });
 
-  test('E2E-2: formulario vacío → los seis mensajes «si falta» en el orden del formulario', () => {
+  test('E2E-2: formulario vacío → los mensajes «si falta» en el orden del formulario (sin precio: aún no hay «Venta»)', () => {
     const errores = validarAnuncio(VALORES_VACIOS);
-    assert.deepEqual(Object.keys(errores), CAMPOS_ANUNCIO);
+    assert.deepEqual(Object.keys(errores), [...CAMPOS_ANUNCIO, 'modalidad']);
     assert.deepEqual(errores, {
       titulo: 'El título es obligatorio.',
       descripcion: 'La descripción es obligatoria.',
@@ -37,7 +40,19 @@ describe('validarAnuncio', () => {
       deporte: 'Elige un deporte.',
       unidades_disponibles: 'Indica las unidades disponibles.',
       estado_material: 'Elige el estado del material.',
+      modalidad: 'Elige si es venta o donación.',
     });
+  });
+
+  test('US-14 CA2: «Venta» sin precio → error de precio; «Donación» no valida el precio aunque haya texto', () => {
+    assert.deepEqual(validarAnuncio({ ...CORRECTO, precio: '' }), {
+      precio_unitario_centimos: 'Indica el precio por unidad.',
+    });
+    assert.deepEqual(validarAnuncio({ ...CORRECTO, modalidad: 'donacion', precio: 'abc' }), {});
+  });
+
+  test('el orden de CAMPOS_CON_ERROR es el del formulario (el foco va al primero)', () => {
+    assert.deepEqual(CAMPOS_CON_ERROR, [...CAMPOS_ANUNCIO, 'modalidad', 'precio_unitario_centimos']);
   });
 
   test('E2E-3: «Bola» y 10000 unidades', () => {
@@ -135,13 +150,30 @@ describe('Desplegables', () => {
   });
 });
 
-describe('cuerpoDelAnuncio (CA15, CA30)', () => {
-  test('solo los seis campos de US-12, recortados', () => {
+describe('cuerpoDelAnuncio (US-12 CA15 y US-14 CA3, CA5, CA8, CA12, CA13)', () => {
+  const base = Object.fromEntries(Object.entries(CORRECTO).filter(([campo]) => !['modalidad', 'precio'].includes(campo)));
+
+  test('venta: los seis campos recortados + modalidad y precio en céntimos enteros', () => {
     assert.deepEqual(cuerpoDelAnuncio({ ...CORRECTO, descripcion: `  ${CORRECTO.descripcion}\n` }), {
-      ...CORRECTO,
+      ...base,
       unidades_disponibles: 12,
+      modalidad: 'venta',
+      precio_unitario_centimos: 850,
     });
   });
+
+  test('donación: no se envía precio_unitario_centimos aunque haya texto escrito (CA5)', () => {
+    const cuerpo = cuerpoDelAnuncio({ ...CORRECTO, modalidad: 'donacion', precio: '8,50' });
+    assert.equal(cuerpo.modalidad, 'donacion');
+    assert.equal('precio_unitario_centimos' in cuerpo, false);
+  });
+
+  for (const [texto, centimos] of [['8,5', 850], ['8,05', 805], ['0,01', 1], ['99999,99', 9999999],
+    ['8.50', 850], ['  8,50  ', 850]]) {
+    test(`precio «${texto}» → ${centimos} céntimos`, () => {
+      assert.equal(cuerpoDelAnuncio({ ...CORRECTO, precio: texto }).precio_unitario_centimos, centimos);
+    });
+  }
 });
 
 describe('haCambiado (CA9)', () => {
@@ -149,6 +181,11 @@ describe('haCambiado (CA9)', () => {
     assert.equal(haCambiado(VALORES_VACIOS), false);
     assert.equal(haCambiado({ ...VALORES_VACIOS, titulo: 'Conos' }), true);
     assert.equal(haCambiado({ ...VALORES_VACIOS, categoria: 'otros' }), true);
+  });
+
+  test('marcar una modalidad o escribir un precio cuenta como dato escrito', () => {
+    assert.equal(haCambiado({ ...VALORES_VACIOS, modalidad: 'donacion' }), true);
+    assert.equal(haCambiado({ ...VALORES_VACIOS, precio: '8' }), true);
   });
 
   test('texto ilegible en unidades cuenta como dato escrito', () => {
@@ -166,6 +203,16 @@ describe('erroresDelServidor (CA12)', () => {
     assert.deepEqual(
       erroresDelServidor({ titulo: 'El título no puede tener saltos de línea.', fotos: 'Añade al menos una foto.' }),
       { titulo: 'El título no puede tener saltos de línea.' },
+    );
+  });
+
+  test('US-14 CA9: modalidad y precio caen bajo su campo', () => {
+    assert.deepEqual(
+      erroresDelServidor({
+        modalidad: 'La modalidad no es válida.',
+        precio_unitario_centimos: 'Una donación no puede tener precio.',
+      }),
+      { modalidad: 'La modalidad no es válida.', precio_unitario_centimos: 'Una donación no puede tener precio.' },
     );
   });
 
