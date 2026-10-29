@@ -71,6 +71,16 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 @media (max-width: 560px) { .campos-en-fila { grid-template-columns: 1fr; } }
 .menu .enlace { margin: 0; padding: 0 0 2px; border-radius: 0; color: #587068; background: none; font-size: inherit; font-weight: 600; border-bottom: 2px solid transparent; }
 .menu .enlace:hover { color: #174f46; background: none; }
+.seccion-formulario { display: grid; gap: 14px; }
+.seccion-formulario h2 { margin: 8px 0 0; font-size: 17px; }
+.campo-opciones { display: grid; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.campo-opciones legend { padding: 0; margin-bottom: 6px; font-size: 14px; font-weight: 650; }
+.opciones-en-fila { display: flex; flex-wrap: wrap; gap: 24px; }
+.opciones-en-fila label { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; }
+.opciones-en-fila input { width: 18px; height: 18px; margin: 0; accent-color: #174f46; }
+.campo-con-sufijo { display: flex; align-items: center; gap: 8px; }
+.campo .campo-con-sufijo input { width: 160px; }
+.campo-ayuda { margin: 0; color: #62766d; font-size: 13px; }
 .boton-secundario { color: #174f46; background: #fff; box-shadow: inset 0 0 0 1px #cdd9d0; }
 .boton-secundario:hover { background: #eef4ef; }
 .boton-peligro { background: #a13e33; }
