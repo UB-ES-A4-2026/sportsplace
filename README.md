@@ -22,9 +22,14 @@ T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pru
 Está alojado en **Render, plan gratuito**, en un único Web Service para la web y
 la API mediante el `Dockerfile` de la raíz. Tiene configurado el despliegue desde
 `dev` con **Auto-Deploy: After CI Checks Pass**; se acepta el arranque en frío.
-El primer despliegue pasó `deploy:check` el 29/10/2026. La evidencia y los criterios
-pendientes, incluida la comprobación de un despliegue automático tras una nueva
-integración en `dev`, están en la guía enlazada.
+El Auto-Deploy de la PR #145 y el `deploy:check` contra la URL real quedaron
+[comprobados y aceptados el 29/10/2026](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6500493326).
+El workflow [Smoke Render (T12-6)](.github/workflows/smoke-render.yml) programa una
+comprobación con cada push a `dev`: espera a que `/api/health` identifique ese mismo
+commit y ejecuta `deploy:check` contra la URL HTTPS. La espera se ejecuta en una
+rama de CI conservada para que no bloquee los checks que Render necesita para
+desplegar. La guía explica el flujo, el límite de espera y la primera ejecución
+automática que debe enlazarse en #86 después de integrar esta ampliación.
 
 ## Tecnologías
 
