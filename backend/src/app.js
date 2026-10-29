@@ -3,6 +3,7 @@ import express from 'express';
 import { errorHandler, notFoundHandler } from './errors.js';
 import { anunciosRouter } from './routes/anuncios.js';
 import { authRouter } from './routes/auth.js';
+import { centrosRouter } from './routes/centros.js';
 import { healthRouter } from './routes/health.js';
 import { marcarEnterosConDecimales } from './validation/anuncios.js';
 
@@ -25,6 +26,7 @@ export function createApp({ auth = null, centros = null, anuncios = null } = {})
   app.use(healthRouter());
   app.use('/api/auth', authRouter());
   app.use('/api/anuncios', anunciosRouter());
+  app.use('/api/centros', centrosRouter());
 
   app.use(notFoundHandler);
   app.use(errorHandler);

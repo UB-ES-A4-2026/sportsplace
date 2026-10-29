@@ -45,6 +45,7 @@ Cualquier error de la API tiene esta forma:
 | 400 | `DATOS_INVALIDOS` | Faltan campos o tienen un formato incorrecto. |
 | 400 | `JSON_INVALIDO` | El cuerpo no es JSON válido. |
 | 400 | `ENLACE_INVALIDO` | El enlace de confirmación no existe, ya se ha usado o ha caducado. |
+| 400 | `CODIGO_POSTAL_DESCONOCIDO` | El código postal tiene un formato válido pero no está en `codigos_postales` (US-68). |
 | 401 | `NO_AUTENTICADO` | Falta el token, ha caducado o la sesión se ha cerrado. |
 | 401 | `CREDENCIALES_INCORRECTAS` | Email o contraseña incorrectos (no se dice cuál). |
 | 403 | `EMAIL_NO_CONFIRMADO` | La cuenta todavía no ha confirmado su email. |
@@ -111,6 +112,9 @@ Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anu
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/centros/mio` | US-07 | Sí | Alex |
+| `PATCH /api/centros/mio` | US-07 | Sí, con email confirmado | Alex |
+| `PUT /api/centros/mio/ubicacion` | US-68 | Sí, con email confirmado | Alex |
 
 ### `GET /api/health`
 
@@ -241,6 +245,73 @@ Privada: `requireAuth` + `requireEmailConfirmado`.
 - `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
 - `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `GET /api/centros/mio` (US-07)
+
+Privada (`requireAuth`). Devuelve el centro al que pertenece el usuario (en este sprint, el de `centros.usuario_id`; US-84 lo amplía a miembros).
+
+- `200 { "centro": centro }`:
+
+```json
+{
+  "id": "uuid", "nombre": "Club Natació Exemple", "email": "centro@example.com",
+  "localidad": "Barcelona", "direccion": null, "codigo_postal": "08001", "telefono": "+34 931 234 567",
+  "descripcion": "Club de natación…", "email_contacto": "material@clubnatacio.cat",
+  "web": "https://clubnatacio.cat", "creado_en": "2026-10-09T10:00:00.000Z",
+  "provincia": "Barcelona", "latitud": 41.3888, "longitud": 2.159
+}
+```
+
+`provincia`, `latitud` y `longitud` (números) las pone el servidor a partir del código postal (US-68). Son `null` en los centros que todavía no han indicado su ubicación.
+
+- `401 NO_AUTENTICADO`.
+- `404 NO_ENCONTRADO` si la cuenta no tiene ningún centro (no debería pasar: el alta crea los dos en la misma transacción).
+- `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `PATCH /api/centros/mio` (US-07)
+
+Privada (`requireAuth` + `requireEmailConfirmado`). Cuerpo con cualquiera de estos campos; los que no se envían no cambian y `null` o `""` borra un opcional:
+
+```json
+{ "nombre": "Club Natació Exemple", "descripcion": "…", "telefono": "+34 931 234 567", "email_contacto": "material@clubnatacio.cat", "web": "https://clubnatacio.cat" }
+```
+
+Se recortan los espacios antes de validar. Los límites se cuentan por caracteres (un emoji es 1).
+
+| Campo | Regla | Mensaje en `details` |
+|---|---|---|
+| `nombre` | Obligatorio, 1-160 | «El nombre del centro es obligatorio.», «Como máximo 160 caracteres.» |
+| `descripcion` | Opcional, 0-1000, admite saltos de línea | «Como máximo 1000 caracteres.» |
+| `telefono` | Opcional, dígitos, espacios y un `+` inicial, 9-30 | «El teléfono no es válido.», «Como máximo 30 caracteres.» |
+| `email_contacto` | Opcional, misma regla que el email del alta, se guarda en minúsculas | «El email no es válido.» |
+| `web` | Opcional, máx. 255, `http://` o `https://` y dominio con punto | «La web debe empezar por http:// o https://.», «La web no es válida.», «Como máximo 255 caracteres.» |
+
+- `200 { "centro": centro }` con los datos actualizados. Cada `PATCH` correcto actualiza `centros.actualizado_en`.
+- `400 DATOS_INVALIDOS` con `details` por campo. Un campo desconocido o no editable (`email`, `usuario_id`, `localidad`…) da `details.<campo>` «Este campo no se puede modificar.».
+- `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `503 BASE_DATOS_NO_DISPONIBLE`.
+
+No existe ninguna ruta para editar otro centro por id.
+
+### `PUT /api/centros/mio/ubicacion` (US-68)
+
+Privada (`requireAuth` + `requireEmailConfirmado`). Fija la ubicación del centro propio; se envían siempre los tres campos:
+
+```json
+{ "direccion": "Carrer de la Piscina 12", "codigo_postal": "08025", "localidad": "Barcelona" }
+```
+
+Se recortan los espacios antes de validar. Las claves que no son estas tres (p. ej. `provincia`, `latitud`) se ignoran.
+
+| Campo | Regla | Mensaje en `details` |
+|---|---|---|
+| `direccion` | Opcional, 0-255; vacía se guarda como `null` | «Como máximo 255 caracteres.» |
+| `codigo_postal` | Obligatorio, 5 cifras entre `01000` y `52999` | «El código postal es obligatorio.», «El código postal debe tener 5 cifras.», «El código postal no es de España.» |
+| `localidad` | Obligatoria, 1-120; la escribe el usuario | «La localidad es obligatoria.», «Como máximo 120 caracteres.» |
+
+- `200 { "centro": centro }` (como en `GET /api/centros/mio`). El servidor busca el código postal en `codigos_postales` y copia `provincia`, `latitud` y `longitud` en el centro en la misma sentencia; también actualiza `actualizado_en`.
+- `400 DATOS_INVALIDOS` con `details` por campo.
+- `400 CODIGO_POSTAL_DESCONOCIDO`, `message` y `details.codigo_postal` «No conocemos este código postal. Revísalo.», si el formato es válido pero el código no está en la tabla. No se cambia nada.
+- `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `405` con otros métodos, `503 BASE_DATOS_NO_DISPONIBLE`.
 
 ## Rutas privadas y confirmación del email (US-02)
 
