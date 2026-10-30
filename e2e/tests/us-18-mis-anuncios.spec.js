@@ -197,9 +197,11 @@ test('US-18 · E2E-3 · paginación', async ({ page, cuentas }) => {
   await page.reload();
   await expect(enlacesTitulo(page)).toHaveText(['Material de prueba 01']);
 
-  // CA2 y CA10: página no numérica → la 1; mayor que la última → la última.
-  await page.goto('/mis-anuncios?pagina=abc');
-  await expect(page.getByText('Página 1 de 2')).toBeVisible();
+  // CA2 y CA10: página no numérica o < 1 → la 1; mayor que la última → la última.
+  for (const valor of ['abc', '0']) {
+    await page.goto(`/mis-anuncios?pagina=${valor}`);
+    await expect(page.getByText('Página 1 de 2')).toBeVisible();
+  }
   await page.goto('/mis-anuncios?pagina=9');
   await expect(page.getByText('Página 2 de 2')).toBeVisible();
   await expect(enlacesTitulo(page)).toHaveText(['Material de prueba 01']);
@@ -272,7 +274,7 @@ test('US-18 · E2E-6 · aislamiento', async ({ request, cuentas }) => {
   expect(cuerpoA.anuncios.map((anuncio) => anuncio.titulo)).not.toContain('Balones del centro B');
   expect(cuerpoA.anuncios.map((anuncio) => anuncio.titulo)).not.toContain('Material retirado');
 
-  // CA13: sin token → 401; «mios» no se toma como id.
+  // CA13: sin token → 401. Que «mios» no se toma como id lo demuestran las respuestas 200 con token de arriba.
   const sinToken = await request.get('/api/anuncios/mios');
   expect(sinToken.status()).toBe(401);
 
