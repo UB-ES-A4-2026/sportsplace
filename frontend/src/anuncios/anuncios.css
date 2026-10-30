@@ -56,3 +56,35 @@
 .boton-enlace { display: inline-block; margin-top: 22px; padding: 12px 18px; border-radius: 8px; color: #fff; background: #174f46; font-size: 14px; font-weight: 650; text-decoration: none; }
 .pagina .boton-enlace { color: #fff; }
 .boton-enlace:hover { background: #256455; }
+
+/* Mis anuncios (US-18 T18-2) */
+.mis-anuncios-cabecera { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; }
+.mis-anuncios-cabecera .boton-enlace { margin-top: 0; }
+.mis-anuncios-total { margin: 18px 0 0; color: #587068; font-size: 14px; font-weight: 600; }
+.mis-anuncios-vacio { margin-top: 24px; }
+.lista-anuncios { display: grid; gap: 0; margin: 18px 0 0; padding: 0; list-style: none; border-top: 1px solid #dfe7df; }
+.fila-anuncio { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid #dfe7df; }
+.fila-miniatura { width: 64px; height: 64px; }
+.fila-miniatura img { display: block; width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
+.sin-foto { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 8px; color: #7a8b81; background: #e6ebe8; font-size: 12px; font-weight: 600; text-align: center; }
+.fila-datos { display: grid; gap: 4px; min-width: 0; }
+.fila-titulo { overflow: hidden; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
+.fila-detalle { margin: 0; color: #2f4a42; font-size: 14px; }
+.fila-estado { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 0; color: #7a8b81; font-size: 13px; }
+.fila-acciones { display: flex; align-items: center; gap: 8px; }
+.fila-acciones:empty { display: none; }
+.fila-acciones button { margin-top: 0; padding: 8px 12px; }
+.menu-mas { position: relative; }
+.menu-mas-opciones { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; display: grid; min-width: 190px; padding: 6px; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgb(25 55 47 / 18%); }
+.menu-mas-opciones[hidden] { display: none; }
+.menu-mas-opciones button { width: 100%; margin: 0; padding: 9px 12px; color: #174f46; background: none; text-align: left; }
+.menu-mas-opciones button:hover { background: #eef4ef; }
+.paginacion { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; color: #587068; font-size: 14px; font-weight: 600; }
+.paginacion button { margin-top: 0; }
+.paginacion button:disabled { cursor: not-allowed; }
+@media (max-width: 560px) {
+  .fila-anuncio { grid-template-columns: 64px minmax(0, 1fr); }
+  .fila-acciones { grid-column: 2; }
+  .menu-mas-opciones { right: auto; left: 0; }
+  .paginacion { gap: 10px; }
+}
