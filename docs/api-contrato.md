@@ -73,6 +73,30 @@ Cualquier error de la API tiene esta forma:
 
 `expires_at` está en segundos Unix. El `access_token` dura una hora; antes de que caduque, el frontend usa `POST /api/auth/refresh`.
 
+`anuncio` (E03, «Objeto `anuncio`» de `docs/especificacion/E03-publicacion-de-material.md`):
+
+```json
+{
+  "id": "uuid",
+  "centro_id": "uuid",
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado",
+  "modalidad": "donacion",
+  "precio_unitario_centimos": null,
+  "estado": "activo",
+  "fotos": [],
+  "publicado_en": "2026-11-03T10:15:00.000Z",
+  "creado_en": "2026-11-03T10:15:00.000Z",
+  "actualizado_en": "2026-11-03T10:15:00.000Z"
+}
+```
+
+Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anuncios salen como `modalidad: "donacion"`, `precio_unitario_centimos: null` y `fotos: []` (US-12, CA30).
+
 ## Endpoints
 
 | Método y ruta | Historia | Privada | Responsable backend |
@@ -87,10 +111,19 @@ Cualquier error de la API tiene esta forma:
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
 | `PATCH /api/centros/mio` | US-07 | Sí, con email confirmado | Alex |
+| `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 
 ### `GET /api/health`
 
 `200 { "status": "ok", "service": "sportsplace-api" }`
+
+En Render añade el campo opcional `commit` con el SHA completo de 40 caracteres
+hexadecimales de `RENDER_GIT_COMMIT`, normalizado a minúsculas. Sin esa variable o
+con un valor inválido se omite el campo. `/health` es un alias de la misma sonda;
+ambas respuestas conservan `Cache-Control: no-store`. El smoke de T12-6 compara
+`commit` con el SHA de `dev` esperado antes de comprobar la web publicada. Esta
+sonda no acredita Auth ni la conexión PostgreSQL.
 
 ### `POST /api/auth/registro` (US-01)
 
@@ -230,6 +263,36 @@ Se recortan los espacios antes de validar. Los límites se cuentan por caractere
 - `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `503 BASE_DATOS_NO_DISPONIBLE`.
 
 No existe ninguna ruta para editar otro centro por id.
+
+### `POST /api/anuncios` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo JSON:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado"
+}
+```
+
+- `201 { "anuncio": anuncio }` con la cabecera `Location: /api/anuncios/<id>`. El anuncio se crea `activo`, del centro de la sesión, con `publicado_en` = `creado_en` = `actualizado_en`.
+- Reglas y mensajes: «Tabla de campos» de E03. Los textos se recortan de espacios y las longitudes se cuentan en caracteres Unicode. `unidades_disponibles` solo acepta un entero JSON entre 1 y 9999: `"3"`, `3.0` o `2.5` se rechazan.
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por **cada** campo incorrecto. No se crea nada. Un cuerpo JSON que no es un objeto (p. ej. `[]`) devuelve los seis campos obligatorios; un cuerpo que no es JSON, `400 JSON_INVALIDO`.
+- Las claves `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- US-13 cambiará el cuerpo a `multipart/form-data` (fotos) y US-14 añadirá `modalidad` y `precio_unitario_centimos`.
+
+### `GET /api/anuncios/:id` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`.
+
+- `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 
 ## Rutas privadas y confirmación del email (US-02)
 
