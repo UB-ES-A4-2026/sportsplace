@@ -111,7 +111,7 @@ test.beforeAll(async ({ cuentas }) => {
 test.afterEach(async () => {
   if (!creados.length) return;
   await db.query(
-    `UPDATE public.anuncios SET estado = 'retirado', retirado_en = coalesce(retirado_en, now())
+    `UPDATE public.anuncios SET estado = 'retirado', retirado_en = coalesce(retirado_en, now()), entregado_en = NULL
      WHERE id = ANY($1::uuid[]) AND estado <> 'retirado'`,
     [creados.splice(0)],
   );
