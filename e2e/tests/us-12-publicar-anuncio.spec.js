@@ -1,6 +1,9 @@
 // T12-5 · E2E de US-12 (publicar un anuncio). Casos: docs/especificacion/E03 (US-12) y casos-US-12.md
 // Usa la plantilla de T12-7: login real con `entrar` y las cuentas de la semilla de T12-8.
+// Desde US-13 (T13-2/T13-3) publicar exige al menos una foto: en la web se añade una en `rellenar`
+// y por la API se envía multipart (`datos` + `fotos`, docs/api-contrato.md).
 import { test, expect, entrar } from '../fixtures.js';
+import { archivo } from './fixtures/imagenes.js';
 
 const VALIDO = {
   titulo: 'Balones de fútbol talla 5',
@@ -22,6 +25,9 @@ const VALIDO_API = {
 
 const ERROR_GENERICO = 'No se ha podido completar la acción. Inténtalo de nuevo.';
 
+// Una foto JPG pequeña y válida: los casos de US-12 no prueban las fotos, solo las necesitan para publicar.
+const FOTO = archivo('foto-1.jpg', 50 * 1024);
+
 // ---------------------------------------------------------------- utilidades
 
 // Token de la API para los casos que llaman a la API directamente.
@@ -29,6 +35,25 @@ async function tokenDe(request, email, password) {
   const res = await request.post('/api/auth/login', { data: { email, password } });
   expect(res.status()).toBe(200);
   return (await res.json()).sesion.access_token;
+}
+
+// POST /api/anuncios en multipart: la parte `datos` con el JSON y una parte `fotos` por archivo.
+// Se usa FormData porque el objeto `multipart` de Playwright no admite varias partes con el mismo nombre.
+function publicarPorApi(request, token, datos, fotos = [FOTO]) {
+  const formulario = new FormData();
+  formulario.append('datos', JSON.stringify(datos));
+  for (const { name, mimeType, buffer } of fotos) {
+    formulario.append('fotos', new Blob([buffer], { type: mimeType }), name);
+  }
+  return request.post('/api/anuncios', { headers: { Authorization: `Bearer ${token}` }, multipart: formulario });
+}
+
+// Añade fotos con el botón «+ Añadir fotos» de la sección «Fotos» (T13-3), como lo haría el usuario.
+async function anadirFotos(page, fotos = [FOTO]) {
+  const selector = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: '+ Añadir fotos' }).click();
+  await (await selector).setFiles(fotos);
+  await expect(page.getByText(`${fotos.length}/8`, { exact: true })).toBeVisible();
 }
 
 // Los campos se buscan por su etiqueta visible (el «*» va aparte con aria-hidden).
@@ -53,6 +78,7 @@ async function rellenar(page, datos = VALIDO) {
   await c.deporte.selectOption({ label: datos.deporte });
   await c.unidades.fill(datos.unidades);
   await c.estado.selectOption({ label: datos.estado });
+  await anadirFotos(page);
 }
 
 // Cuenta las peticiones POST /api/anuncios que hace el navegador.
@@ -105,6 +131,8 @@ test('US-12 · E2E-1 · publicar con datos correctos', async ({ page, request, c
   expect(res.status()).toBe(200);
   const { anuncio } = await res.json();
   expect(anuncio).toMatchObject({ ...VALIDO_API, estado: 'activo' });
+  expect(anuncio.fotos).toHaveLength(1);
+  expect(anuncio.fotos[0]).toMatchObject({ orden: 1, es_principal: true });
   expect(anuncio.publicado_en).toBe(anuncio.creado_en);
   expect(anuncio.actualizado_en).toBe(anuncio.creado_en);
 });
@@ -123,6 +151,7 @@ test('US-12 · E2E-2 · formulario vacío', async ({ page, cuentas }) => {
     'Elige un deporte.',
     'Indica las unidades disponibles.',
     'Elige el estado del material.',
+    'Añade al menos una foto.', // US-13 CA4
   ]) {
     await expect(page.getByText(mensaje)).toBeVisible();
   }
@@ -184,10 +213,7 @@ for (const variante of ['503', 'red caída']) {
 
 test('US-12 · E2E-5 · anuncio de otro centro y API directa', async ({ page, request, cuentas }) => {
   const tokenA = await tokenDe(request, cuentas.centroA, cuentas.password);
-  const creado = await request.post('/api/anuncios', {
-    headers: { Authorization: `Bearer ${tokenA}` },
-    data: VALIDO_API,
-  });
+  const creado = await publicarPorApi(request, tokenA, VALIDO_API);
   expect(creado.status()).toBe(201);
   const { anuncio } = await creado.json();
   expect(creado.headers().location).toBe(`/api/anuncios/${anuncio.id}`);
@@ -208,24 +234,19 @@ test('US-12 · E2E-5 · anuncio de otro centro y API directa', async ({ page, re
     expect((await res.json()).error).toMatchObject({ code: 'NO_ENCONTRADO', message: 'Anuncio no encontrado.' });
   }
 
-  // POST con datos incorrectos: todos los errores a la vez.
-  const malo = await request.post('/api/anuncios', {
-    headers: authB,
-    data: { titulo: 'Bal', unidades_disponibles: '3', estado: 'entregado' },
-  });
+  // POST con datos incorrectos y sin fotos: todos los errores a la vez, también el de las fotos (US-13 CA14).
+  const malo = await publicarPorApi(request, tokenB, { titulo: 'Bal', unidades_disponibles: '3', estado: 'entregado' }, []);
   expect(malo.status()).toBe(400);
   const { error } = await malo.json();
   expect(error.code).toBe('DATOS_INVALIDOS');
   expect(error.message).toBe('Revisa los campos marcados.');
   expect(Object.keys(error.details).sort()).toEqual(
-    ['categoria', 'descripcion', 'deporte', 'estado_material', 'titulo', 'unidades_disponibles'].sort(),
+    ['categoria', 'descripcion', 'deporte', 'estado_material', 'fotos', 'titulo', 'unidades_disponibles'].sort(),
   );
+  expect(error.details.fotos).toBe('Añade al menos una foto.');
 
   // CA21: estado y centro_id del cuerpo se ignoran.
-  const ignorado = await request.post('/api/anuncios', {
-    headers: authB,
-    data: { ...VALIDO_API, estado: 'entregado', centro_id: anuncio.centro_id },
-  });
+  const ignorado = await publicarPorApi(request, tokenB, { ...VALIDO_API, estado: 'entregado', centro_id: anuncio.centro_id });
   expect(ignorado.status()).toBe(201);
   const deB = (await ignorado.json()).anuncio;
   expect(deB.estado).toBe('activo');
@@ -292,10 +313,7 @@ test.describe('US-12 · CA26 · longitud del título', () => {
 
 test('US-12 · CA27 · título con salto de línea (API)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroA, cuentas.password);
-  const res = await request.post('/api/anuncios', {
-    headers: { Authorization: `Bearer ${token}` },
-    data: { ...VALIDO_API, titulo: 'Balones\nde fútbol' },
-  });
+  const res = await publicarPorApi(request, token, { ...VALIDO_API, titulo: 'Balones\nde fútbol' });
   expect(res.status()).toBe(400);
   const { error } = await res.json();
   expect(error.code).toBe('DATOS_INVALIDOS');
@@ -339,10 +357,7 @@ test.describe('US-12 · CA28 · unidades', () => {
   test('API: valores no enteros o fuera de rango', async ({ request, cuentas }) => {
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
     for (const valor of [2.5, '2,5', '3', 0, 10000]) {
-      const res = await request.post('/api/anuncios', {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { ...VALIDO_API, unidades_disponibles: valor },
-      });
+      const res = await publicarPorApi(request, token, { ...VALIDO_API, unidades_disponibles: valor });
       expect(res.status(), `unidades_disponibles = ${JSON.stringify(valor)}`).toBe(400);
       expect((await res.json()).error.details).toHaveProperty('unidades_disponibles');
     }

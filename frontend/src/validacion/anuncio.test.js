@@ -155,6 +155,10 @@ describe('haCambiado (CA9)', () => {
     assert.equal(haCambiado(VALORES_VACIOS, VALORES_VACIOS, { unidadesIlegibles: true }), true);
   });
 
+  test('haber añadido fotos cuenta como dato escrito (US-13 CA9)', () => {
+    assert.equal(haCambiado(VALORES_VACIOS, VALORES_VACIOS, { hayFotos: true }), true);
+  });
+
   test('con valores iniciales (US-15), compara con ellos', () => {
     assert.equal(haCambiado(CORRECTO, CORRECTO), false);
     assert.equal(haCambiado({ ...CORRECTO, titulo: 'Otro título' }, CORRECTO), true);
@@ -162,10 +166,14 @@ describe('haCambiado (CA9)', () => {
 });
 
 describe('erroresDelServidor (CA12)', () => {
-  test('se queda con los campos del formulario e ignora el resto', () => {
+  test('se queda con los campos del formulario y con `fotos`, e ignora el resto', () => {
     assert.deepEqual(
-      erroresDelServidor({ titulo: 'El título no puede tener saltos de línea.', fotos: 'Añade al menos una foto.' }),
-      { titulo: 'El título no puede tener saltos de línea.' },
+      erroresDelServidor({
+        titulo: 'El título no puede tener saltos de línea.',
+        fotos: 'Añade al menos una foto.',
+        otro: 'No es un campo del formulario.',
+      }),
+      { titulo: 'El título no puede tener saltos de línea.', fotos: 'Añade al menos una foto.' },
     );
   });
 
