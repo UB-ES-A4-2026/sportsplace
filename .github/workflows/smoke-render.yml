@@ -1,0 +1,79 @@
+name: Smoke Render (T12-6)
+run-name: T12-6 · ${{ github.event_name == 'push' && 'programar smoke' || 'smoke remoto' }} · ${{ inputs.expected_sha || github.sha }}
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Commit completo de dev que Render debe servir
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    name: Programar smoke de dev
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Lanzar la espera en una ref distinta del commit desplegable
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SMOKE_RUNNER_REF: chore/T12-6-smoke-render-automatico
+        run: node tools/scripts/dispatch-render-smoke.js
+
+  smoke:
+    name: Esperar commit y comprobar Render
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    concurrency:
+      group: render-smoke-${{ inputs.expected_sha }}
+      cancel-in-progress: false
+    env:
+      EXPECTED_COMMIT: ${{ inputs.expected_sha }}
+      DEPLOY_URL: https://sportsplace-pruebas.onrender.com
+    steps:
+      - name: Validar el SHA recibido antes de descargar código
+        run: node -e "if (!/^[a-f0-9]{40}$/.test(process.env.EXPECTED_COMMIT) || process.env.EXPECTED_COMMIT.length !== 40 || process.env.EXPECTED_COMMIT === process.env.GITHUB_SHA) process.exit(1)"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.expected_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Esperar a que Render sirva exactamente el commit de dev
+        run: npm --prefix tools run deploy:wait -- "$DEPLOY_URL" "$EXPECTED_COMMIT"
+      - name: Smoke HTTP contra el entorno real
+        run: npm --prefix tools run deploy:check -- "$DEPLOY_URL"
+      - name: Verificar que la versión sigue siendo la esperada al terminar
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const response = await fetch(new URL('/api/health', process.env.DEPLOY_URL), {
+            redirect: 'error', signal: AbortSignal.timeout(10_000), headers: { 'Cache-Control': 'no-cache' },
+          });
+          assert.equal(response.status, 200);
+          assert.equal((await response.json()).commit, process.env.EXPECTED_COMMIT);
+          NODE
+      - name: Guardar resultado y versión en el resumen de Actions
+        if: always()
+        env:
+          SMOKE_STATUS: ${{ job.status }}
+        run: |
+          printf '### T12-6 · Smoke remoto\n\n- Entorno: %s\n- Commit esperado: `%s`\n- Resultado: **%s**\n' "$DEPLOY_URL" "$EXPECTED_COMMIT" "$SMOKE_STATUS" >> "$GITHUB_STEP_SUMMARY"
