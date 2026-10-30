@@ -85,3 +85,25 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 .dialogo-botones { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .dialogo-botones button { margin-top: 0; }
 @media (max-width: 560px) { .dialogo-botones { flex-direction: column-reverse; } .dialogo-botones button { width: 100%; } }
+
+/* Sección «Fotos» del formulario de anuncio (US-13 T13-3) */
+.solo-lectores { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.seccion-fotos { margin: 0; padding: 0; border: 0; min-width: 0; }
+.seccion-fotos legend { padding: 0; font-weight: 600; }
+.seccion-fotos .ayuda { margin: 4px 0 10px; color: #587068; font-size: 13px; }
+.fotos-zona { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 14px; border: 1px dashed #cdd9d0; border-radius: 12px; }
+.fotos-zona button { margin-top: 0; }
+.fotos-zona-activa { background: #eef4ef; border-color: #174f46; }
+.fotos-contador { color: #174f46; font-size: 13px; font-weight: 600; }
+.fotos-arrastrar { color: #587068; font-size: 13px; }
+.fotos-mensajes { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.seccion-fotos > .campo-error { margin-top: 8px; }
+.fotos-subiendo { margin: 8px 0 0; color: #174f46; font-size: 13px; font-weight: 600; }
+.fotos-lista { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.foto { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #eef4ef; box-shadow: inset 0 0 0 1px #cdd9d0; }
+.foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-principal { box-shadow: 0 0 0 2px #174f46; }
+.foto-etiqueta { position: absolute; left: 6px; bottom: 6px; padding: 2px 8px; border-radius: 999px; background: #174f46; color: #fff; font-size: 11px; font-weight: 600; }
+.foto-estrella, .foto-quitar { position: absolute; top: 6px; width: 32px; min-height: 32px; height: 32px; margin: 0; padding: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: #174f46; font-size: 15px; line-height: 1; box-shadow: none; }
+.foto-estrella { left: 6px; }
+.foto-quitar { right: 6px; color: #a13e33; }

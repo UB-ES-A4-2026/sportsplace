@@ -14,9 +14,12 @@ export class ErrorApi extends Error {
 
 // Llama a nuestra API. Ejemplo: api('/auth/login', { method: 'POST', body: { email, password } }).
 // Si hay sesión guardada, añade la cabecera Authorization. Devuelve el JSON, o null si la respuesta es 204.
+// Si `body` es un FormData (multipart, p. ej. las fotos de US-13), se envía tal cual y sin `Content-Type`: el
+// navegador lo añade con el `boundary` correcto.
 export async function api(ruta, { method = 'GET', body, signal } = {}) {
   const headers = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const esFormulario = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body !== undefined && !esFormulario) headers['Content-Type'] = 'application/json';
 
   const token = leerSesion()?.access_token;
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -26,7 +29,7 @@ export async function api(ruta, { method = 'GET', body, signal } = {}) {
     respuesta = await fetch(`/api${ruta}`, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined || esFormulario ? body : JSON.stringify(body),
       signal,
       cache: 'no-store',
     });
