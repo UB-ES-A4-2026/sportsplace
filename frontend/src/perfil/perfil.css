@@ -1,0 +1,32 @@
+/* E02 · Perfil del centro (US-07 T07-3): menú del centro en la cabecera, /perfil y /perfil/editar.
+   Va en su propio archivo para no chocar con los cambios de styles.css de otras historias. */
+
+/* Menú del centro (CA1) */
+.menu-centro { position: relative; }
+.menu .menu-centro-boton { margin: 0; }
+.menu-centro-opciones { position: absolute; top: calc(100% + 8px); right: 0; z-index: 10; display: grid; min-width: 180px; padding: 6px; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgb(25 55 47 / 18%); }
+.menu-centro-opciones[hidden] { display: none; }
+.menu-centro-opciones a,
+.menu-centro-opciones button { display: block; width: 100%; margin: 0; padding: 9px 12px; border: 0; border-radius: 6px; color: #174f46; background: none; font: inherit; font-size: 14px; font-weight: 600; text-align: left; text-decoration: none; cursor: pointer; }
+.menu-centro-opciones a:hover,
+.menu-centro-opciones button:hover { background: #eef4ef; }
+
+/* /perfil/editar: «*» de los campos obligatorios */
+.campo-obligatorio label::after { content: " *"; }
+
+/* /perfil */
+.perfil-nombre { margin: 18px 0 0; font-size: 24px; overflow-wrap: anywhere; }
+.perfil-localidad { margin: 4px 0 0; color: #587068; }
+.perfil-bloque { margin-top: 26px; }
+.perfil-bloque h3 { margin: 0 0 8px; font-size: 16px; }
+.perfil-descripcion { margin: 0; color: #2f4a42; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
+.perfil-vacio { margin: 0; color: #7a8b81; }
+.perfil-contacto { display: grid; grid-template-columns: max-content 1fr; gap: 8px 18px; margin: 0; font-size: 15px; }
+.perfil-contacto dt { color: #587068; font-weight: 600; }
+.perfil-contacto dd { margin: 0; overflow-wrap: anywhere; }
+.perfil-desde { margin: 26px 0 0; color: #7a8b81; font-size: 13px; }
+@media (max-width: 560px) {
+  .perfil-contacto { grid-template-columns: 1fr; gap: 2px; }
+  .perfil-contacto dd { margin-bottom: 8px; }
+  .menu-centro-opciones { right: auto; left: 0; }
+}
