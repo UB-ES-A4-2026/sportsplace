@@ -17,6 +17,20 @@ Validación de infraestructura del sprint: [validación DevOps](docs/sprint-0-va
 Sprint 1: [pruebas e2e con Playwright (T12-7)](docs/pruebas-e2e.md) y
 [base de pruebas aislada y semilla de QA (T12-8)](docs/base-pruebas.md).
 
+T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pruebas.md).
+**Entorno de pruebas:** [https://sportsplace-pruebas.onrender.com](https://sportsplace-pruebas.onrender.com).
+Está alojado en **Render, plan gratuito**, en un único Web Service para la web y
+la API mediante el `Dockerfile` de la raíz. Tiene configurado el despliegue desde
+`dev` con **Auto-Deploy: After CI Checks Pass**; se acepta el arranque en frío.
+El Auto-Deploy de la PR #145 y el `deploy:check` contra la URL real quedaron
+[comprobados y aceptados el 29/10/2026](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6500493326).
+El workflow [Smoke Render (T12-6)](.github/workflows/smoke-render.yml) programa una
+comprobación con cada push a `dev`: espera a que `/api/health` identifique ese mismo
+commit y ejecuta `deploy:check` contra la URL HTTPS. La espera se ejecuta en una
+rama de CI conservada para que no bloquee los checks que Render necesita para
+desplegar. La guía explica el flujo, el límite de espera y la primera ejecución
+automática que debe enlazarse en #86 después de integrar esta ampliación.
+
 ## Tecnologías
 
 - Frontend: React con Vite, en JavaScript.
