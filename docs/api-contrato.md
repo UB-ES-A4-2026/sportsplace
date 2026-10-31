@@ -117,6 +117,13 @@ Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anu
 
 `200 { "status": "ok", "service": "sportsplace-api" }`
 
+En Render añade el campo opcional `commit` con el SHA completo de 40 caracteres
+hexadecimales de `RENDER_GIT_COMMIT`, normalizado a minúsculas. Sin esa variable o
+con un valor inválido se omite el campo. `/health` es un alias de la misma sonda;
+ambas respuestas conservan `Cache-Control: no-store`. El smoke de T12-6 compara
+`commit` con el SHA de `dev` esperado antes de comprobar la web publicada. Esta
+sonda no acredita Auth ni la conexión PostgreSQL.
+
 ### `POST /api/auth/registro` (US-01)
 
 ```json
