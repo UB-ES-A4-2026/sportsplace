@@ -77,8 +77,11 @@
 .menu-mas { position: relative; }
 .menu-mas-opciones { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; display: grid; min-width: 190px; padding: 6px; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgb(25 55 47 / 18%); }
 .menu-mas-opciones[hidden] { display: none; }
-.menu-mas-opciones button { width: 100%; margin: 0; padding: 9px 12px; color: #174f46; background: none; text-align: left; }
-.menu-mas-opciones button:hover { background: #eef4ef; }
+.menu-mas-opciones > button { width: 100%; margin: 0; padding: 9px 12px; color: #174f46; background: none; text-align: left; }
+.menu-mas-opciones > button:hover { background: #eef4ef; }
+/* Opción destructiva del menú («Retirar anuncio», US-70). Solo los hijos directos: el diálogo que abre no hereda estos estilos. */
+.menu-mas-opciones > .menu-mas-opcion-peligro { color: #a13e33; }
+.menu-mas-opciones > .menu-mas-opcion-peligro:hover { background: #fbeae7; }
 .paginacion { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; color: #587068; font-size: 14px; font-weight: 600; }
 .paginacion button { margin-top: 0; }
 .paginacion button:disabled { cursor: not-allowed; }
