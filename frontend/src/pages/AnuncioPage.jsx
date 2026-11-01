@@ -47,8 +47,9 @@ export default function AnuncioPage() {
     setResultado({ clave, anuncio });
   }, [clave]);
 
-  // US-70 CA6: si falla una acción, el diálogo ya se ha cerrado sin cambios. 404 → «Anuncio no encontrado»;
-  // 409 → aviso rojo y se recarga el anuncio para ver su estado real; el resto → aviso rojo genérico.
+  // Fallo de una acción de la ficha (US-16 CA4 y US-70 CA6): el diálogo, si lo había, ya se ha cerrado sin cambios.
+  // 404 → «Anuncio no encontrado»; 409 → aviso rojo y se recarga el anuncio para ver su estado real; el resto → aviso
+  // rojo genérico.
   const mostrarFallo = useCallback(({ noEncontrado, mensaje, recargar }) => {
     if (noEncontrado) {
       setResultado({ clave, noEncontrado: true });
