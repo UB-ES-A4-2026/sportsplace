@@ -1,0 +1,51 @@
+# T12-8: template copied to .e2e/supabase by test-env:up.
+# The runner gives each checkout its own project_id. Never link this to a cloud project.
+project_id = "sportsplace-e2e"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.seed]
+enabled = false
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:4173"
+additional_redirect_urls = ["http://127.0.0.1:4173/confirmar-email", "http://127.0.0.1:4173/restablecer-contrasena"]
+jwt_expiry = 3600
+enable_signup = true
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+double_confirm_changes = true
+max_frequency = "1s"
+
+[analytics]
+enabled = false
+
+[edge_runtime]
+enabled = false
