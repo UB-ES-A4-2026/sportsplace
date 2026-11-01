@@ -53,7 +53,7 @@ async function anadirFotos(page, fotos = [FOTO]) {
   const selector = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: '+ Añadir fotos' }).click();
   await (await selector).setFiles(fotos);
-  await expect(page.getByText(`${fotos.length}/8`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`${fotos.length}/8 fotos`, { exact: true })).toBeVisible();
 }
 
 // Los campos se buscan por su etiqueta visible (el «*» va aparte con aria-hidden).
