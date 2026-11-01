@@ -15,6 +15,8 @@ export default function Layout() {
         <nav className="menu" aria-label="Principal">
           {usuario ? (
             <>
+              {/* US-18 CA1: «Mis anuncios», subrayado en cualquier ruta que empiece por /mis-anuncios. */}
+              <NavLink to="/mis-anuncios">Mis anuncios</NavLink>
               {/* US-12 CA1: botón primario «Publicar anuncio», a la derecha y antes del menú del centro. */}
               <Link to="/anuncios/nuevo" className="boton-cabecera">Publicar anuncio</Link>
               <NavLink to="/panel">Mi centro</NavLink>

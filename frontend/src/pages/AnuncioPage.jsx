@@ -6,6 +6,7 @@ import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/
 import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import Aviso from '../components/Aviso.jsx';
 import BotonPausarReactivar from '../components/BotonPausarReactivar.jsx';
+import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
 import FranjaPausado from '../components/FranjaPausado.jsx';
 
@@ -116,6 +117,9 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
         {/* US-16 CA1-CA4: «Pausar» (activo) o «Reactivar» (pausado), sin diálogo; aviso verde y la ficha cambia en sitio.
             Con un 409 (estado desfasado, E2E-4), aviso rojo y se recarga el anuncio. */}
         <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+        {/* US-70 CA1: solo en borrador, activo, pausado y reservado (el botón no se pinta en entregado). Al retirar,
+            va a /mis-anuncios con replace y el aviso «Anuncio retirado.» (CA4). */}
+        <BotonRetirarAnuncio anuncio={anuncio} onFallo={onFallo} />
       </div>
     </>
   );
