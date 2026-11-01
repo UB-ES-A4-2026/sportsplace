@@ -5,7 +5,9 @@ import { lineaDeFechas, resultadoDeLaCarga } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
 import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import Aviso from '../components/Aviso.jsx';
+import BotonPausarReactivar from '../components/BotonPausarReactivar.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
+import FranjaPausado from '../components/FranjaPausado.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
 export default function AnuncioPage() {
@@ -39,6 +41,22 @@ export default function AnuncioPage() {
 
   const actual = resultado?.clave === clave ? resultado : null;
 
+  // US-16 CA3: tras pausar o reactivar, la ficha se actualiza con el anuncio que devuelve la API, sin recargar.
+  const actualizarAnuncio = useCallback((anuncio) => {
+    setResultado({ clave, anuncio });
+  }, [clave]);
+
+  // US-70 CA6: si falla una acción, el diálogo ya se ha cerrado sin cambios. 404 → «Anuncio no encontrado»;
+  // 409 → aviso rojo y se recarga el anuncio para ver su estado real; el resto → aviso rojo genérico.
+  const mostrarFallo = useCallback(({ noEncontrado, mensaje, recargar }) => {
+    if (noEncontrado) {
+      setResultado({ clave, noEncontrado: true });
+      return;
+    }
+    setAviso({ tipo: 'error', texto: mensaje });
+    if (recargar) setIntento((n) => n + 1);
+  }, [clave]);
+
   if (actual?.noEncontrado) return <AnuncioNoEncontrado />;
 
   return (
@@ -56,19 +74,23 @@ export default function AnuncioPage() {
           </div>
         )}
 
-        {actual?.anuncio && <Ficha anuncio={actual.anuncio} />}
+        {actual?.anuncio && (
+          <Ficha anuncio={actual.anuncio} onActualizado={actualizarAnuncio} onAviso={setAviso} onFallo={mostrarFallo} />
+        )}
       </section>
     </>
   );
 }
 
-function Ficha({ anuncio }) {
+function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
   return (
     <>
       <div className="ficha-cabecera">
         <h1 id="titulo-pagina">{anuncio.titulo}</h1>
         <EtiquetaEstado estado={anuncio.estado} />
       </div>
+      {/* US-16: franja gris bajo el título mientras está pausado; cambia con el estado sin recargar (CA3). */}
+      <FranjaPausado estado={anuncio.estado} />
 
       {/* [Depende de US-13] galería · [Depende de US-14] precio o «Donación · Gratis» */}
 
@@ -90,7 +112,11 @@ function Ficha({ anuncio }) {
       <p className="ficha-fechas">{lineaDeFechas(anuncio)}</p>
 
       {/* Zona «Acciones»: la rellenan US-15 (Editar), US-16 (Pausar/Reactivar), US-17, US-70 (Retirar) y US-19. */}
-      <div className="ficha-acciones" />
+      <div className="ficha-acciones">
+        {/* US-16 CA1-CA4: «Pausar» (activo) o «Reactivar» (pausado), sin diálogo; aviso verde y la ficha cambia en sitio.
+            Con un 409 (estado desfasado, E2E-4), aviso rojo y se recarga el anuncio. */}
+        <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+      </div>
     </>
   );
 }
