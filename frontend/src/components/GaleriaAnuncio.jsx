@@ -16,23 +16,21 @@ export default function GaleriaAnuncio({ titulo, fotos }) {
   return (
     <div className="galeria">
       <img className="galeria-grande" src={grande.url} alt={textoAlternativo(titulo, grande, lista)} />
-      {lista.length > 1 && (
-        <ul className="galeria-miniaturas">
-          {lista.map((foto, posicion) => (
-            <li key={foto.id}>
-              <button
-                type="button"
-                className={foto.id === idGrande ? 'galeria-miniatura galeria-miniatura-activa' : 'galeria-miniatura'}
-                aria-label={`Ver foto ${posicion + 1}`}
-                aria-pressed={foto.id === idGrande}
-                onClick={() => setElegida(foto.id)}
-              >
-                <img src={foto.url} alt="" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="galeria-miniaturas">
+        {lista.map((foto, posicion) => (
+          <li key={foto.id}>
+            <button
+              type="button"
+              className={foto.id === idGrande ? 'galeria-miniatura galeria-miniatura-activa' : 'galeria-miniatura'}
+              aria-label={`Ver foto ${posicion + 1}`}
+              aria-pressed={foto.id === idGrande}
+              onClick={() => setElegida(foto.id)}
+            >
+              <img src={foto.url} alt="" />
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
