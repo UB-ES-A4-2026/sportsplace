@@ -32,7 +32,8 @@ export default function FilaAnuncio({ anuncio, children }) {
 
       <div className="fila-acciones">
         {/* Botón principal: [Depende de US-15] «Editar» · [Depende de US-20] «Completar y publicar». */}
-        <MenuMas>{children}</MenuMas>
+        {/* Con `key` por estado, el menú se cierra cuando la acción cambia el estado (p. ej. tras «Pausar»). */}
+        <MenuMas key={anuncio.estado}>{children}</MenuMas>
       </div>
     </li>
   );
