@@ -71,10 +71,10 @@ function Ficha({ anuncio }) {
         <EtiquetaEstado estado={anuncio.estado} />
       </div>
 
-      {/* CA6 y CA7 (US-14): «8,50 € / unidad» o «Donación · Gratis» bajo el título. */}
-      <p className="ficha-precio"><PrecioAnuncio anuncio={anuncio} grande /></p>
+      {/* [Depende de US-13] galería (E03: título → galería → precio → tabla) */}
 
-      {/* [Depende de US-13] galería */}
+      {/* CA6 y CA7 (US-14): «8,50 € / unidad» o «Donación · Gratis». */}
+      <p className="ficha-precio"><PrecioAnuncio anuncio={anuncio} grande /></p>
 
       <table className="ficha-datos">
         <tbody>

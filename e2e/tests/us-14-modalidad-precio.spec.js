@@ -3,8 +3,7 @@
 //
 // La migración (T14-1), la validación (T14-2) y el formulario (T14-3) ya están en la base, así que
 // los casos comprueban el cuerpo que envía la web (petición interceptada) y lo que guarda la API.
-// Solo quedan en `fixme` los textos de la ficha («8,50 € / unidad», «Donación · Gratis»), que
-// dependen de T14-4 (#64): quitar el `fixme` de esos tests cuando #64 esté fusionada.
+// Los textos de la ficha («8,50 € / unidad», «Donación · Gratis») los añade T14-4 (#64).
 // Los ayudantes están copiados de us-12-publicar-anuncio.spec.js: importarlos registraría sus tests otra vez.
 import { test, expect, entrar } from '../fixtures.js';
 
@@ -245,10 +244,9 @@ test.describe('US-14 · Modalidad y precio', () => {
 
   // ---------------------------------------------------------------- ficha (T14-4, #64)
 
-  // El precio y «Donación · Gratis» en la ficha los añade T14-4 (#64, Lucía). Quitar el `fixme` cuando se fusione.
   test.describe('Ficha (T14-4, #64)', () => {
     for (const [escrito, texto] of [['8,50', '8,50 € / unidad'], ['99999,99', '99.999,99 € / unidad']]) {
-      test.fixme(`venta «${escrito}» → «${texto}» (T14-4, #64)`, async ({ page, cuentas }) => {
+      test(`venta «${escrito}» → «${texto}» (T14-4, #64)`, async ({ page, cuentas }) => {
         await abrirFormulario(page, cuentas);
         await rellenar(page, 'Venta', escrito);
         await publicar(page);
@@ -256,7 +254,7 @@ test.describe('US-14 · Modalidad y precio', () => {
       });
     }
 
-    test.fixme('donación → «Donación · Gratis» (T14-4, #64)', async ({ page, cuentas }) => {
+    test('donación → «Donación · Gratis» (T14-4, #64)', async ({ page, cuentas }) => {
       await abrirFormulario(page, cuentas);
       await rellenar(page, 'Donación');
       await publicar(page);
