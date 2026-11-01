@@ -61,6 +61,28 @@ jobs:
       - run: npm run lint
       - run: npm test
 
+  deployment-image:
+    name: Imagen de despliegue (T12-6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Construir web y API de producción sin secretos
+        run: docker build --tag sportsplace-deploy-ci .
+      - name: Arrancar la imagen
+        run: docker run --detach --name sportsplace-deploy-ci --env PORT=10000 --publish 127.0.0.1:4301:10000 sportsplace-deploy-ci
+      - name: Comprobar web, rutas SPA y API por el mismo origen
+        run: npm --prefix tools run deploy:check -- http://127.0.0.1:4301
+      - name: Mostrar diagnóstico si falla
+        if: failure()
+        run: docker logs sportsplace-deploy-ci
+      - name: Detener el contenedor de esta comprobación
+        if: always()
+        run: docker rm --force sportsplace-deploy-ci
+
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
