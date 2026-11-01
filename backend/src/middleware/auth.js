@@ -20,6 +20,12 @@ export function getCentros(request) {
   return centros;
 }
 
+export function getAnuncios(request) {
+  const anuncios = request.app.get('anuncios');
+  if (!anuncios) throw databaseUnavailable();
+  return anuncios;
+}
+
 // Exige una sesión válida y deja el usuario en request.usuario.
 export async function requireAuth(request, response, next) {
   const token = bearerToken(request);

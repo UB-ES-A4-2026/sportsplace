@@ -73,6 +73,30 @@ Cualquier error de la API tiene esta forma:
 
 `expires_at` está en segundos Unix. El `access_token` dura una hora; antes de que caduque, el frontend usa `POST /api/auth/refresh`.
 
+`anuncio` (E03, «Objeto `anuncio`» de `docs/especificacion/E03-publicacion-de-material.md`):
+
+```json
+{
+  "id": "uuid",
+  "centro_id": "uuid",
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado",
+  "modalidad": "venta",
+  "precio_unitario_centimos": 850,
+  "estado": "activo",
+  "fotos": [],
+  "publicado_en": "2026-11-03T10:15:00.000Z",
+  "creado_en": "2026-11-03T10:15:00.000Z",
+  "actualizado_en": "2026-11-03T10:15:00.000Z"
+}
+```
+
+Fechas ISO 8601 en UTC. `modalidad` es `venta` o `donacion` (US-14); `precio_unitario_centimos` es el precio por unidad en céntimos enteros (850 = 8,50 €) y es `null` en una donación. Mientras US-13 no esté en `dev`, `fotos` es `[]` (US-12, CA30).
+
 ## Endpoints
 
 | Método y ruta | Historia | Privada | Responsable backend |
@@ -85,6 +109,8 @@ Cualquier error de la API tiene esta forma:
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
+| `POST /api/anuncios` | US-12, US-14 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 
 ### `GET /api/health`
 
@@ -185,6 +211,51 @@ Privada. Sin cuerpo.
 - `401 NO_AUTENTICADO` si la sesión ya no era válida. El frontend lo trata igual que un cierre correcto.
 
 En ambos casos el frontend borra los tokens que guarda y redirige a la pantalla de entrada. Después, cualquier ruta privada devuelve `401`.
+
+### `POST /api/anuncios` (US-12, US-14)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Cuerpo JSON:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 12,
+  "estado_material": "buen_estado",
+  "modalidad": "venta",
+  "precio_unitario_centimos": 850
+}
+```
+
+En una donación, `"modalidad": "donacion"` y `precio_unitario_centimos` no se envía o vale `null`.
+
+- `201 { "anuncio": anuncio }` con la cabecera `Location: /api/anuncios/<id>`. El anuncio se crea `activo`, del centro de la sesión, con `publicado_en` = `creado_en` = `actualizado_en`.
+- Reglas y mensajes: «Tabla de campos» de E03. Los textos se recortan de espacios y las longitudes se cuentan en caracteres Unicode. `unidades_disponibles` solo acepta un entero JSON entre 1 y 9999: `"3"`, `3.0` o `2.5` se rechazan.
+- Modalidad y precio (US-14, CA9), en `details`:
+
+| Caso | Clave | Mensaje |
+|---|---|---|
+| Falta `modalidad` | `modalidad` | «Elige si es venta o donación.» |
+| `modalidad` distinta de `venta`/`donacion` (p. ej. `"regalo"`, `"Venta"`) | `modalidad` | «La modalidad no es válida.» |
+| Venta sin precio o con `null` | `precio_unitario_centimos` | «Indica el precio por unidad.» |
+| Venta con un precio que no es un entero JSON entre 1 y 9.999.999 (`0`, `10000000`, `8.5`, `850.0`, `"850"`) | `precio_unitario_centimos` | «El precio debe estar entre 0,01 € y 99.999,99 €.» |
+| Donación con cualquier precio distinto de `null` | `precio_unitario_centimos` | «Una donación no puede tener precio.» |
+
+  Si la modalidad falta o no es válida, el precio no se valida (su regla depende de la modalidad).
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por **cada** campo incorrecto. No se crea nada. Un cuerpo JSON que no es un objeto (p. ej. `[]`) devuelve los siete campos obligatorios; un cuerpo que no es JSON, `400 JSON_INVALIDO`.
+- Las claves `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- US-13 cambiará el cuerpo a `multipart/form-data` (fotos), con estos mismos campos en `datos`.
+
+### `GET /api/anuncios/:id` (US-12)
+
+Privada: `requireAuth` + `requireEmailConfirmado`.
+
+- `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 
 ## Rutas privadas y confirmación del email (US-02)
 
