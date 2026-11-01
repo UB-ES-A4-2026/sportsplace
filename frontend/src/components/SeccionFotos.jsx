@@ -38,6 +38,9 @@ export default function SeccionFotos({ estado, mensajes, error, subiendo, deshab
       <legend>Fotos<span aria-hidden="true"> *</span></legend>
       <p id="fotos-ayuda" className="ayuda">{AYUDA_FOTOS}</p>
 
+      <p className="fotos-contador">{estado.fotos.length}/{MAX_FOTOS} fotos</p>
+
+      {/* Rejilla de miniaturas y, al final, la casilla «+ Añadir fotos» (oculta con 8 fotos). También acepta soltar archivos. */}
       <div
         className={arrastrando ? 'fotos-zona fotos-zona-activa' : 'fotos-zona'}
         onDragOver={alArrastrar}
@@ -54,31 +57,6 @@ export default function SeccionFotos({ estado, mensajes, error, subiendo, deshab
           aria-hidden="true"
           onChange={alElegir}
         />
-        <button
-          type="button"
-          id="fotos"
-          name="fotos"
-          className="boton-secundario"
-          disabled={deshabilitado || llena}
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={describe}
-          onClick={() => selector.current?.click()}
-        >
-          + Añadir fotos
-        </button>
-        <span className="fotos-contador">{estado.fotos.length}/{MAX_FOTOS}</span>
-        <span className="fotos-arrastrar">o arrástralas aquí</span>
-      </div>
-
-      {mensajes.length > 0 && (
-        <ul className="fotos-mensajes" role="alert">
-          {mensajes.map((mensaje) => <li key={mensaje} className="campo-error">{mensaje}</li>)}
-        </ul>
-      )}
-      {error && <p id="fotos-error" className="campo-error">{error}</p>}
-      {subiendo && <p className="fotos-subiendo" role="status">Subiendo fotos…</p>}
-
-      {estado.fotos.length > 0 && (
         <ol className="fotos-lista">
           {estado.fotos.map((foto, posicion) => {
             const principal = foto.id === estado.principalId;
@@ -89,6 +67,7 @@ export default function SeccionFotos({ estado, mensajes, error, subiendo, deshab
                 <button
                   type="button"
                   className="foto-estrella"
+                  title={principal ? 'Foto principal' : 'Marcar como principal'}
                   aria-pressed={principal}
                   aria-label={principal ? `Foto ${posicion + 1} (principal)` : `Marcar foto ${posicion + 1} como principal`}
                   disabled={deshabilitado}
@@ -99,6 +78,7 @@ export default function SeccionFotos({ estado, mensajes, error, subiendo, deshab
                 <button
                   type="button"
                   className="foto-quitar"
+                  title="Quitar foto"
                   aria-label={`Quitar foto ${posicion + 1}`}
                   disabled={deshabilitado}
                   onClick={() => onQuitar(foto.id)}
@@ -108,8 +88,33 @@ export default function SeccionFotos({ estado, mensajes, error, subiendo, deshab
               </li>
             );
           })}
+          {!llena && (
+            <li className="foto-anadir">
+              <button
+                type="button"
+                id="fotos"
+                name="fotos"
+                className="boton-secundario"
+                disabled={deshabilitado}
+                aria-invalid={error ? 'true' : undefined}
+                aria-describedby={describe}
+                onClick={() => selector.current?.click()}
+              >
+                + Añadir fotos
+              </button>
+            </li>
+          )}
         </ol>
+        {estado.fotos.length === 0 && <span className="fotos-arrastrar">o arrástralas aquí</span>}
+      </div>
+
+      {mensajes.length > 0 && (
+        <ul className="fotos-mensajes" role="alert">
+          {mensajes.map((mensaje) => <li key={mensaje} className="campo-error">{mensaje}</li>)}
+        </ul>
       )}
+      {error && <p id="fotos-error" className="campo-error">{error}</p>}
+      {subiendo && <p className="fotos-subiendo" role="status">Subiendo fotos…</p>}
     </fieldset>
   );
 }

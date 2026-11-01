@@ -132,8 +132,10 @@ export function haCambiado(valores, iniciales = VALORES_VACIOS, { unidadesIlegib
 // o a la sección de fotos (`fotos`, US-13).
 export function erroresDelServidor(details) {
   if (!details || typeof details !== 'object') return {};
-  const campos = [...CAMPOS_ANUNCIO, 'fotos'];
-  return Object.fromEntries(
-    campos.filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
+  const errores = Object.fromEntries(
+    [...CAMPOS_ANUNCIO, 'fotos'].filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
   );
+  // «La foto principal no es válida.» (`foto_principal`) se enseña bajo la sección de fotos, sin pisar su propio error.
+  if (typeof details.foto_principal === 'string' && !errores.fotos) errores.fotos = details.foto_principal;
+  return errores;
 }

@@ -177,6 +177,15 @@ describe('erroresDelServidor (CA12)', () => {
     );
   });
 
+  test('`foto_principal` se enseña bajo la sección de fotos, salvo que `fotos` ya tenga error', () => {
+    assert.deepEqual(erroresDelServidor({ foto_principal: 'La foto principal no es válida.' }),
+      { fotos: 'La foto principal no es válida.' });
+    assert.deepEqual(
+      erroresDelServidor({ fotos: 'Añade al menos una foto.', foto_principal: 'La foto principal no es válida.' }),
+      { fotos: 'Añade al menos una foto.' },
+    );
+  });
+
   test('sin details → vacío', () => {
     assert.deepEqual(erroresDelServidor(undefined), {});
   });
