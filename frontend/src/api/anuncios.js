@@ -15,6 +15,11 @@ export async function obtenerAnuncio(id, { signal } = {}, llamarApi = api) {
   return datos.anuncio;
 }
 
+// US-70: DELETE /api/anuncios/:id. Retirada lógica; la API responde 204 sin cuerpo.
+export async function retirarAnuncio(id, llamarApi = api) {
+  await llamarApi(`/anuncios/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
 // US-18 CA11-CA12: GET /api/anuncios/mios?pagina=p&por_pagina=n. Responde 200 { anuncios, total, pagina, por_pagina }.
 export async function listarMisAnuncios({ pagina, porPagina }, { signal } = {}, llamarApi = api) {
   const parametros = new URLSearchParams({ pagina: String(pagina), por_pagina: String(porPagina) });
