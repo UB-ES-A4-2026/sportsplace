@@ -2,6 +2,14 @@
 
 export const MENSAJE_TRANSICION_NO_PERMITIDA = 'Esta acción no está disponible en el estado actual del anuncio.';
 export const MENSAJE_ERROR_GENERICO = 'No se ha podido completar la acción. Inténtalo de nuevo.';
+export const AVISO_RETIRADO = 'Anuncio retirado.';
+
+// US-70 CA1: «Retirar anuncio» se ve en borrador, activo, pausado y reservado; no en entregado.
+const ESTADOS_RETIRABLES = ['borrador', 'activo', 'pausado', 'reservado'];
+
+export function puedeRetirar(estado) {
+  return ESTADOS_RETIRABLES.includes(estado);
+}
 
 // US-16: «Pausar» solo en activo y «Reactivar» solo en pausado (CA1); textos de CA2 y avisos de CA4.
 const PAUSA = {
