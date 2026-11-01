@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { crearAnuncio, obtenerAnuncio, retirarAnuncio } from './anuncios.js';
+import { crearAnuncio, listarMisAnuncios, obtenerAnuncio, retirarAnuncio } from './anuncios.js';
 
 describe('crearAnuncio', () => {
   test('CA15-CA16: POST /anuncios con el cuerpo en JSON y devuelve el `anuncio` de la respuesta', async () => {
@@ -37,6 +37,21 @@ describe('obtenerAnuncio', () => {
   });
 });
 
+describe('listarMisAnuncios', () => {
+  test('CA11: GET /anuncios/mios con pagina y por_pagina, y devuelve la respuesta entera', async () => {
+    const llamadas = [];
+    const respuesta = { anuncios: [], total: 0, pagina: 2, por_pagina: 20 };
+    const signal = new AbortController().signal;
+
+    const resultado = await listarMisAnuncios({ pagina: 2, porPagina: 20 }, { signal }, async (ruta, opciones) => {
+      llamadas.push({ ruta, opciones });
+      return respuesta;
+    });
+
+    assert.deepEqual(llamadas, [{ ruta: '/anuncios/mios?pagina=2&por_pagina=20', opciones: { signal } }]);
+    assert.equal(resultado, respuesta);
+  });
+});
 
 test('retirarAnuncio hace DELETE /anuncios/:id sin cuerpo (US-70 CA7)', async () => {
   const llamadas = [];
