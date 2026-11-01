@@ -85,3 +85,6 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 .dialogo-botones { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .dialogo-botones button { margin-top: 0; }
 @media (max-width: 560px) { .dialogo-botones { flex-direction: column-reverse; } .dialogo-botones button { width: 100%; } }
+.franja-reservado, .franja-entregado { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; }
+.franja-reservado { color: #7a4510; background: #fdeedb; }
+.franja-entregado { color: #1d4f7a; background: #e3eef8; }

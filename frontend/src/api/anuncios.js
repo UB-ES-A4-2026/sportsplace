@@ -19,3 +19,10 @@ export async function obtenerAnuncio(id, { signal } = {}, llamarApi = api) {
 export async function retirarAnuncio(id, llamarApi = api) {
   await llamarApi(`/anuncios/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
+
+// US-17 CA7: POST /api/anuncios/:id/reservar, /quitar-reserva y /entregar, sin cuerpo. Devuelven 200 { anuncio }.
+// `accion` es la de accionesDeReservaYEntrega: 'reservar', 'quitar-reserva' o 'entregar'.
+export async function cambiarReservaOEntrega(id, accion, llamarApi = api) {
+  const { anuncio } = await llamarApi(`/anuncios/${encodeURIComponent(id)}/${accion}`, { method: 'POST' });
+  return anuncio;
+}

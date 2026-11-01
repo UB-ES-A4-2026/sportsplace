@@ -22,3 +22,29 @@ export function resultadoDelFallo(fallo) {
   if (fallo?.status === 403 && fallo.code === 'EMAIL_NO_CONFIRMADO') return { mensaje: fallo.message };
   return { mensaje: MENSAJE_ERROR_GENERICO };
 }
+
+// US-17 CA1: `activo` → «Marcar como reservado» y «Marcar como entregado»; `reservado` → «Quitar reserva» y
+// «Marcar como entregado»; `pausado`, `borrador`, `entregado` (y `retirado`) → ninguno. Textos de CA2, avisos de CA4.
+// «Marcar como entregado» pide confirmación (CA3); reservar y quitar reserva son inmediatos.
+const RESERVAR = { accion: 'reservar', texto: 'Marcar como reservado', textoEnviando: 'Reservando…', aviso: 'Anuncio reservado.' };
+const QUITAR_RESERVA = { accion: 'quitar-reserva', texto: 'Quitar reserva', textoEnviando: 'Quitando reserva…', aviso: 'Reserva quitada.' };
+const ENTREGAR = {
+  accion: 'entregar',
+  texto: 'Marcar como entregado',
+  textoEnviando: 'Marcando…',
+  aviso: 'Anuncio entregado.',
+  confirmacion: {
+    titulo: '¿Marcar como entregado?',
+    texto: 'Ya no podrás editarlo ni cambiar su estado.',
+    textoConfirmar: 'Marcar como entregado',
+  },
+};
+const RESERVA_Y_ENTREGA = {
+  activo: [RESERVAR, ENTREGAR],
+  reservado: [QUITAR_RESERVA, ENTREGAR],
+};
+
+// Devuelve las acciones de US-17 que se ofrecen en ese estado, en orden de pantalla ([] si ninguna).
+export function accionesDeReservaYEntrega(estado) {
+  return Object.hasOwn(RESERVA_Y_ENTREGA, estado) ? RESERVA_Y_ENTREGA[estado] : [];
+}
