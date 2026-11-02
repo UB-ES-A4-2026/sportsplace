@@ -39,7 +39,6 @@ export default function FormularioAnuncio({
   const formulario = useRef(null);
   const enviandoAhora = useRef(false);
   const [valores, setValores] = useState(valoresIniciales);
-  const [unidadesIlegibles, setUnidadesIlegibles] = useState(false);
   const [errores, setErrores] = useState({});
   const [intentado, setIntentado] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -54,10 +53,10 @@ export default function FormularioAnuncio({
   }
 
   // CA8: tras el primer intento, cada campo se vuelve a validar al cambiarlo.
-  function actualizar(campo, valor, ilegible = unidadesIlegibles) {
+  function actualizar(campo, valor) {
     setValores((anteriores) => ({ ...anteriores, [campo]: valor }));
     if (!intentado) return;
-    const error = validarCampo(campo, valor, { ilegible });
+    const error = validarCampo(campo, valor);
     setErrores((anteriores) => {
       const siguientes = { ...anteriores };
       if (error) siguientes[campo] = error;
@@ -86,13 +85,6 @@ export default function FormularioAnuncio({
     });
   }
 
-  function cambiarUnidades(evento) {
-    // Con texto que no es un número («abc»), el navegador deja `value` vacío y marca `badInput`.
-    const ilegible = evento.target.validity?.badInput ?? false;
-    setUnidadesIlegibles(ilegible);
-    actualizar('unidades_disponibles', evento.target.value, ilegible);
-  }
-
   async function enviar(evento) {
     evento.preventDefault();
     // CA10: un segundo clic mientras se envía no hace otra petición.
@@ -100,7 +92,7 @@ export default function FormularioAnuncio({
 
     // CA7: se validan todos los campos a la vez; con errores, foco en el primero y ninguna petición.
     setIntentado(true);
-    const erroresLocales = validarAnuncio(valores, { unidadesIlegibles });
+    const erroresLocales = validarAnuncio(valores);
     setErrores(erroresLocales);
     if (Object.keys(erroresLocales).length > 0) {
       enfocarPrimerError(erroresLocales);
@@ -129,7 +121,7 @@ export default function FormularioAnuncio({
 
   // CA9: sin tocar, «Cancelar» sale directamente; con datos, pregunta antes.
   function cancelar() {
-    if (haCambiado(valores, valoresIniciales, { unidadesIlegibles })) setDialogoAbierto(true);
+    if (haCambiado(valores, valoresIniciales)) setDialogoAbierto(true);
     else navigate(destinoCancelar);
   }
 
@@ -160,8 +152,9 @@ export default function FormularioAnuncio({
         </CampoAnuncio>
 
         <CampoAnuncio id="unidades_disponibles" etiqueta="Unidades disponibles" error={errores.unidades_disponibles}>
-          <input type="number" inputMode="numeric" min={1} max={9999} step={1}
-            value={valores.unidades_disponibles} onChange={cambiarUnidades} />
+          {/* Texto con teclado numérico: en un input type="number" Chromium descarta la coma de «2,5» (#134). */}
+          <input type="text" inputMode="numeric" autoComplete="off"
+            value={valores.unidades_disponibles} onChange={cambiar} />
         </CampoAnuncio>
 
         <CampoAnuncio id="estado_material" etiqueta="Estado del material" error={errores.estado_material}>

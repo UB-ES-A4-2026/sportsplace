@@ -51,6 +51,7 @@ Cualquier error de la API tiene esta forma:
 | 404 | `NO_ENCONTRADO` | La ruta o el recurso no existe. |
 | 405 | `METODO_NO_PERMITIDO` | Método HTTP no admitido en esa ruta. |
 | 409 | `EMAIL_YA_REGISTRADO` | Ya existe una cuenta con ese email. |
+| 409 | `TRANSICION_NO_PERMITIDA` | El estado actual del anuncio no permite esa acción; `details.estado_actual` dice cuál es (E03, US-16). |
 | 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo supera 100 kB. |
 | 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
@@ -110,11 +111,22 @@ Fechas ISO 8601 en UTC. `modalidad` es `venta` o `donacion` (US-14); `precio_uni
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-14 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios/:id/pausar` | US-16 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios/:id/reactivar` | US-16 | Sí (email confirmado) | Anass |
+| `DELETE /api/anuncios/:id` | US-70 | Sí (email confirmado) | Anass |
 
 ### `GET /api/health`
 
 `200 { "status": "ok", "service": "sportsplace-api" }`
+
+En Render añade el campo opcional `commit` con el SHA completo de 40 caracteres
+hexadecimales de `RENDER_GIT_COMMIT`, normalizado a minúsculas. Sin esa variable o
+con un valor inválido se omite el campo. `/health` es un alias de la misma sonda;
+ambas respuestas conservan `Cache-Control: no-store`. El smoke de T12-6 compara
+`commit` con el SHA de `dev` esperado antes de comprobar la web publicada. Esta
+sonda no acredita Auth ni la conexión PostgreSQL.
 
 ### `POST /api/auth/registro` (US-01)
 
@@ -256,6 +268,76 @@ Privada: `requireAuth` + `requireEmailConfirmado`.
 - `200 { "anuncio": anuncio }` si el anuncio es del centro de la sesión y no está retirado.
 - `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `GET /api/anuncios/mios` (US-18)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del centro de la sesión, paginada: `GET /api/anuncios/mios?pagina=1&por_pagina=20`.
+
+- `pagina`: entero mayor que 0, por defecto 1. `por_pagina`: entero de 1 a 50, por defecto 20.
+- `200`:
+
+```json
+{
+  "anuncios": [
+    {
+      "id": "uuid",
+      "titulo": "Balones de fútbol talla 5",
+      "categoria": "balones",
+      "deporte": "futbol",
+      "unidades_disponibles": 12,
+      "modalidad": "donacion",
+      "precio_unitario_centimos": null,
+      "estado": "activo",
+      "foto_principal_url": null,
+      "publicado_en": "2026-11-03T10:15:00.000Z",
+      "actualizado_en": "2026-11-03T10:15:00.000Z"
+    }
+  ],
+  "total": 21,
+  "pagina": 1,
+  "por_pagina": 20
+}
+```
+
+- Incluye los anuncios en `borrador`, `activo`, `pausado`, `reservado` y `entregado`; nunca los `retirado` ni los de otros centros. `total` cuenta los mismos.
+- Orden: `actualizado_en` descendente y, a igualdad, `id` descendente.
+- Si `pagina` es mayor que la última, se devuelve la última y `pagina` trae su número (con 0 anuncios, la 1). La web debe usar ese valor (CA10).
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «Debe ser un número entero mayor que 0.» y/o `details.por_pagina` «Debe ser un número entre 1 y 50.». Solo se aceptan dígitos: `2.5`, `-1`, `abc`, un valor vacío o el parámetro repetido se rechazan.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- Mientras US-13 y US-14 no estén en `dev`, `foto_principal_url` es `null`, `modalidad` es `"donacion"` y `precio_unitario_centimos` es `null` (US-12, CA30).
+
+### Cambios de estado de un anuncio (E03)
+
+Siguen la tabla «Estados del anuncio y transiciones» de E03. Cada cambio es un único `UPDATE ... WHERE id = … AND centro_id = <centro de la sesión> AND estado IN (<estados de origen>)`: si el estado actual no está en la lista no se cambia nada, así que dos peticiones simultáneas no pueden saltarse la regla (una recibe `200` y la otra `409`). El servicio común está en `backend/src/services/transiciones-anuncio.js` (tabla de acciones) y en `transicionar` del repositorio de anuncios; US-17 y US-70 añaden ahí sus acciones.
+
+Un cambio de estado renueva `actualizado_en` y no modifica ningún otro campo ni `publicado_en`.
+
+Errores comunes a todas las transiciones:
+
+- `409 TRANSICION_NO_PERMITIDA`, `message` «Esta acción no está disponible en el estado actual del anuncio.», con `details: { "estado_actual": "<estado>" }`, si el estado actual no permite la acción. Repetir una acción no es idempotente (pausar un anuncio ya pausado → `409`).
+- `404 NO_ENCONTRADO` «Anuncio no encontrado.», igual que en `GET /api/anuncios/:id` (otro centro, inexistente, retirado o id que no es UUID).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- `405 METODO_NO_PERMITIDO` (cabecera `Allow: POST`) con cualquier otro método, por ejemplo `GET`, en las rutas `/:id/<acción>`.
+
+### `POST /api/anuncios/:id/pausar` (US-16)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo (si llega uno, se ignora). `activo` → `pausado`; `200 { "anuncio": anuncio }` con el anuncio ya pausado.
+
+### `POST /api/anuncios/:id/reactivar` (US-16)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. `pausado` → `activo`; `200 { "anuncio": anuncio }`.
+
+### `DELETE /api/anuncios/:id` (US-70)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica con el mismo servicio de transiciones: `borrador`, `activo`, `pausado` o `reservado` → `retirado`, con `retirado_en = now()`.
+
+- `204` sin cuerpo.
+- La fila no se borra (ni las fotos ni sus archivos de Storage). Desde ese momento, cualquier ruta sobre el anuncio responde `404 NO_ENCONTRADO`, también para su propietario: `GET /api/anuncios/:id`, las transiciones y un segundo `DELETE` (US-70 CA11, CA12).
+- `entregado` → `409 TRANSICION_NO_PERMITIDA` con `details.estado_actual`.
+- Ya retirado, inexistente, de otro centro o id que no es UUID → `404 NO_ENCONTRADO`.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- `/api/anuncios/:id` admite `GET` y `DELETE`; con otro método, `405` con `Allow: GET, DELETE`.
+- US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
 
 ## Rutas privadas y confirmación del email (US-02)
 

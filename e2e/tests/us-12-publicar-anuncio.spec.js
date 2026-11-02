@@ -327,12 +327,10 @@ test.describe('US-12 · CA28 · unidades', () => {
     });
   }
 
-  // «2,5» y «2.5» se escriben con el teclado: fill() falla en un input type="number" (respuesta de la #48).
-  // «2,5» falla en Chromium: el campo descarta la coma, queda 25 y se publica. Fallo abierto y enlazado
-  // en la #48; el test se activa (quitar el fixme) cuando se corrija el formulario.
+  // «2,5» y «2.5» se escriben con el teclado.
+  // «Unidades disponibles» es un campo de texto (#134): Chromium descartaba la coma en un input type="number".
   for (const escrito of ['2,5', '2.5']) {
-    const caso = escrito === '2,5' ? test.fixme : test;
-    caso(`web: ${escrito} (escrito con el teclado)`, async ({ page, cuentas }) => {
+    test(`web: ${escrito} (escrito con el teclado)`, async ({ page, cuentas }) => {
       await entrar(page, cuentas.centroA, cuentas.password);
       await page.goto('/anuncios/nuevo');
       await rellenar(page, { ...VALIDO, unidades: '' });

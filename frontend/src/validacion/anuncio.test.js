@@ -128,10 +128,9 @@ describe('Unidades disponibles (CA28)', () => {
     });
   }
 
-  test('texto que el navegador no entiende como número (value vacío + badInput) → error de formato', () => {
-    assert.equal(validarCampo('unidades_disponibles', '', { ilegible: true }), rango);
-    assert.equal(validarAnuncio({ ...CORRECTO, unidades_disponibles: '' }, { unidadesIlegibles: true })
-      .unidades_disponibles, rango);
+  test('#134: con espacios o con coma (escrito tal cual en el campo de texto) se rechaza', () => {
+    assert.equal(validarCampo('unidades_disponibles', '2 5'), rango);
+    assert.equal(validarCampo('unidades_disponibles', ' 12 '), undefined);
   });
 
   test('se envía como entero JSON', () => {
@@ -186,10 +185,6 @@ describe('haCambiado (CA9)', () => {
   test('marcar una modalidad o escribir un precio cuenta como dato escrito', () => {
     assert.equal(haCambiado({ ...VALORES_VACIOS, modalidad: 'donacion' }), true);
     assert.equal(haCambiado({ ...VALORES_VACIOS, precio: '8' }), true);
-  });
-
-  test('texto ilegible en unidades cuenta como dato escrito', () => {
-    assert.equal(haCambiado(VALORES_VACIOS, VALORES_VACIOS, { unidadesIlegibles: true }), true);
   });
 
   test('con valores iniciales (US-15), compara con ellos', () => {
