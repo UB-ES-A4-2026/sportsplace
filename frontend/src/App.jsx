@@ -3,6 +3,7 @@ import Layout from './components/Layout.jsx';
 import AnuncioPage from './pages/AnuncioPage.jsx';
 import RutaPrivada from './components/RutaPrivada.jsx';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage.jsx';
+import EditarAnuncioPage from './pages/EditarAnuncioPage.jsx';
 import EntrarPage from './pages/EntrarPage.jsx';
 import MisAnunciosPage from './pages/MisAnunciosPage.jsx';
 import InicioPage from './pages/InicioPage.jsx';
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="mis-anuncios" element={<MisAnunciosPage />} />
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
           <Route path="anuncios/:id" element={<AnuncioPage />} />
+          <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>
