@@ -4,6 +4,7 @@ import { formatearFecha } from '../anuncios/ficha.js';
 import { useCentro } from '../centro/useCentro.js';
 import Aviso from '../components/Aviso.jsx';
 import { TEXTOS_PERFIL } from '../perfil/perfil.js';
+import { faltaCodigoPostal, textoDireccion, textoZona, TEXTOS_UBICACION } from '../perfil/ubicacion.js';
 
 // US-07: /perfil · «Mi perfil», vista previa propia de los datos del centro (GET /api/centros/mio).
 export default function PerfilPage() {
@@ -44,8 +45,15 @@ function DatosDelCentro({ centro }) {
   return (
     <>
       <h2 className="perfil-nombre">{centro.nombre}</h2>
-      {/* [Depende de US-68] zona junto a la localidad */}
       <p className="perfil-localidad">{centro.localidad}</p>
+
+      {/* US-68 CA10: los centros sin código postal (Sprint 0) ven la banda amarilla hasta indicarlo. */}
+      {faltaCodigoPostal(centro) && (
+        <div className="perfil-banda" role="status">
+          <p>{TEXTOS_UBICACION.banda}</p>
+          <Link to="/perfil/ubicacion" className="boton-enlace">{TEXTOS_UBICACION.indicar}</Link>
+        </div>
+      )}
 
       <section className="perfil-bloque" aria-labelledby="titulo-sobre-nosotros">
         <h3 id="titulo-sobre-nosotros">Sobre nosotros</h3>
@@ -70,6 +78,16 @@ function DatosDelCentro({ centro }) {
           </dd>
         </dl>
       </section>
+
+      {/* US-68: zona (localidad y provincia) y dirección completa, que solo ve el propio centro (CA14). */}
+      {!faltaCodigoPostal(centro) && (
+        <section className="perfil-bloque" aria-labelledby="titulo-ubicacion">
+          <h3 id="titulo-ubicacion">Ubicación</h3>
+          <p className="perfil-ubicacion">{textoZona(centro)}</p>
+          <p className="perfil-ubicacion">{textoDireccion(centro)}</p>
+          <Link to="/perfil/ubicacion" className="boton-enlace boton-enlace-secundario">{TEXTOS_UBICACION.editar}</Link>
+        </section>
+      )}
 
       <p className="perfil-desde">En Sportsplace desde {formatearFecha(centro.creado_en)}</p>
       <Link to="/perfil/editar" className="boton-enlace">Editar perfil</Link>
