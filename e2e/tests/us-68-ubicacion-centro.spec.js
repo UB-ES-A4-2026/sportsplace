@@ -174,8 +174,11 @@ test('US-68 · CA1 y CA2 · ruta privada y «Cancelar» sin guardar', async ({ p
     if (route.request().method() === 'PUT') llamadas += 1;
     return route.continue();
   });
-  await entrar(page, cuentas.centroA, cuentas.password);
-  await page.goto('/perfil/ubicacion');
+  // Tras entrar, la web vuelve a la ruta pedida (como en US-07 CA2), no a /panel.
+  await page.getByLabel('Email', { exact: false }).fill(cuentas.centroA);
+  await page.getByLabel('Contraseña', { exact: false }).fill(cuentas.password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL('/perfil/ubicacion');
   await rellenar(page, DATOS_HISTORIA);
   await boton(page, 'Cancelar').click();
 
