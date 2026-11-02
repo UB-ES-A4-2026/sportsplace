@@ -11,6 +11,18 @@ export function puedeRetirar(estado) {
   return ESTADOS_RETIRABLES.includes(estado);
 }
 
+// US-16: «Pausar» solo en activo y «Reactivar» solo en pausado (CA1); textos de CA2 y avisos de CA4.
+const PAUSA = {
+  activo: { accion: 'pausar', texto: 'Pausar', textoEnviando: 'Pausando…', aviso: 'Anuncio pausado.' },
+  pausado: { accion: 'reactivar', texto: 'Reactivar', textoEnviando: 'Reactivando…', aviso: 'Anuncio reactivado.' },
+};
+
+// Devuelve { accion, texto, textoEnviando, aviso } o null si en ese estado no se ofrece ninguno de los dos
+// (borrador, reservado, entregado y retirado).
+export function accionDePausa(estado) {
+  return Object.hasOwn(PAUSA, estado) ? PAUSA[estado] : null;
+}
+
 // Traduce el fallo de una acción a lo que debe mostrar la pantalla:
 // - 404: la pantalla «Anuncio no encontrado» («Propiedad» de la base común).
 // - 409: aviso rojo de transición y recargar el anuncio para ver su estado real (US-16 CA4, US-17 CA4).
