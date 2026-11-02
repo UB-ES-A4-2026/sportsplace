@@ -207,8 +207,8 @@ test('US-18 · E2E-3 · paginación', async ({ page, cuentas }) => {
   await expect(enlacesTitulo(page)).toHaveText(['Material de prueba 01']);
 });
 
-// [Depende de US-16] la acción «Pausar» del menú «Más ▾» (T16-2). Se activa (quitar el fixme) cuando US-16 llegue a dev.
-test.fixme('US-18 · E2E-4 · acción en fila', async ({ page, cuentas }) => {
+// La acción «Pausar» del menú «Más ▾» la monta US-16 (T16-2, #172), ya en dev (#181).
+test('US-18 · E2E-4 · acción en fila', async ({ page, cuentas }) => {
   await entrar(page, cuentas.centroA, cuentas.password);
   await irAMisAnuncios(page);
   // «Material de prueba 21» es el más reciente y está activo (índice 20 de la semilla).
