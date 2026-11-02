@@ -55,9 +55,15 @@ export function authRouter() {
 
   // US-04: pedir un enlace para cambiar la contraseña. Responde siempre 204,
   // exista o no la cuenta (CA19, CA23).
+  // CA15 (#152): Supabase da el email por confirmado al verificar un enlace de
+  // recuperación, así que a una cuenta sin confirmar (o inexistente) no se le
+  // envía: se responde el mismo 204 sin llamar a Supabase.
   router.post('/recuperar-contrasena', async (request, response) => {
     const { email } = validarRecuperacion(request.body);
-    await getAuth(request).requestPasswordReset(email);
+    const auth = getAuth(request);
+    if (await getCentros(request).cuentaConfirmada(email)) {
+      await auth.requestPasswordReset(email);
+    }
     response.status(204).end();
   });
 
