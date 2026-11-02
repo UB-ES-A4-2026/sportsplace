@@ -14,6 +14,14 @@
 /* /perfil/editar: «*» de los campos obligatorios */
 .campo-obligatorio label::after { content: " *"; }
 
+/* /perfil · US-68: banda amarilla sin código postal (CA10) y bloque «Ubicación» */
+.perfil-banda { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin-top: 20px; padding: 14px 16px; border-radius: 10px; color: #6b4a00; background: #fff4cc; }
+.perfil-banda p { margin: 0; font-size: 14px; font-weight: 600; }
+.perfil-banda .boton-enlace { margin-top: 0; }
+.perfil-ubicacion { margin: 0 0 4px; color: #2f4a42; overflow-wrap: anywhere; }
+.pagina .boton-enlace-secundario { margin-top: 10px; color: #174f46; background: #fff; box-shadow: inset 0 0 0 1px #cdd9d0; }
+.pagina .boton-enlace-secundario:hover { background: #eef4ef; }
+
 /* /perfil */
 .perfil-nombre { margin: 18px 0 0; font-size: 24px; overflow-wrap: anywhere; }
 .perfil-localidad { margin: 4px 0 0; color: #587068; }

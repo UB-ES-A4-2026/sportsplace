@@ -28,8 +28,8 @@ export function createApp({
 
   app.use(healthRouter({ commit: renderGitCommit }));
   app.use('/api/auth', authRouter());
-  app.use('/api/centros', centrosRouter());
   app.use('/api/anuncios', anunciosRouter());
+  app.use('/api/centros', centrosRouter());
 
   if (webRoot !== null) app.use(staticWeb(webRoot));
 
