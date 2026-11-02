@@ -71,13 +71,12 @@ const VALIDADORES = {
   deporte(valor) {
     return validarOpcion(valor, DEPORTES, { falta: 'Elige un deporte.', invalido: 'El deporte no es válido.' });
   },
-  // `ilegible`: el campo numérico tiene texto que el navegador no entiende como número («abc», «2,5» en algunos
-  // navegadores). En ese caso `value` llega vacío, pero hay algo escrito: es un error de formato, no un campo vacío.
-  unidades_disponibles(valor, { ilegible = false } = {}) {
+  // Es un campo de texto: lo escrito se ve y se valida tal cual («2,5» y «abc» son errores de formato).
+  unidades_disponibles(valor) {
     const texto = String(valor ?? '').trim();
-    if (texto === '' && !ilegible) return 'Indica las unidades disponibles.';
+    if (texto === '') return 'Indica las unidades disponibles.';
     const n = Number(texto);
-    if (ilegible || !ENTERO.test(texto) || n < 1 || n > 9999) {
+    if (!ENTERO.test(texto) || n < 1 || n > 9999) {
       return 'Las unidades deben ser un número entero entre 1 y 9999.';
     }
     return undefined;
@@ -96,10 +95,10 @@ export function validarCampo(campo, valor, opciones) {
 }
 
 // Valida todos los campos a la vez (CA7). Devuelve un objeto campo → mensaje; vacío si todo es correcto.
-export function validarAnuncio(valores, { unidadesIlegibles = false } = {}) {
+export function validarAnuncio(valores) {
   const errores = {};
   for (const campo of CAMPOS_ANUNCIO) {
-    const error = validarCampo(campo, valores[campo], { ilegible: unidadesIlegibles });
+    const error = validarCampo(campo, valores[campo]);
     if (error) errores[campo] = error;
   }
   return errores;
@@ -122,9 +121,8 @@ export function cuerpoDelAnuncio(valores) {
 // En «Publicar anuncio» los valores iniciales están vacíos, así que equivale a «algún campo tiene valor».
 // Comparar con los iniciales deja el componente listo para un formulario que ya viene relleno (US-15, US-19).
 // `hayFotos`: ya se ha añadido alguna foto (US-13 CA9), que también cuenta como dato escrito.
-export function haCambiado(valores, iniciales = VALORES_VACIOS, { unidadesIlegibles = false, hayFotos = false } = {}) {
-  return unidadesIlegibles
-    || hayFotos
+export function haCambiado(valores, iniciales = VALORES_VACIOS, { hayFotos = false } = {}) {
+  return hayFotos
     || CAMPOS_ANUNCIO.some((campo) => String(valores[campo] ?? '') !== String(iniciales[campo] ?? ''));
 }
 

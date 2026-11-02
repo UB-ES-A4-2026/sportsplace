@@ -50,6 +50,7 @@ const server = createAppServer({
   centros,
   anuncios,
   fotos,
+  renderGitCommit: process.env.RENDER_GIT_COMMIT,
   webRoot: process.env.STATIC_WEB_DIR?.trim() || null,
 });
 
