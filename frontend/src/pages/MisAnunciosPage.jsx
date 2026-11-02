@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { listarMisAnuncios } from '../api/anuncios.js';
-import { AVISO_RETIRADO, puedeRetirar } from '../anuncios/acciones.js';
+import { accionDePausa, AVISO_RETIRADO, puedeRetirar } from '../anuncios/acciones.js';
 import {
+  conFilaActualizada,
   paginaCorregida,
   paginaDeLaUrl,
   POR_PAGINA,
@@ -12,6 +13,7 @@ import {
   totalDePaginas,
 } from '../anuncios/misAnuncios.js';
 import Aviso from '../components/Aviso.jsx';
+import BotonPausarReactivar from '../components/BotonPausarReactivar.jsx';
 import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import FilaAnuncio from '../components/FilaAnuncio.jsx';
 
@@ -62,7 +64,15 @@ export default function MisAnunciosPage() {
     setAviso({ tipo: 'exito', texto: AVISO_RETIRADO });
   }, []);
 
-  // US-70 CA6: 409 y 404 → aviso rojo (si lo hay) y se recarga la lista para ver el estado real; el resto, aviso genérico.
+  // US-16 CA3 y US-18 CA7: tras pausar o reactivar, la fila se sustituye por el anuncio devuelto sin moverse ni recargar.
+  const actualizarFila = useCallback((anuncio) => {
+    setResultado((anterior) => ({
+      ...anterior, lista: { ...anterior.lista, anuncios: conFilaActualizada(anterior.lista.anuncios, anuncio) },
+    }));
+  }, []);
+
+  // US-16 CA4 y US-70 CA6: 409 y 404 → aviso rojo (si lo hay) y se recarga la lista para ver el estado real;
+  // el resto, aviso genérico.
   const mostrarFallo = useCallback(({ noEncontrado, mensaje, recargar }) => {
     if (mensaje) setAviso({ tipo: 'error', texto: mensaje });
     if (recargar || noEncontrado) setIntento((n) => n + 1);
@@ -95,7 +105,8 @@ export default function MisAnunciosPage() {
         {lista && !corregida && (
           lista.total === 0
             ? <ListaVacia />
-            : <Lista lista={lista} pagina={pagina} irAPagina={irAPagina} onRetirado={quitarFila} onFallo={mostrarFallo} />
+            : <Lista lista={lista} pagina={pagina} irAPagina={irAPagina} onActualizado={actualizarFila} onAviso={setAviso}
+                onRetirado={quitarFila} onFallo={mostrarFallo} />
         )}
       </section>
     </>
@@ -112,7 +123,7 @@ function ListaVacia() {
   );
 }
 
-function Lista({ lista, pagina, irAPagina, onRetirado, onFallo }) {
+function Lista({ lista, pagina, irAPagina, onActualizado, onAviso, onRetirado, onFallo }) {
   const paginas = totalDePaginas(lista.total, lista.por_pagina);
 
   return (
@@ -121,11 +132,14 @@ function Lista({ lista, pagina, irAPagina, onRetirado, onFallo }) {
       {/* [Depende de US-71] filtros */}
 
       <ul className="lista-anuncios">
-        {/* Acciones de cada fila (CA6) en el menú «Más ▾»: US-70 «Retirar anuncio» (solo si el estado lo permite, para
-            no dejar un menú vacío). [Depende de US-15, US-16, US-17, US-19 y US-90] el resto; al montarlas, la fila se
-            actualiza con `conFilaActualizada` (anuncios/misAnuncios.js). */}
+        {/* Acciones de cada fila (CA6) en el menú «Más ▾», solo las que el estado permite (sin menú vacío):
+            US-16 «Pausar»/«Reactivar» y US-70 «Retirar anuncio». [Depende de US-15, US-17, US-19 y US-90] el resto. */}
         {lista.anuncios.map((anuncio) => (
           <FilaAnuncio key={anuncio.id} anuncio={anuncio}>
+            {accionDePausa(anuncio.estado) && (
+              <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo}
+                className="menu-mas-opcion" />
+            )}
             {puedeRetirar(anuncio.estado) && (
               <BotonRetirarAnuncio anuncio={anuncio} onRetirado={onRetirado} onFallo={onFallo}
                 className="menu-mas-opcion-peligro" />

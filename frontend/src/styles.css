@@ -73,6 +73,7 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 .menu .enlace:hover { color: #174f46; background: none; }
 .boton-secundario { color: #174f46; background: #fff; box-shadow: inset 0 0 0 1px #cdd9d0; }
 .boton-secundario:hover { background: #eef4ef; }
+.franja-pausado { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; color: #4a554f; background: #e9ecea; font-size: 14px; line-height: 1.5; }
 .boton-peligro { background: #a13e33; }
 .boton-peligro:hover { background: #8a3329; }
 .boton-texto-peligro { margin-top: 0; padding: 8px 0; color: #a13e33; background: none; }
