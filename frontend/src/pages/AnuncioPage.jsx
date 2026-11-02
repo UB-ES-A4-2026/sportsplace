@@ -6,6 +6,7 @@ import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/
 import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import Aviso from '../components/Aviso.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
+import GaleriaAnuncio from '../components/GaleriaAnuncio.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
 export default function AnuncioPage() {
@@ -70,7 +71,9 @@ function Ficha({ anuncio }) {
         <EtiquetaEstado estado={anuncio.estado} />
       </div>
 
-      {/* [Depende de US-13] galería · [Depende de US-14] precio o «Donación · Gratis» */}
+      <GaleriaAnuncio titulo={anuncio.titulo} fotos={anuncio.fotos} />
+
+      {/* [Depende de US-14] precio o «Donación · Gratis» */}
 
       <table className="ficha-datos">
         <tbody>
