@@ -5,7 +5,9 @@ import { lineaDeFechas, resultadoDeLaCarga } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
 import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import Aviso from '../components/Aviso.jsx';
+import BotonesReservaEntrega from '../components/BotonesReservaEntrega.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
+import FranjaReservaEntrega from '../components/FranjaReservaEntrega.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
 export default function AnuncioPage() {
@@ -39,6 +41,21 @@ export default function AnuncioPage() {
 
   const actual = resultado?.clave === clave ? resultado : null;
 
+  // US-17 CA2: la etiqueta, la franja y los botones se actualizan en sitio con el anuncio que devuelve la API.
+  function actualizarAnuncio(anuncio) {
+    setResultado({ clave, anuncio });
+  }
+
+  // US-17 CA4: un 404 lleva a «Anuncio no encontrado»; un 409 da aviso rojo y recarga el anuncio para ver su estado real.
+  function mostrarFallo({ noEncontrado, mensaje, recargar }) {
+    if (noEncontrado) {
+      setResultado({ clave, noEncontrado: true });
+      return;
+    }
+    setAviso({ tipo: 'error', texto: mensaje });
+    if (recargar) setIntento((n) => n + 1);
+  }
+
   if (actual?.noEncontrado) return <AnuncioNoEncontrado />;
 
   return (
@@ -56,19 +73,24 @@ export default function AnuncioPage() {
           </div>
         )}
 
-        {actual?.anuncio && <Ficha anuncio={actual.anuncio} />}
+        {actual?.anuncio && (
+          <Ficha anuncio={actual.anuncio} onActualizado={actualizarAnuncio} onAviso={setAviso} onFallo={mostrarFallo} />
+        )}
       </section>
     </>
   );
 }
 
-function Ficha({ anuncio }) {
+function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
   return (
     <>
       <div className="ficha-cabecera">
         <h1 id="titulo-pagina">{anuncio.titulo}</h1>
         <EtiquetaEstado estado={anuncio.estado} />
       </div>
+
+      {/* US-17: franja naranja si está reservado y azul si está entregado, bajo el título. */}
+      <FranjaReservaEntrega anuncio={anuncio} />
 
       {/* [Depende de US-13] galería · [Depende de US-14] precio o «Donación · Gratis» */}
 
@@ -90,7 +112,10 @@ function Ficha({ anuncio }) {
       <p className="ficha-fechas">{lineaDeFechas(anuncio)}</p>
 
       {/* Zona «Acciones»: la rellenan US-15 (Editar), US-16 (Pausar/Reactivar), US-17, US-70 (Retirar) y US-19. */}
-      <div className="ficha-acciones" />
+      <div className="ficha-acciones">
+        {/* US-17: «Marcar como reservado», «Quitar reserva» y «Marcar como entregado» según el estado. */}
+        <BotonesReservaEntrega anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+      </div>
     </>
   );
 }
