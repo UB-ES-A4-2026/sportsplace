@@ -463,17 +463,24 @@ test.describe('US-04 · Recuperar la contraseña', () => {
     expect((await login(request, email, NUEVA)).status()).toBe(200);
   });
 
-  // Fallo de la aplicación: al verificar el enlace de recuperación, Supabase Auth confirma el email
-  // de la cuenta, y el login posterior responde 200 en lugar de 403. Se activa cuando se corrija
-  // Fallo abierto en #152.
-  test.fixme('CA15 · cambiar la contraseña no confirma el email', async ({ request }) => {
+  // CA15 (#152, corregido en #174): a una cuenta sin confirmar no se le envía el enlace de recuperación
+  // (responde el mismo 204, CA23). Sin enlace no hay token con el que cambiar la contraseña, así que esta
+  // vía no puede confirmar el email: el login sigue dando 403.
+  test('CA15 · cambiar la contraseña no confirma el email', async ({ request }) => {
     const email = await crearCuenta(request, { confirmada: false });
-    const token = await pedirEnlace(request, email);
-    expect((await restablecer(request, token, NUEVA)).status()).toBe(204);
+    expect((await esperarEmail(request, email, 1)).tipo).toBe('signup');
 
-    const res = await login(request, email, NUEVA);
-    expect(res.status()).toBe(403);
-    expect((await res.json()).error.code).toBe('EMAIL_NO_CONFIRMADO');
+    const res = await request.post(RECUPERAR, { data: { email } });
+    expect(res.status()).toBe(204);
+
+    // No hay un evento que esperar si no se envía nada: se da margen al servidor de correo.
+    await new Promise((r) => setTimeout(r, 2_000));
+    expect(await emailsDe(request, email)).toHaveLength(1);
+    expect((await esperarEmail(request, email, 1)).tipo).toBe('signup');
+
+    const entrada = await login(request, email, ANTIGUA);
+    expect(entrada.status()).toBe(403);
+    expect((await entrada.json()).error.code).toBe('EMAIL_NO_CONFIRMADO');
   });
 
   test('CA19 · POST /api/auth/recuperar-contrasena', async ({ request }) => {
