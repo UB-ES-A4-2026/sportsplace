@@ -184,8 +184,9 @@ Pública. Pide el email «Cambia tu contraseña de Sportsplace» (plantilla *Res
 ```
 
 - `204` sin cuerpo, **exista o no la cuenta**: la respuesta (código, cuerpo y cabeceras) es idéntica para un email registrado, uno no registrado y uno sin confirmar (CA23). El email se recorta y se pasa a minúsculas antes de enviarlo (CA25).
+- El email solo se envía si la cuenta existe y tiene el email confirmado (se comprueba en `auth.users`). A una cuenta sin confirmar no se le envía, porque Supabase da el email por confirmado al verificar un enlace de recuperación y eso rompería CA15 (#152); la respuesta sigue siendo el mismo `204`.
 - `400 DATOS_INVALIDOS` con `details.email`: misma regla y mensajes que en el registro («El email es obligatorio.», «El email no es válido.», máximo 254 caracteres).
-- `400 JSON_INVALIDO`, `429 DEMASIADOS_INTENTOS`, `503 AUTH_NO_DISPONIBLE`.
+- `400 JSON_INVALIDO`, `429 DEMASIADOS_INTENTOS`, `503 AUTH_NO_DISPONIBLE`, `503 BASE_DATOS_NO_DISPONIBLE` (no se ha podido comprobar la cuenta).
 
 ### `POST /api/auth/restablecer-contrasena` (US-04)
 

@@ -38,6 +38,26 @@ export function createCentrosRepository(database) {
       }
     },
 
+    // US-04 CA15 (#152): ¿la cuenta de este email existe y tiene el email
+    // confirmado? Se consulta auth.users, la fuente de verdad de Supabase Auth,
+    // y no la copia de centros: así también sirve para los miembros de US-84,
+    // que no tienen fila en centros. `email` llega normalizado (minúsculas).
+    async cuentaConfirmada(email) {
+      try {
+        const { rows } = await database.query(
+          `SELECT email_confirmed_at IS NOT NULL AS confirmada
+           FROM auth.users
+           WHERE lower(email) = $1
+           LIMIT 1`,
+          [email],
+        );
+        return rows[0]?.confirmada === true;
+      } catch (error) {
+        console.error(`No se pudo comprobar la cuenta: ${error?.code ?? 'error desconocido'}`);
+        throw databaseUnavailable();
+      }
+    },
+
     // US-02: copia en centros la fecha de confirmación de la cuenta.
     async marcarEmailConfirmado(usuarioId, confirmadoEn) {
       await database.query(

@@ -1,12 +1,26 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { ApiError } from '../src/errors.js';
+import { databaseUnavailable } from '../src/repositories/centros.js';
 import { invalidRecoveryLink } from '../src/services/supabase-auth.js';
 import { postJson, startApi } from './helpers.js';
 
 // US-04: POST /api/auth/recuperar-contrasena y /restablecer-contrasena
-// (CA6, CA7, CA19-CA21, CA23-CA26). El doble de Supabase Auth registra los
+// (CA6, CA7, CA15, CA19-CA21, CA23-CA26). El doble de Supabase Auth registra los
 // envíos y los cambios de contraseña; los enlaces válidos solo sirven una vez.
+// El doble de la base de datos dice qué cuentas existen y tienen el email
+// confirmado (auth.users).
+const SIN_CONFIRMAR = 'sin-confirmar@ejemplo.com';
+const SIN_CUENTA = 'nadie@ejemplo.com';
+let consultas;
+let baseCaida;
+const fakeCentros = {
+  async cuentaConfirmada(email) {
+    if (baseCaida) throw databaseUnavailable();
+    consultas.push(email);
+    return ![SIN_CONFIRMAR, SIN_CUENTA].includes(email);
+  },
+};
 let envios;
 let cambios;
 let enlaces;
@@ -24,9 +38,11 @@ const fakeAuth = {
 };
 
 let api;
-before(async () => { api = await startApi({ auth: fakeAuth }); });
+before(async () => { api = await startApi({ auth: fakeAuth, centros: fakeCentros }); });
 after(() => api.close());
 beforeEach(() => {
+  consultas = [];
+  baseCaida = false;
   envios = [];
   cambios = [];
   enlaces = new Set(['hash-valido']);
@@ -43,18 +59,46 @@ test('US-04 CA19/CA21/CA25: pedir el enlace responde 204 sin cuerpo y normaliza 
   assert.equal(response.status, 204);
   assert.equal(await response.text(), '');
   assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(consultas, ['piscina@clubnatacio.cat']);
   assert.deepEqual(envios, ['piscina@clubnatacio.cat']);
 });
 
 test('US-04 CA23: la respuesta es idéntica para un email registrado, uno no registrado y uno sin confirmar', async () => {
   const respuestas = [];
-  for (const email of ['piscina@clubnatacio.cat', 'nadie@ejemplo.com', 'sin-confirmar@ejemplo.com']) {
+  for (const email of ['piscina@clubnatacio.cat', SIN_CUENTA, SIN_CONFIRMAR]) {
     const response = await recuperar({ email });
     const cabeceras = Object.fromEntries([...response.headers].filter(([nombre]) => !['date', 'etag'].includes(nombre)));
     respuestas.push({ status: response.status, cuerpo: await response.text(), cabeceras });
   }
   assert.deepEqual(respuestas[1], respuestas[0]);
   assert.deepEqual(respuestas[2], respuestas[0]);
+  // Solo la cuenta confirmada recibe el email (CA15).
+  assert.deepEqual(envios, ['piscina@clubnatacio.cat']);
+});
+
+test('US-04 CA15 (#152): a una cuenta sin confirmar no se le envía el enlace y se responde el mismo 204', async () => {
+  const response = await recuperar({ email: '  Sin-Confirmar@Ejemplo.com ' });
+
+  assert.equal(response.status, 204);
+  assert.equal(await response.text(), '');
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(consultas, [SIN_CONFIRMAR]);
+  assert.deepEqual(envios, []);
+});
+
+test('US-04 CA15: aunque Supabase esté limitando envíos, la cuenta sin confirmar recibe 204 sin llamarlo', async () => {
+  fallo = new ApiError(429, 'DEMASIADOS_INTENTOS', 'Demasiados intentos. Espera unos minutos y vuelve a probar.');
+  assert.equal((await recuperar({ email: SIN_CONFIRMAR })).status, 204);
+  assert.equal((await recuperar({ email: SIN_CUENTA })).status, 204);
+  assert.deepEqual(envios, []);
+});
+
+test('US-04 CA19: si no se puede comprobar la cuenta, 503 BASE_DATOS_NO_DISPONIBLE y no se envía nada', async () => {
+  baseCaida = true;
+  const response = await recuperar({ email: 'piscina@clubnatacio.cat' });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, 'BASE_DATOS_NO_DISPONIBLE');
+  assert.deepEqual(envios, []);
 });
 
 test('US-04 CA6: el email es obligatorio, con la regla y los mensajes de US-01', async () => {
