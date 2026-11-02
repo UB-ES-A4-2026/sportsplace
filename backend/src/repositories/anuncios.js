@@ -1,4 +1,5 @@
 import { ApiError } from '../errors.js';
+import { transicionNoPermitida } from '../services/transiciones-anuncio.js';
 import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,6 +31,24 @@ export function aAnuncio(fila) {
     fotos: [],
     publicado_en: fecha(fila.publicado_en),
     creado_en: fecha(fila.creado_en),
+    actualizado_en: fecha(fila.actualizado_en),
+  };
+}
+
+// Fila de la tabla → `resumen` de la lista «Mis anuncios» (US-18, CA12).
+// CA30 de US-12: sin US-13 ni US-14 en dev, sin foto principal y como donación.
+export function aResumen(fila) {
+  return {
+    id: fila.id,
+    titulo: fila.titulo,
+    categoria: fila.categoria,
+    deporte: fila.deporte,
+    unidades_disponibles: fila.unidades_disponibles,
+    modalidad: 'donacion',
+    precio_unitario_centimos: null,
+    estado: fila.estado,
+    foto_principal_url: null,
+    publicado_en: fecha(fila.publicado_en),
     actualizado_en: fecha(fila.actualizado_en),
   };
 }
@@ -90,6 +109,65 @@ export function createAnunciosRepository(database) {
       );
       if (rows.length === 0) throw anuncioNoEncontrado();
       return aAnuncio(rows[0]);
+    },
+
+    // E03 «Estados del anuncio y transiciones» (US-16; después US-17 y US-70).
+    // Cambia el estado en un único UPDATE que solo actúa si el estado actual está
+    // en `desde`: con dos peticiones a la vez, la segunda ya no lo encuentra y
+    // recibe 409 (US-16 CA10). Renueva actualizado_en y no toca ningún otro dato
+    // ni publicado_en (US-16 CA5). entregado_en y retirado_en solo tienen valor
+    // en su estado, como exigen los CHECK de la tabla.
+    async transicionar(usuarioId, id, { desde, hacia }) {
+      if (typeof id !== 'string' || !UUID.test(id)) throw anuncioNoEncontrado();
+      const centro = 'SELECT c.id FROM public.centros c WHERE c.usuario_id = $1';
+      const { rows } = await consultar(
+        `UPDATE public.anuncios
+         SET estado = $3::text,
+             actualizado_en = now(),
+             entregado_en = CASE WHEN $3::text = 'entregado' THEN now() END,
+             retirado_en = CASE WHEN $3::text = 'retirado' THEN now() END
+         WHERE id = $2 AND centro_id = (${centro}) AND estado = ANY($4::text[])
+         RETURNING ${COLUMNAS}`,
+        [usuarioId, id, hacia, [...desde]],
+      );
+      if (rows.length > 0) return aAnuncio(rows[0]);
+
+      // No ha cambiado nada: o no es un anuncio visible del centro (404, como en
+      // «Propiedad») o su estado no permite la acción (409 con el estado actual).
+      const { rows: [actual] } = await consultar(
+        `SELECT estado FROM public.anuncios
+         WHERE id = $2 AND centro_id = (${centro}) AND estado <> 'retirado'`,
+        [usuarioId, id],
+      );
+      if (!actual) throw anuncioNoEncontrado();
+      throw transicionNoPermitida(actual.estado);
+    },
+
+    // US-18 (CA3, CA4, CA10, CA14): anuncios del centro de la sesión salvo los
+    // retirados, del último modificado al más antiguo (a igualdad, id
+    // descendente). Si se pide una página mayor que la última, se devuelve la
+    // última, con su número en `pagina`.
+    async listarMios(usuarioId, { pagina, porPagina }) {
+      const centro = 'SELECT c.id FROM public.centros c WHERE c.usuario_id = $1';
+      const { rows: [{ total }] } = await consultar(
+        `SELECT count(*)::integer AS total
+         FROM public.anuncios a
+         WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'`,
+        [usuarioId],
+      );
+      const ultima = Math.max(1, Math.ceil(total / porPagina));
+      const paginaServida = Math.min(pagina, ultima);
+
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.categoria, a.deporte, a.unidades_disponibles,
+                a.estado, a.publicado_en, a.actualizado_en
+         FROM public.anuncios a
+         WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'
+         ORDER BY a.actualizado_en DESC, a.id DESC
+         LIMIT $2 OFFSET $3`,
+        [usuarioId, porPagina, (paginaServida - 1) * porPagina],
+      );
+      return { anuncios: rows.map(aResumen), total, pagina: paginaServida, por_pagina: porPagina };
     },
   };
 }

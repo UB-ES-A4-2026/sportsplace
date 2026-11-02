@@ -5,6 +5,7 @@ import { lineaDeFechas, resultadoDeLaCarga } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
 import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import Aviso from '../components/Aviso.jsx';
+import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
 import PrecioAnuncio from '../components/PrecioAnuncio.jsx';
 
@@ -40,6 +41,17 @@ export default function AnuncioPage() {
 
   const actual = resultado?.clave === clave ? resultado : null;
 
+  // US-70 CA6: si falla una acción, el diálogo ya se ha cerrado sin cambios. 404 → «Anuncio no encontrado»;
+  // 409 → aviso rojo y se recarga el anuncio para ver su estado real; el resto → aviso rojo genérico.
+  const mostrarFallo = useCallback(({ noEncontrado, mensaje, recargar }) => {
+    if (noEncontrado) {
+      setResultado({ clave, noEncontrado: true });
+      return;
+    }
+    setAviso({ tipo: 'error', texto: mensaje });
+    if (recargar) setIntento((n) => n + 1);
+  }, [clave]);
+
   if (actual?.noEncontrado) return <AnuncioNoEncontrado />;
 
   return (
@@ -57,13 +69,13 @@ export default function AnuncioPage() {
           </div>
         )}
 
-        {actual?.anuncio && <Ficha anuncio={actual.anuncio} />}
+        {actual?.anuncio && <Ficha anuncio={actual.anuncio} onFallo={mostrarFallo} />}
       </section>
     </>
   );
 }
 
-function Ficha({ anuncio }) {
+function Ficha({ anuncio, onFallo }) {
   return (
     <>
       <div className="ficha-cabecera">
@@ -94,7 +106,11 @@ function Ficha({ anuncio }) {
       <p className="ficha-fechas">{lineaDeFechas(anuncio)}</p>
 
       {/* Zona «Acciones»: la rellenan US-15 (Editar), US-16 (Pausar/Reactivar), US-17, US-70 (Retirar) y US-19. */}
-      <div className="ficha-acciones" />
+      <div className="ficha-acciones">
+        {/* US-70 CA1: solo en borrador, activo, pausado y reservado (el botón no se pinta en entregado). Al retirar,
+            va a /mis-anuncios con replace y el aviso «Anuncio retirado.» (CA4). */}
+        <BotonRetirarAnuncio anuncio={anuncio} onFallo={onFallo} />
+      </div>
     </>
   );
 }

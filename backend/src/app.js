@@ -10,7 +10,9 @@ import { marcarEnterosConDecimales } from './validation/anuncios.js';
 // `auth` es el servicio de autenticación (Supabase Auth en producción y un
 // doble en las pruebas); `centros` y `anuncios`, los repositorios de sus tablas.
 // Cualquiera puede ser null si falta su configuración.
-export function createApp({ auth = null, centros = null, anuncios = null, webRoot = null } = {}) {
+export function createApp({
+  auth = null, centros = null, anuncios = null, webRoot = null, renderGitCommit = null,
+} = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('auth', auth);
@@ -23,7 +25,7 @@ export function createApp({ auth = null, centros = null, anuncios = null, webRoo
   });
   app.use(express.json({ limit: '100kb', reviver: marcarEnterosConDecimales }));
 
-  app.use(healthRouter());
+  app.use(healthRouter({ commit: renderGitCommit }));
   app.use('/api/auth', authRouter());
   app.use('/api/anuncios', anunciosRouter());
 
