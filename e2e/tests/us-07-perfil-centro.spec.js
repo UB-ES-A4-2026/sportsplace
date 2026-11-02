@@ -269,13 +269,14 @@ test.describe('US-07 · API de /api/centros/mio', () => {
     });
   });
 
+  // US-68 (CA13) añade provincia, latitud y longitud.
   test('CA17 · GET devuelve el centro propio con todos sus campos', async ({ request, cuentas }) => {
     const res = await request.get('/api/centros/mio', { headers: { Authorization: `Bearer ${token}` } });
     expect(res.status()).toBe(200);
     const { centro } = await res.json();
     expect(Object.keys(centro).sort()).toEqual([
       'codigo_postal', 'creado_en', 'descripcion', 'direccion', 'email', 'email_contacto',
-      'id', 'localidad', 'nombre', 'telefono', 'web',
+      'id', 'latitud', 'localidad', 'longitud', 'nombre', 'provincia', 'telefono', 'web',
     ]);
     expect(centro).toMatchObject({ id: original.id, email: cuentas.centroA, nombre: original.nombre });
   });
