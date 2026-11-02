@@ -2,9 +2,11 @@ import { ApiError } from '../errors.js';
 
 const UNIQUE_VIOLATION = '23505';
 
-// US-07: columnas que devuelven GET y PATCH /api/centros/mio (CA17).
+// US-07: columnas que devuelven GET y PATCH /api/centros/mio (CA17). US-68 añade
+// provincia y coordenadas (CA13); NUMERIC se devuelve como número, no como texto.
 const PERFIL = `id, nombre, email, localidad, direccion, codigo_postal, telefono,
-  descripcion, email_contacto, web, creado_en`;
+  descripcion, email_contacto, web, creado_en,
+  provincia, latitud::float8 AS latitud, longitud::float8 AS longitud`;
 const EDITABLES = ['nombre', 'descripcion', 'telefono', 'email_contacto', 'web'];
 
 export function emailAlreadyRegistered() {
@@ -15,19 +17,30 @@ export function databaseUnavailable() {
   return new ApiError(503, 'BASE_DATOS_NO_DISPONIBLE', 'No se ha podido guardar la información. Inténtalo más tarde.');
 }
 
+export function codigoPostalDesconocido() {
+  return new ApiError(400, 'CODIGO_POSTAL_DESCONOCIDO', 'No conocemos este código postal. Revísalo.', {
+    codigo_postal: 'No conocemos este código postal. Revísalo.',
+  });
+}
+
 export function createCentrosRepository(database) {
   return {
     // US-01: crea el centro y su cuenta en la misma transacción. Si la cuenta
     // no se puede crear, el centro no se guarda; el índice único del email
-    // impide dos altas simultáneas con el mismo email.
+    // impide dos altas simultáneas con el mismo email. Si el código postal está
+    // en codigos_postales, copia también provincia y coordenadas (US-68, CA7).
     async registrar(centro, crearCuenta) {
       try {
         return await database.transaction(async (client) => {
           const { rows } = await client.query(
             `INSERT INTO public.centros (
                nombre, email, localidad, direccion, codigo_postal, telefono,
+               provincia, latitud, longitud,
                politica_privacidad_aceptada, politica_privacidad_aceptada_en
-             ) VALUES ($1, $2, $3, $4, $5, $6, TRUE, now())
+             )
+             SELECT $1, $2, $3, $4, $5, $6, cp.provincia, cp.latitud, cp.longitud, TRUE, now()
+             FROM (SELECT 1) AS fila
+             LEFT JOIN public.codigos_postales cp ON cp.codigo_postal = $5
              RETURNING id`,
             [centro.nombre, centro.email, centro.localidad, centro.direccion, centro.codigo_postal, centro.telefono],
           );
@@ -39,6 +52,26 @@ export function createCentrosRepository(database) {
         if (error instanceof ApiError) throw error;
         if (error?.code === UNIQUE_VIOLATION) throw emailAlreadyRegistered();
         console.error(`No se pudo registrar el centro: ${error?.code ?? 'error desconocido'}`);
+        throw databaseUnavailable();
+      }
+    },
+
+    // US-04 CA15 (#152): ¿la cuenta de este email existe y tiene el email
+    // confirmado? Se consulta auth.users, la fuente de verdad de Supabase Auth,
+    // y no la copia de centros: así también sirve para los miembros de US-84,
+    // que no tienen fila en centros. `email` llega normalizado (minúsculas).
+    async cuentaConfirmada(email) {
+      try {
+        const { rows } = await database.query(
+          `SELECT email_confirmed_at IS NOT NULL AS confirmada
+           FROM auth.users
+           WHERE lower(email) = $1
+           LIMIT 1`,
+          [email],
+        );
+        return rows[0]?.confirmada === true;
+      } catch (error) {
+        console.error(`No se pudo comprobar la cuenta: ${error?.code ?? 'error desconocido'}`);
         throw databaseUnavailable();
       }
     },
@@ -84,6 +117,38 @@ export function createCentrosRepository(database) {
         console.error(`No se pudo actualizar el perfil del centro: ${error?.code ?? 'error desconocido'}`);
         throw databaseUnavailable();
       }
+    },
+
+    // US-68 (CA7, CA8, CA18, CA19): guarda la ubicación ya validada y copia
+    // provincia, latitud y longitud del código postal en la misma sentencia.
+    // Si el código no está en codigos_postales no se cambia nada (CA5).
+    async actualizarUbicacion(usuarioId, { direccion, codigo_postal: codigoPostal, localidad }) {
+      let rows;
+      try {
+        ({ rows } = await database.query(
+          `WITH cp AS (
+             SELECT provincia AS cp_provincia, latitud AS cp_latitud, longitud AS cp_longitud
+             FROM public.codigos_postales WHERE codigo_postal = $3
+           ), actualizado AS (
+             UPDATE public.centros
+             SET direccion = $2, codigo_postal = $3, localidad = $4,
+                 provincia = cp_provincia, latitud = cp_latitud, longitud = cp_longitud,
+                 actualizado_en = now()
+             FROM cp
+             WHERE usuario_id = $1
+             RETURNING ${PERFIL}
+           )
+           SELECT EXISTS (SELECT 1 FROM cp) AS codigo_conocido, actualizado.*
+           FROM (SELECT 1) AS fila LEFT JOIN actualizado ON TRUE`,
+          [usuarioId, direccion, codigoPostal, localidad],
+        ));
+      } catch (error) {
+        console.error(`No se pudo guardar la ubicación del centro: ${error?.code ?? 'error desconocido'}`);
+        throw databaseUnavailable();
+      }
+      const { codigo_conocido: codigoConocido, ...centro } = rows[0] ?? {};
+      if (!codigoConocido) throw codigoPostalDesconocido();
+      return centro.id ? centro : null;
     },
   };
 }

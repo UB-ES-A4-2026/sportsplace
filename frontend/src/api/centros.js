@@ -13,3 +13,9 @@ export async function actualizarMiCentro(cambios, llamarApi = api) {
   const datos = await llamarApi('/centros/mio', { method: 'PATCH', body: cambios });
   return datos.centro;
 }
+
+// US-68 CA11: PUT /api/centros/mio/ubicacion con los tres campos. Responde 200 { centro } con provincia y coordenadas.
+export async function guardarUbicacion(ubicacion, llamarApi = api) {
+  const datos = await llamarApi('/centros/mio/ubicacion', { method: 'PUT', body: ubicacion });
+  return datos.centro;
+}
