@@ -12,6 +12,7 @@ import PanelPage from './pages/PanelPage.jsx';
 import PerfilPage from './pages/PerfilPage.jsx';
 import PublicarAnuncioPage from './pages/PublicarAnuncioPage.jsx';
 import RegistroPage from './pages/RegistroPage.jsx';
+import UbicacionPage from './pages/UbicacionPage.jsx';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="mis-anuncios" element={<MisAnunciosPage />} />
           <Route path="perfil" element={<PerfilPage />} />
           <Route path="perfil/editar" element={<EditarPerfilPage />} />
+          <Route path="perfil/ubicacion" element={<UbicacionPage />} />
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
           <Route path="anuncios/:id" element={<AnuncioPage />} />
         </Route>
