@@ -42,6 +42,11 @@ function tooManyAttempts() {
   return new ApiError(429, 'DEMASIADOS_INTENTOS', 'Demasiados intentos. Espera unos minutos y vuelve a probar.');
 }
 
+// US-04 (CA20): enlace de recuperación usado, caducado, sustituido por otro o inventado.
+export function invalidRecoveryLink() {
+  return new ApiError(400, 'ENLACE_INVALIDO', 'El enlace para cambiar la contraseña no es válido o ha caducado.');
+}
+
 export function emailNotConfirmed() {
   return new ApiError(403, 'EMAIL_NO_CONFIRMADO', 'Confirma tu email con el enlace que te hemos enviado antes de continuar.');
 }
@@ -54,9 +59,10 @@ export function createSupabaseAuth({
   const key = environment.SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!url || !key) return null;
 
-  const client = clientFactory(url, key, {
+  const options = {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
+  };
+  const client = clientFactory(url, key, options);
 
   return {
     client,
@@ -110,6 +116,51 @@ export function createSupabaseAuth({
       if (error.status >= 500 || !error.status) throw authUnavailable();
       // Otros errores (email sin cuenta o ya confirmado) se responden igual que
       // un envío correcto, para no revelar qué emails tienen cuenta.
+    },
+
+    // US-04 (CA19, CA23, CA25): pide el email «Reset password» (plantilla de
+    // T04-1, que enlaza a /restablecer-contrasena). Supabase no revela si el
+    // email tiene cuenta, y cualquier otro error se responde igual que un envío
+    // correcto, así que la respuesta es la misma exista o no la cuenta.
+    async requestPasswordReset(email) {
+      const { error } = await client.auth.resetPasswordForEmail(normalizeEmail(email));
+      if (!error) return;
+      if (error.status === 429) throw tooManyAttempts();
+      if (error.status >= 500 || !error.status) throw authUnavailable();
+    },
+
+    // US-04 (CA12-CA14, CA20, CA26): cambia la contraseña con el token_hash del
+    // enlace y cierra todas las sesiones de la cuenta. Usa un cliente propio de
+    // esta petición: verifyOtp guarda la sesión de recuperación en el cliente y
+    // updateUser la usa, así que no se puede compartir con otras peticiones.
+    // El token_hash no se escribe nunca en los logs (CA24).
+    async resetPassword(tokenHash, password) {
+      const recuperacion = clientFactory(url, key, options);
+
+      const { data, error } = await recuperacion.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+      if (error) {
+        if (error.status === 429) throw tooManyAttempts();
+        if (error.status >= 500 || !error.status) throw authUnavailable();
+        throw invalidRecoveryLink();
+      }
+      if (!data?.session) throw invalidRecoveryLink();
+
+      const { error: errorCambio } = await recuperacion.auth.updateUser({ password });
+      // CA26: elegir la misma contraseña que antes se acepta.
+      if (errorCambio && errorCambio.code !== 'same_password') {
+        if (errorCambio.code === 'weak_password') {
+          throw new ApiError(400, 'DATOS_INVALIDOS', 'Revisa los datos del formulario.', {
+            password: 'La contraseña es demasiado débil.',
+          });
+        }
+        if (errorCambio.status === 429) throw tooManyAttempts();
+        throw authUnavailable();
+      }
+
+      // CA14: cierra todas las sesiones abiertas de la cuenta (también la de
+      // recuperación); sus refresh_token dejan de servir.
+      const { error: errorCierre } = await recuperacion.auth.admin.signOut(data.session.access_token, 'global');
+      if (errorCierre && (errorCierre.status >= 500 || !errorCierre.status)) throw authUnavailable();
     },
 
     async signIn(email, password) {
