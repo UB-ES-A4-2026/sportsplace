@@ -435,7 +435,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del ce
 - `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «Debe ser un número entero mayor que 0.» y/o `details.por_pagina` «Debe ser un número entre 1 y 50.». Solo se aceptan dígitos: `2.5`, `-1`, `abc`, un valor vacío o el parámetro repetido se rechazan.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `foto_principal_url` es la URL pública de la foto con `es_principal` (US-13) o `null` si el anuncio no tiene fotos.
-- Mientras US-14 no esté en `dev`, `modalidad` es `"donacion"` y `precio_unitario_centimos` es `null` (US-12, CA30).
+- `modalidad` y `precio_unitario_centimos` son los del anuncio (US-14, CA7): `"donacion"` con `null`, o `"venta"` con el precio en céntimos.
 
 ### Cambios de estado de un anuncio (E03)
 
