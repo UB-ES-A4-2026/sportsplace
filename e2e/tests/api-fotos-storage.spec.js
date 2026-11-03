@@ -23,6 +23,8 @@ const datos = {
   deporte: 'futbol',
   unidades_disponibles: 2,
   estado_material: 'buen_estado',
+  // US-14: `modalidad` es obligatoria desde T14-1; «donacion» no arrastra precio.
+  modalidad: 'donacion',
 };
 
 let database;

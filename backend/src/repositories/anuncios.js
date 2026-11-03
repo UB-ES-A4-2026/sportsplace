@@ -13,9 +13,8 @@ export function anuncioNoEncontrado() {
 const fecha = (valor) => (valor === null || valor === undefined ? null : new Date(valor).toISOString());
 
 // Fila de la tabla → objeto `anuncio` de la API («Base común»). `fotos` ya
-// viene en el formato de la API y ordenado por `orden` (US-13).
-// CA30: hasta que US-14 esté en dev, la rama no tiene modalidad ni precio:
-// el anuncio se devuelve como donación, sin precio.
+// viene en el formato de la API y ordenado por `orden` (US-13). La modalidad y
+// el precio son los de la fila (US-14).
 export function aAnuncio(fila, fotos = []) {
   return {
     id: fila.id,
@@ -26,8 +25,8 @@ export function aAnuncio(fila, fotos = []) {
     deporte: fila.deporte,
     unidades_disponibles: fila.unidades_disponibles,
     estado_material: fila.estado_material,
-    modalidad: 'donacion',
-    precio_unitario_centimos: null,
+    modalidad: fila.modalidad,
+    precio_unitario_centimos: fila.precio_unitario_centimos,
     estado: fila.estado,
     fotos,
     publicado_en: fecha(fila.publicado_en),
@@ -60,7 +59,8 @@ export function aResumen(fila) {
 }
 
 const COLUMNAS = `id, centro_id, titulo, descripcion, categoria, deporte,
-  unidades_disponibles, estado_material, estado, publicado_en, creado_en, actualizado_en`;
+  unidades_disponibles, estado_material, modalidad, precio_unitario_centimos,
+  estado, publicado_en, creado_en, actualizado_en`;
 
 // Clase 23 de PostgreSQL: una restricción (CHECK, UNIQUE, FK) ha rechazado los
 // datos. Con los datos ya validados es un fallo del servidor (500), no una caída (503).
@@ -106,6 +106,7 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
 
     // US-12 y US-13: crea el anuncio `activo` del centro y sus fotos en una
     // única transacción (CA19, CA20): o se guardan todas las filas o ninguna.
+    // Con su modalidad y su precio en céntimos (US-14, CA11).
     // `id` lo genera el servidor antes, porque forma parte de la ruta de las
     // fotos; publicado_en, creado_en y actualizado_en toman la misma hora (now()).
     async crear({ id, centroId, datos, fotos }) {
@@ -114,12 +115,14 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
           const { rows } = await client.query(
             `INSERT INTO public.anuncios (
                id, centro_id, titulo, descripcion, categoria, deporte,
-               unidades_disponibles, estado_material, estado, publicado_en
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'activo', now())
+               unidades_disponibles, estado_material, modalidad, precio_unitario_centimos,
+               estado, publicado_en
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'activo', now())
              RETURNING ${COLUMNAS}`,
             [
               id, centroId, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
               datos.unidades_disponibles, datos.estado_material,
+              datos.modalidad, datos.precio_unitario_centimos ?? null,
             ],
           );
           const { rows: filasFotos } = await client.query(
@@ -154,7 +157,8 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
       if (typeof id !== 'string' || !UUID.test(id)) throw anuncioNoEncontrado();
       const { rows } = await consultar(
         `SELECT a.id, a.centro_id, a.titulo, a.descripcion, a.categoria, a.deporte,
-                a.unidades_disponibles, a.estado_material, a.estado,
+                a.unidades_disponibles, a.estado_material,
+                a.modalidad, a.precio_unitario_centimos, a.estado,
                 a.publicado_en, a.creado_en, a.actualizado_en
          FROM public.anuncios a
          JOIN public.centros c ON c.id = a.centro_id

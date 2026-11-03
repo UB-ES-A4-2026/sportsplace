@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { puedeEditar } from '../anuncios/editar.js';
 import { obtenerAnuncio } from '../api/anuncios.js';
 import { lineaDeFechas, resultadoDeLaCarga } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
@@ -10,6 +11,7 @@ import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
 import FranjaPausado from '../components/FranjaPausado.jsx';
 import GaleriaAnuncio from '../components/GaleriaAnuncio.jsx';
+import PrecioAnuncio from '../components/PrecioAnuncio.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
 export default function AnuncioPage() {
@@ -95,9 +97,11 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
       {/* US-16: franja gris bajo el título mientras está pausado; cambia con el estado sin recargar (CA3). */}
       <FranjaPausado estado={anuncio.estado} />
 
+      {/* E03: título → galería (US-13) → precio (US-14) → tabla */}
       <GaleriaAnuncio titulo={anuncio.titulo} fotos={anuncio.fotos} />
 
-      {/* [Depende de US-14] precio o «Donación · Gratis» */}
+      {/* CA6 y CA7 (US-14): «8,50 € / unidad» o «Donación · Gratis». */}
+      <p className="ficha-precio"><PrecioAnuncio anuncio={anuncio} grande /></p>
 
       <table className="ficha-datos">
         <tbody>
@@ -118,6 +122,12 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
 
       {/* Zona «Acciones»: la rellenan US-15 (Editar), US-16 (Pausar/Reactivar), US-17, US-70 (Retirar) y US-19. */}
       <div className="ficha-acciones">
+        {/* US-15 CA1: «Editar» (secundario) en activo, pausado y reservado; no en entregado. */}
+        {puedeEditar(anuncio.estado) && (
+          <Link to={`/anuncios/${encodeURIComponent(anuncio.id)}/editar`} className="boton-enlace boton-enlace-secundario">
+            Editar
+          </Link>
+        )}
         {/* US-16 CA1-CA4: «Pausar» (activo) o «Reactivar» (pausado), sin diálogo; aviso verde y la ficha cambia en sitio.
             Con un 409 (estado desfasado, E2E-4), aviso rojo y se recarga el anuncio. */}
         <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />

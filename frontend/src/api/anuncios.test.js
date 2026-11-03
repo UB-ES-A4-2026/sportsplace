@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { crearAnuncio, listarMisAnuncios, obtenerAnuncio, pausarAnuncio, reactivarAnuncio, retirarAnuncio } from './anuncios.js';
+import {
+  crearAnuncio,
+  editarAnuncio,
+  listarMisAnuncios,
+  obtenerAnuncio,
+  pausarAnuncio,
+  reactivarAnuncio,
+  retirarAnuncio,
+} from './anuncios.js';
 
 describe('crearAnuncio', () => {
   const fotos = {
@@ -117,4 +125,20 @@ test('retirarAnuncio codifica el id en la ruta', async () => {
 test('retirarAnuncio deja pasar el error de la API', async () => {
   const fallo = new Error('409');
   await assert.rejects(retirarAnuncio('x', async () => { throw fallo; }), fallo);
+});
+
+describe('editarAnuncio', () => {
+  test('US-15 CA11: PATCH /anuncios/:id (id escapado) con el FormData y devuelve el `anuncio`', async () => {
+    const llamadas = [];
+    const anuncio = { id: 'a/1' };
+    const formulario = new FormData();
+
+    const resultado = await editarAnuncio('a/1', formulario, async (ruta, opciones) => {
+      llamadas.push({ ruta, opciones });
+      return { anuncio };
+    });
+
+    assert.deepEqual(llamadas, [{ ruta: '/anuncios/a%2F1', opciones: { method: 'PATCH', body: formulario } }]);
+    assert.equal(resultado, anuncio);
+  });
 });

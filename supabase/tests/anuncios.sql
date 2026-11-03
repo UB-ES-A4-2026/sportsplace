@@ -1,6 +1,7 @@
 -- US-12 (T12-1). Ejecutar con psql -v ON_ERROR_STOP=1 despues de aplicar las
 -- migraciones. Requiere los roles anon y authenticated de Supabase y un usuario
 -- administrador (por ejemplo, postgres). Todo se revierte al terminar.
+-- Desde US-14 (T14-1) modalidad es obligatoria: los INSERT la indican.
 BEGIN;
 
 DO $tests$
@@ -21,10 +22,10 @@ BEGIN
     -- Anuncio valido: valores por defecto y fechas.
     INSERT INTO public.anuncios (
         centro_id, titulo, descripcion, categoria, deporte,
-        unidades_disponibles, estado_material, publicado_en
+        unidades_disponibles, estado_material, modalidad, publicado_en
     ) VALUES (
         centro, 'Balones de futbol talla 5', base, 'balones', 'futbol',
-        12, 'buen_estado', now()
+        12, 'buen_estado', 'donacion', now()
     ) RETURNING * INTO fila;
     anuncio := fila.id;
 
@@ -117,10 +118,10 @@ BEGIN
     BEGIN
         INSERT INTO public.anuncios (
             centro_id, titulo, descripcion, categoria, deporte,
-            unidades_disponibles, estado_material, publicado_en
+            unidades_disponibles, estado_material, modalidad, publicado_en
         ) VALUES (
             gen_random_uuid(), 'Balones de futbol', base, 'balones', 'futbol',
-            1, 'nuevo', now()
+            1, 'nuevo', 'donacion', now()
         );
         RAISE EXCEPTION 'Se acepto un anuncio de un centro inexistente';
     EXCEPTION WHEN foreign_key_violation THEN NULL;

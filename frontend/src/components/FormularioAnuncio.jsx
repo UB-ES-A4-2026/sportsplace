@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { ErrorApi } from '../api/cliente.js';
 import {
   anadirFotos,
+  fotosCambiadas,
   FOTOS_VACIAS,
   marcarPrincipal,
   quitarFoto,
@@ -11,8 +12,10 @@ import {
 } from '../anuncios/fotos.js';
 import { resultadoDelEnvio } from '../anuncios/publicar.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL } from '../anuncios/valores.js';
+import { validarModalidadPrecio } from '../validacion/modalidadPrecio.js';
 import {
   CAMPOS_ANUNCIO,
+  CAMPOS_MODALIDAD_PRECIO,
   cuerpoDelAnuncio,
   DESCRIPCION_MAX,
   haCambiado,
@@ -25,16 +28,19 @@ import {
 import Aviso from './Aviso.jsx';
 import DialogoConfirmacion from './DialogoConfirmacion.jsx';
 import SeccionFotos from './SeccionFotos.jsx';
+import SeccionModalidadPrecio from './SeccionModalidadPrecio.jsx';
 
 // Formulario de anuncio reutilizable (US-12 T12-3; lo reutilizarán US-15, US-19 y US-90).
 // Campos, reglas y mensajes de la «Tabla de campos» de E03. Valida todo al enviar, revalida cada campo
 // al cambiarlo tras el primer intento, muestra los `details` de un 400 bajo su campo y conserva los datos si falla.
 //
+// - `fotosIniciales`: fotos con las que empieza la sección (al editar, las actuales del anuncio; US-15).
 // - `onEnviar(cuerpo, fotos)`: hace la petición y, si va bien, navega. Si lanza un ErrorApi, el formulario muestra el error.
 // - `dialogoSalir`: { titulo, texto, confirmar, cancelar } del diálogo que abre «Cancelar» con datos (CA9).
 // - `destinoCancelar`: adónde lleva «Cancelar» (o «Salir» en el diálogo).
 export default function FormularioAnuncio({
   valoresIniciales = VALORES_VACIOS,
+  fotosIniciales = FOTOS_VACIAS,
   textoEnviar,
   textoEnviando,
   dialogoSalir,
@@ -45,7 +51,7 @@ export default function FormularioAnuncio({
   const formulario = useRef(null);
   const enviandoAhora = useRef(false);
   const [valores, setValores] = useState(valoresIniciales);
-  const [fotos, setFotos] = useState(FOTOS_VACIAS);
+  const [fotos, setFotos] = useState(fotosIniciales);
   const [mensajesFotos, setMensajesFotos] = useState([]);
   const [errores, setErrores] = useState({});
   const [intentado, setIntentado] = useState(false);
@@ -61,9 +67,11 @@ export default function FormularioAnuncio({
     return () => abiertas.forEach((vista) => URL.revokeObjectURL(vista));
   }, []);
 
+  // En el orden del formulario: campos, «Fotos» (US-13) y «Modalidad y precio» (US-14). Se busca por id (no por name):
+  // en «Modalidad» varios radios comparten name y el primero lleva el id del campo; la sección de fotos tiene id="fotos".
   function enfocarPrimerError(lista) {
-    const campo = [...CAMPOS_ANUNCIO, 'fotos'].find((nombre) => lista[nombre]);
-    if (campo) formulario.current?.elements.namedItem(campo)?.focus();
+    const campo = [...CAMPOS_ANUNCIO, 'fotos', ...CAMPOS_MODALIDAD_PRECIO].find((nombre) => lista[nombre]);
+    if (campo) formulario.current?.querySelector(`#${campo}`)?.focus();
   }
 
   // CA8: tras el primer intento, cada campo se vuelve a validar al cambiarlo.
@@ -109,13 +117,30 @@ export default function FormularioAnuncio({
 
   function quitarLaFoto(id) {
     const { estado, quitada } = quitarFoto(fotos, id);
-    if (quitada?.vista) {
+    // Solo se liberan las miniaturas creadas aquí; las fotos actuales (US-15) usan su URL pública.
+    if (quitada?.vista && vistas.current.has(quitada.vista)) {
       URL.revokeObjectURL(quitada.vista);
       vistas.current.delete(quitada.vista);
     }
     setFotos(estado);
     setMensajesFotos([]);
     revalidarFotos(estado);
+  }
+
+  // US-14: «Modalidad y precio» se valida junta, porque el precio depende de la modalidad (CA2, CA5).
+  // Cambiar a «Donación» quita el error del precio; el texto escrito se conserva por si vuelve a «Venta».
+  function cambiarModalidadPrecio(campo, valor) {
+    const siguientes = { ...valores, [campo]: valor };
+    setValores(siguientes);
+    if (!intentado) return;
+    const nuevos = validarModalidadPrecio(siguientes);
+    // Al marcar «Venta» el campo aparece vacío: el aviso de precio llega al enviar o al escribir, no antes.
+    if (campo === 'modalidad' && siguientes.precio.trim() === '') delete nuevos.precio_unitario_centimos;
+    setErrores((anteriores) => {
+      const resto = { ...anteriores };
+      for (const clave of CAMPOS_MODALIDAD_PRECIO) delete resto[clave];
+      return { ...resto, ...nuevos };
+    });
   }
 
   async function enviar(evento) {
@@ -154,7 +179,7 @@ export default function FormularioAnuncio({
 
   // CA9: sin tocar, «Cancelar» sale directamente; con datos, pregunta antes.
   function cancelar() {
-    if (haCambiado(valores, valoresIniciales, { hayFotos: fotos.fotos.length > 0 })) {
+    if (haCambiado(valores, valoresIniciales, { hayFotos: fotosCambiadas(fotos, fotosIniciales) })) {
       setDialogoAbierto(true);
     }
     else navigate(destinoCancelar);
@@ -208,7 +233,7 @@ export default function FormularioAnuncio({
           onPrincipal={(id) => setFotos((anteriores) => marcarPrincipal(anteriores, id))}
         />
 
-        {/* [Depende de US-14] sección «Modalidad y precio» */}
+        <SeccionModalidadPrecio valores={valores} errores={errores} onCambio={cambiarModalidadPrecio} />
 
         <div className="formulario-botones">
           <button type="button" className="boton-secundario" onClick={cancelar}>Cancelar</button>

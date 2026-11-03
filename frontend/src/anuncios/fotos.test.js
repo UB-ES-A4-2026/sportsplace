@@ -4,6 +4,7 @@ import {
   anadirFotos,
   cuerpoMultipart,
   errorDeArchivo,
+  fotosCambiadas,
   FOTOS_VACIAS,
   indicePrincipal,
   marcarPrincipal,
@@ -210,6 +211,37 @@ describe('subidaLenta (CA11)', () => {
     assert.equal(subidaLenta(dos), false);
     const tres = anadirFotos(dos, [cinco]).estado;
     assert.equal(subidaLenta(tres), true);
+  });
+
+  test('US-15: las fotos que ya están en el servidor no cuentan', () => {
+    const actuales = { fotos: [{ id: 'f1', existente: true, vista: 'https://x/f1.jpg', nombre: 'Foto 1' }], principalId: 'f1' };
+    assert.equal(pesoTotal(actuales), 0);
+    assert.equal(pesoTotal(con(['a.jpg'], actuales).estado), 1000);
+  });
+});
+
+describe('fotosCambiadas (US-12 CA9, US-15 CA3)', () => {
+  const actuales = {
+    fotos: [
+      { id: 'f1', existente: true, vista: 'https://x/f1.jpg', nombre: 'Foto 1' },
+      { id: 'f2', existente: true, vista: 'https://x/f2.jpg', nombre: 'Foto 2' },
+    ],
+    principalId: 'f1',
+  };
+
+  test('al publicar (sin iniciales): cambia si hay alguna foto', () => {
+    assert.equal(fotosCambiadas(FOTOS_VACIAS), false);
+    assert.equal(fotosCambiadas(con(['a.jpg']).estado), true);
+  });
+
+  test('al editar: igual que las actuales → sin cambios', () => {
+    assert.equal(fotosCambiadas(actuales, actuales), false);
+  });
+
+  test('al editar: quitar, añadir o cambiar la principal → cambios', () => {
+    assert.equal(fotosCambiadas(quitarFoto(actuales, 'f2').estado, actuales), true);
+    assert.equal(fotosCambiadas(con(['a.jpg'], actuales).estado, actuales), true);
+    assert.equal(fotosCambiadas(marcarPrincipal(actuales, 'f2'), actuales), true);
   });
 });
 

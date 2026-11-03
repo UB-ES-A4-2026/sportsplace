@@ -4,7 +4,7 @@ import { ACEPTAR_FOTOS, AYUDA_FOTOS, MAX_FOTOS } from '../anuncios/fotos.js';
 // Sección «Fotos» del formulario de anuncio (E03, US-13 T13-3).
 // Es "tonta": el estado vive en FormularioAnuncio (ver anuncios/fotos.js).
 //
-// - `estado`: { fotos: [{ id, archivo, vista }], principalId }.
+// - `estado`: { fotos: [{ id, archivo, vista }], principalId }. Al editar (US-15), las actuales llevan `nombre` y no `archivo`.
 // - `mensajes`: avisos de los archivos rechazados («logo.gif: Solo se admiten…»), CA2 y CA3.
 // - `error`: «Añade al menos una foto.» u otro error de la sección (CA4).
 // - `subiendo`: se está enviando con más de 10 MB en total → «Subiendo fotos…» (CA11).
@@ -62,7 +62,7 @@ export default function SeccionFotos({ estado, mensajes, error, subiendo, deshab
             const principal = foto.id === estado.principalId;
             return (
               <li key={foto.id} className={principal ? 'foto foto-principal' : 'foto'}>
-                {foto.vista && <img src={foto.vista} alt={foto.archivo.name} />}
+                {foto.vista && <img src={foto.vista} alt={foto.archivo?.name ?? foto.nombre} />}
                 {principal && <span className="foto-etiqueta">Principal</span>}
                 <button
                   type="button"

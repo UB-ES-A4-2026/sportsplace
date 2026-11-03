@@ -38,3 +38,10 @@ export async function listarMisAnuncios({ pagina, porPagina }, { signal } = {}, 
   const parametros = new URLSearchParams({ pagina: String(pagina), por_pagina: String(porPagina) });
   return llamarApi(`/anuncios/mios?${parametros}`, { signal });
 }
+
+// US-15 CA11 y CA14: PATCH /api/anuncios/:id en multipart/form-data (`datos`, `fotos`, `foto_principal`).
+// Responde 200 { anuncio }.
+export async function editarAnuncio(id, formulario, llamarApi = api) {
+  const datos = await llamarApi(`/anuncios/${encodeURIComponent(id)}`, { method: 'PATCH', body: formulario });
+  return datos.anuncio;
+}
