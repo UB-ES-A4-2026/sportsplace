@@ -62,6 +62,7 @@ const datos = {
   deporte: 'futbol',
   unidades_disponibles: 12,
   estado_material: 'buen_estado',
+  // Desde US-14 la modalidad es obligatoria (CA1, CA8).
   modalidad: 'donacion',
 };
 const jpg = { contenido: fotoJpg, tipo: 'image/jpeg', nombre: 'balones1.jpg' };
@@ -102,6 +103,7 @@ test('US-13 CA12/CA17/CA18/E2E-1: dos fotos con la segunda como principal → 20
   const [creado] = creaciones;
   assert.equal(creado.id, anuncio.id);
   assert.equal(creado.centroId, CENTRO);
+  // La validación de US-14 completa la donación con precio null.
   assert.deepEqual(creado.datos, { ...datos, precio_unitario_centimos: null });
   assert.deepEqual(creado.fotos.map(({ ruta, tipo_mime, bytes, orden, es_principal }) => ({ ruta, tipo_mime, bytes, orden, es_principal })), [
     { ruta: `${CENTRO}/${anuncio.id}/${creado.fotos[0].id}.jpg`, tipo_mime: 'image/jpeg', bytes: fotoJpg.length, orden: 1, es_principal: false },

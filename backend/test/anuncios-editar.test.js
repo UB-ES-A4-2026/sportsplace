@@ -509,13 +509,13 @@ test('US-15 CA15: una petición multipart de más de 40 MB responde 413 sin toca
   sinCambios();
 });
 
-test('US-15: /api/anuncios/:id admite GET y PATCH; el resto responde 405', async () => {
+test('US-15: /api/anuncios/:id admite GET, PATCH y DELETE; el resto responde 405', async () => {
   const response = await fetch(`${api.baseUrl}/api/anuncios/${ID}`, {
     method: 'PUT', headers: { Authorization: 'Bearer token-a' },
   });
 
   assert.equal(response.status, 405);
-  assert.equal(response.headers.get('allow'), 'GET, PATCH');
+  assert.equal(response.headers.get('allow'), 'GET, PATCH, DELETE');
 });
 
 // Repositorio con un doble de la base de datos: cada consulta devuelve la

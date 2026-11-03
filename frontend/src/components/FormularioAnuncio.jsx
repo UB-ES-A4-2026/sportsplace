@@ -1,10 +1,21 @@
-import { cloneElement, useCallback, useRef, useState } from 'react';
+import { cloneElement, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ErrorApi } from '../api/cliente.js';
+import {
+  anadirFotos,
+  fotosCambiadas,
+  FOTOS_VACIAS,
+  marcarPrincipal,
+  quitarFoto,
+  subidaLenta,
+  validarFotos,
+} from '../anuncios/fotos.js';
 import { resultadoDelEnvio } from '../anuncios/publicar.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL } from '../anuncios/valores.js';
+import { validarModalidadPrecio } from '../validacion/modalidadPrecio.js';
 import {
   CAMPOS_ANUNCIO,
+  CAMPOS_MODALIDAD_PRECIO,
   cuerpoDelAnuncio,
   DESCRIPCION_MAX,
   haCambiado,
@@ -16,16 +27,20 @@ import {
 } from '../validacion/anuncio.js';
 import Aviso from './Aviso.jsx';
 import DialogoConfirmacion from './DialogoConfirmacion.jsx';
+import SeccionFotos from './SeccionFotos.jsx';
+import SeccionModalidadPrecio from './SeccionModalidadPrecio.jsx';
 
 // Formulario de anuncio reutilizable (US-12 T12-3; lo reutilizarán US-15, US-19 y US-90).
 // Campos, reglas y mensajes de la «Tabla de campos» de E03. Valida todo al enviar, revalida cada campo
 // al cambiarlo tras el primer intento, muestra los `details` de un 400 bajo su campo y conserva los datos si falla.
 //
-// - `onEnviar(cuerpo)`: hace la petición y, si va bien, navega. Si lanza un ErrorApi, el formulario muestra el error.
+// - `fotosIniciales`: fotos con las que empieza la sección (al editar, las actuales del anuncio; US-15).
+// - `onEnviar(cuerpo, fotos)`: hace la petición y, si va bien, navega. Si lanza un ErrorApi, el formulario muestra el error.
 // - `dialogoSalir`: { titulo, texto, confirmar, cancelar } del diálogo que abre «Cancelar» con datos (CA9).
 // - `destinoCancelar`: adónde lleva «Cancelar» (o «Salir» en el diálogo).
 export default function FormularioAnuncio({
   valoresIniciales = VALORES_VACIOS,
+  fotosIniciales = FOTOS_VACIAS,
   textoEnviar,
   textoEnviando,
   dialogoSalir,
@@ -36,7 +51,8 @@ export default function FormularioAnuncio({
   const formulario = useRef(null);
   const enviandoAhora = useRef(false);
   const [valores, setValores] = useState(valoresIniciales);
-  const [unidadesIlegibles, setUnidadesIlegibles] = useState(false);
+  const [fotos, setFotos] = useState(fotosIniciales);
+  const [mensajesFotos, setMensajesFotos] = useState([]);
   const [errores, setErrores] = useState({});
   const [intentado, setIntentado] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -44,16 +60,25 @@ export default function FormularioAnuncio({
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const cerrarAviso = useCallback(() => setAviso(null), []);
 
+  // Las miniaturas son URLs de objeto: se liberan al quitar la foto y al salir del formulario.
+  const vistas = useRef(new Set());
+  useEffect(() => {
+    const abiertas = vistas.current;
+    return () => abiertas.forEach((vista) => URL.revokeObjectURL(vista));
+  }, []);
+
+  // En el orden del formulario: campos, «Fotos» (US-13) y «Modalidad y precio» (US-14). Se busca por id (no por name):
+  // en «Modalidad» varios radios comparten name y el primero lleva el id del campo; la sección de fotos tiene id="fotos".
   function enfocarPrimerError(lista) {
-    const campo = CAMPOS_ANUNCIO.find((nombre) => lista[nombre]);
-    if (campo) formulario.current?.elements.namedItem(campo)?.focus();
+    const campo = [...CAMPOS_ANUNCIO, 'fotos', ...CAMPOS_MODALIDAD_PRECIO].find((nombre) => lista[nombre]);
+    if (campo) formulario.current?.querySelector(`#${campo}`)?.focus();
   }
 
   // CA8: tras el primer intento, cada campo se vuelve a validar al cambiarlo.
-  function actualizar(campo, valor, ilegible = unidadesIlegibles) {
+  function actualizar(campo, valor) {
     setValores((anteriores) => ({ ...anteriores, [campo]: valor }));
     if (!intentado) return;
-    const error = validarCampo(campo, valor, { ilegible });
+    const error = validarCampo(campo, valor);
     setErrores((anteriores) => {
       const siguientes = { ...anteriores };
       if (error) siguientes[campo] = error;
@@ -66,11 +91,56 @@ export default function FormularioAnuncio({
     actualizar(evento.target.name, evento.target.value);
   }
 
-  function cambiarUnidades(evento) {
-    // Con texto que no es un número («abc»), el navegador deja `value` vacío y marca `badInput`.
-    const ilegible = evento.target.validity?.badInput ?? false;
-    setUnidadesIlegibles(ilegible);
-    actualizar('unidades_disponibles', evento.target.value, ilegible);
+  // CA4: tras el primer intento, el error de la sección se actualiza al añadir o quitar fotos.
+  function revalidarFotos(siguientes) {
+    if (!intentado) return;
+    const error = validarFotos(siguientes).fotos;
+    setErrores((anteriores) => {
+      const resto = { ...anteriores };
+      if (error) resto.fotos = error;
+      else delete resto.fotos;
+      return resto;
+    });
+  }
+
+  function anadirLasFotos(archivos) {
+    const crearVista = (archivo) => {
+      const vista = URL.createObjectURL(archivo);
+      vistas.current.add(vista);
+      return vista;
+    };
+    const resultado = anadirFotos(fotos, archivos, { crearVista });
+    setFotos(resultado.estado);
+    setMensajesFotos(resultado.mensajes);
+    revalidarFotos(resultado.estado);
+  }
+
+  function quitarLaFoto(id) {
+    const { estado, quitada } = quitarFoto(fotos, id);
+    // Solo se liberan las miniaturas creadas aquí; las fotos actuales (US-15) usan su URL pública.
+    if (quitada?.vista && vistas.current.has(quitada.vista)) {
+      URL.revokeObjectURL(quitada.vista);
+      vistas.current.delete(quitada.vista);
+    }
+    setFotos(estado);
+    setMensajesFotos([]);
+    revalidarFotos(estado);
+  }
+
+  // US-14: «Modalidad y precio» se valida junta, porque el precio depende de la modalidad (CA2, CA5).
+  // Cambiar a «Donación» quita el error del precio; el texto escrito se conserva por si vuelve a «Venta».
+  function cambiarModalidadPrecio(campo, valor) {
+    const siguientes = { ...valores, [campo]: valor };
+    setValores(siguientes);
+    if (!intentado) return;
+    const nuevos = validarModalidadPrecio(siguientes);
+    // Al marcar «Venta» el campo aparece vacío: el aviso de precio llega al enviar o al escribir, no antes.
+    if (campo === 'modalidad' && siguientes.precio.trim() === '') delete nuevos.precio_unitario_centimos;
+    setErrores((anteriores) => {
+      const resto = { ...anteriores };
+      for (const clave of CAMPOS_MODALIDAD_PRECIO) delete resto[clave];
+      return { ...resto, ...nuevos };
+    });
   }
 
   async function enviar(evento) {
@@ -80,7 +150,7 @@ export default function FormularioAnuncio({
 
     // CA7: se validan todos los campos a la vez; con errores, foco en el primero y ninguna petición.
     setIntentado(true);
-    const erroresLocales = validarAnuncio(valores, { unidadesIlegibles });
+    const erroresLocales = { ...validarAnuncio(valores), ...validarFotos(fotos) };
     setErrores(erroresLocales);
     if (Object.keys(erroresLocales).length > 0) {
       enfocarPrimerError(erroresLocales);
@@ -91,7 +161,7 @@ export default function FormularioAnuncio({
     setEnviando(true);
     setAviso(null);
     try {
-      await onEnviar(cuerpoDelAnuncio(valores));
+      await onEnviar(cuerpoDelAnuncio(valores), fotos);
     } catch (fallo) {
       if (!(fallo instanceof ErrorApi)) throw fallo;
       const resultado = resultadoDelEnvio(fallo);
@@ -109,7 +179,9 @@ export default function FormularioAnuncio({
 
   // CA9: sin tocar, «Cancelar» sale directamente; con datos, pregunta antes.
   function cancelar() {
-    if (haCambiado(valores, valoresIniciales, { unidadesIlegibles })) setDialogoAbierto(true);
+    if (haCambiado(valores, valoresIniciales, { hayFotos: fotosCambiadas(fotos, fotosIniciales) })) {
+      setDialogoAbierto(true);
+    }
     else navigate(destinoCancelar);
   }
 
@@ -140,8 +212,9 @@ export default function FormularioAnuncio({
         </CampoAnuncio>
 
         <CampoAnuncio id="unidades_disponibles" etiqueta="Unidades disponibles" error={errores.unidades_disponibles}>
-          <input type="number" inputMode="numeric" min={1} max={9999} step={1}
-            value={valores.unidades_disponibles} onChange={cambiarUnidades} />
+          {/* Texto con teclado numérico: en un input type="number" Chromium descarta la coma de «2,5» (#134). */}
+          <input type="text" inputMode="numeric" autoComplete="off"
+            value={valores.unidades_disponibles} onChange={cambiar} />
         </CampoAnuncio>
 
         <CampoAnuncio id="estado_material" etiqueta="Estado del material" error={errores.estado_material}>
@@ -149,7 +222,18 @@ export default function FormularioAnuncio({
             opciones={ESTADOS_MATERIAL} />
         </CampoAnuncio>
 
-        {/* [Depende de US-13] sección «Fotos» · [Depende de US-14] sección «Modalidad y precio» */}
+        <SeccionFotos
+          estado={fotos}
+          mensajes={mensajesFotos}
+          error={errores.fotos}
+          subiendo={enviando && subidaLenta(fotos)}
+          deshabilitado={enviando}
+          onAnadir={anadirLasFotos}
+          onQuitar={quitarLaFoto}
+          onPrincipal={(id) => setFotos((anteriores) => marcarPrincipal(anteriores, id))}
+        />
+
+        <SeccionModalidadPrecio valores={valores} errores={errores} onCambio={cambiarModalidadPrecio} />
 
         <div className="formulario-botones">
           <button type="button" className="boton-secundario" onClick={cancelar}>Cancelar</button>

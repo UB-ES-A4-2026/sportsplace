@@ -88,6 +88,26 @@ test('US-12 CA15/CA16/E2E-1: publicar con datos correctos responde 201 con el an
   assert.deepEqual(creaciones, [{ ...valido, precio_unitario_centimos: null }]);
 });
 
+test('US-13 y US-14 (integración): POST multipart valida modalidad y precio y los pasa al repositorio', async () => {
+  const venta = await publicar({ ...valido, modalidad: 'venta', precio_unitario_centimos: 850 });
+  assert.equal(venta.status, 201);
+  const { anuncio } = await venta.json();
+  assert.equal(anuncio.modalidad, 'venta');
+  assert.equal(anuncio.precio_unitario_centimos, 850);
+  assert.equal(anuncio.fotos.length, 1);
+  assert.deepEqual(creaciones, [{ ...valido, modalidad: 'venta', precio_unitario_centimos: 850 }]);
+
+  creaciones.length = 0;
+  const sinModalidad = await publicar({ ...valido, modalidad: undefined });
+  assert.equal(sinModalidad.status, 400);
+  assert.deepEqual((await sinModalidad.json()).error.details, { modalidad: 'Elige si es venta o donación.' });
+
+  const ventaSinPrecio = await publicar({ ...valido, modalidad: 'venta' });
+  assert.equal(ventaSinPrecio.status, 400);
+  assert.deepEqual((await ventaSinPrecio.json()).error.details, { precio_unitario_centimos: 'Indica el precio por unidad.' });
+  assert.deepEqual(creaciones, []);
+});
+
 test('US-12 CA17: con campos incorrectos responde 400 con todos los errores y no crea nada', async () => {
   const response = await publicar({ ...valido, titulo: 'Bola', unidades_disponibles: 10000 });
 
@@ -105,7 +125,7 @@ test('US-12 CA17: con campos incorrectos responde 400 con todos los errores y no
   assert.deepEqual(creaciones, []);
 });
 
-test('US-12 CA18 y US-13 CA15: `datos` que no es JSON da details.datos; `[]` da los siete campos obligatorios', async () => {
+test('US-12 CA18 y US-13 CA15: `datos` que no es JSON da details.datos; `[]` da los seis campos obligatorios', async () => {
   const roto = await publicar('{"titulo": ');
   assert.equal(roto.status, 400);
   assert.deepEqual((await roto.json()).error.details, { datos: 'Faltan los datos del anuncio.' });
@@ -212,5 +232,5 @@ test('US-12: métodos no admitidos responden 405', async () => {
 
   const ficha = await fetch(`${api.baseUrl}/api/anuncios/${randomUUID()}`, { method: 'POST', headers: conToken('token-a') });
   assert.equal(ficha.status, 405);
-  assert.equal(ficha.headers.get('allow'), 'GET, PATCH');
+  assert.equal(ficha.headers.get('allow'), 'GET, PATCH, DELETE');
 });

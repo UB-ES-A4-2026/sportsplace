@@ -2,16 +2,17 @@
 
 La migración [20261023090000_crear_anuncio_fotos_storage.sql](../supabase/migrations/20261023090000_crear_anuncio_fotos_storage.sql)
 añade `anuncio_fotos`, sus restricciones y el bucket `anuncios`. **Depende de la
-tabla `public.anuncios` de T12-1.** La PR se mantiene en borrador hasta que US-12
-entre en `dev` y US-13 se actualice desde ella. No se aplica al compartido antes
-de revisión de Anass/Alex e integración coordinada.
+tabla `public.anuncios` de T12-1.** La revisión de esta tarea puede avanzar con
+las pruebas locales contra esa migración real. Antes de llevar la historia US-13
+a `dev`, US-12 debe estar integrada y US-13 actualizada desde ella. La aplicación
+al compartido requiere revisión de Anass/Alex y ejecución coordinada.
 
 El nombre ordena esta migración **después** de
 `20261022210000_crear_anuncios.sql` (T12-1). La versión inicial tenía el timestamp
 `20261022180000`, anterior al de su dependencia, y fallaría en una instalación
 limpia. Se renombró antes de aplicarla al proyecto compartido, conservando el SQL
-sin cambios. Las ramas que incorporaron aquella versión (#124 y #123) deben
-incorporar también este renombrado; no deben conservar ambos archivos. Si alguien
+sin cambios. Las ramas que incorporen aquella versión deben incorporar también
+este renombrado; no deben conservar ambos archivos. Si alguien
 aplicó el nombre anterior en su base local desechable, debe recrear esa base desde
 el historial corregido. No se modifica el historial de migraciones compartido.
 
