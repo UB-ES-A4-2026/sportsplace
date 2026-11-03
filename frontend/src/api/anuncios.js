@@ -15,6 +15,17 @@ export async function obtenerAnuncio(id, { signal } = {}, llamarApi = api) {
   return datos.anuncio;
 }
 
+// US-16 CA6 y CA7: POST /api/anuncios/:id/pausar y /reactivar, sin cuerpo. Devuelven 200 { anuncio }.
+export async function pausarAnuncio(id, llamarApi = api) {
+  const { anuncio } = await llamarApi(`/anuncios/${encodeURIComponent(id)}/pausar`, { method: 'POST' });
+  return anuncio;
+}
+
+export async function reactivarAnuncio(id, llamarApi = api) {
+  const { anuncio } = await llamarApi(`/anuncios/${encodeURIComponent(id)}/reactivar`, { method: 'POST' });
+  return anuncio;
+}
+
 // US-70: DELETE /api/anuncios/:id. Retirada lógica; la API responde 204 sin cuerpo.
 export async function retirarAnuncio(id, llamarApi = api) {
   await llamarApi(`/anuncios/${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -25,4 +36,10 @@ export async function retirarAnuncio(id, llamarApi = api) {
 export async function cambiarReservaOEntrega(id, accion, llamarApi = api) {
   const { anuncio } = await llamarApi(`/anuncios/${encodeURIComponent(id)}/${accion}`, { method: 'POST' });
   return anuncio;
+}
+
+// US-18 CA11-CA12: GET /api/anuncios/mios?pagina=p&por_pagina=n. Responde 200 { anuncios, total, pagina, por_pagina }.
+export async function listarMisAnuncios({ pagina, porPagina }, { signal } = {}, llamarApi = api) {
+  const parametros = new URLSearchParams({ pagina: String(pagina), por_pagina: String(porPagina) });
+  return llamarApi(`/anuncios/mios?${parametros}`, { signal });
 }

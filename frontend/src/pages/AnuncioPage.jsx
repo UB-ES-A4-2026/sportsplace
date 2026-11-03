@@ -6,7 +6,10 @@ import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/
 import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import Aviso from '../components/Aviso.jsx';
 import BotonesReservaEntrega from '../components/BotonesReservaEntrega.jsx';
+import BotonPausarReactivar from '../components/BotonPausarReactivar.jsx';
+import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
+import FranjaPausado from '../components/FranjaPausado.jsx';
 import FranjaReservaEntrega from '../components/FranjaReservaEntrega.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
@@ -41,20 +44,22 @@ export default function AnuncioPage() {
 
   const actual = resultado?.clave === clave ? resultado : null;
 
-  // US-17 CA2: la etiqueta, la franja y los botones se actualizan en sitio con el anuncio que devuelve la API.
-  function actualizarAnuncio(anuncio) {
+  // US-16 CA3: tras pausar o reactivar, la ficha se actualiza con el anuncio que devuelve la API, sin recargar.
+  const actualizarAnuncio = useCallback((anuncio) => {
     setResultado({ clave, anuncio });
-  }
+  }, [clave]);
 
-  // US-17 CA4: un 404 lleva a «Anuncio no encontrado»; un 409 da aviso rojo y recarga el anuncio para ver su estado real.
-  function mostrarFallo({ noEncontrado, mensaje, recargar }) {
+  // Fallo de una acción de la ficha (US-16 CA4 y US-70 CA6): el diálogo, si lo había, ya se ha cerrado sin cambios.
+  // 404 → «Anuncio no encontrado»; 409 → aviso rojo y se recarga el anuncio para ver su estado real; el resto → aviso
+  // rojo genérico.
+  const mostrarFallo = useCallback(({ noEncontrado, mensaje, recargar }) => {
     if (noEncontrado) {
       setResultado({ clave, noEncontrado: true });
       return;
     }
     setAviso({ tipo: 'error', texto: mensaje });
     if (recargar) setIntento((n) => n + 1);
-  }
+  }, [clave]);
 
   if (actual?.noEncontrado) return <AnuncioNoEncontrado />;
 
@@ -88,8 +93,9 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
         <h1 id="titulo-pagina">{anuncio.titulo}</h1>
         <EtiquetaEstado estado={anuncio.estado} />
       </div>
-
-      {/* US-17: franja naranja si está reservado y azul si está entregado, bajo el título. */}
+      {/* US-16: franja gris bajo el título mientras está pausado; cambia con el estado sin recargar (CA3). */}
+      <FranjaPausado estado={anuncio.estado} />
+      {/* US-17: franja naranja si está reservado y azul si está entregado. */}
       <FranjaReservaEntrega anuncio={anuncio} />
 
       {/* [Depende de US-13] galería · [Depende de US-14] precio o «Donación · Gratis» */}
@@ -113,8 +119,14 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
 
       {/* Zona «Acciones»: la rellenan US-15 (Editar), US-16 (Pausar/Reactivar), US-17, US-70 (Retirar) y US-19. */}
       <div className="ficha-acciones">
-        {/* US-17: «Marcar como reservado», «Quitar reserva» y «Marcar como entregado» según el estado. */}
+        {/* US-16 CA1-CA4: «Pausar» (activo) o «Reactivar» (pausado), sin diálogo; aviso verde y la ficha cambia en sitio.
+            Con un 409 (estado desfasado, E2E-4), aviso rojo y se recarga el anuncio. */}
+        <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+        {/* US-17: «Marcar como reservado», «Quitar reserva» y «Marcar como entregado» según el estado (CA1-CA6). */}
         <BotonesReservaEntrega anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+        {/* US-70 CA1: solo en borrador, activo, pausado y reservado (el botón no se pinta en entregado). Al retirar,
+            va a /mis-anuncios con replace y el aviso «Anuncio retirado.» (CA4). */}
+        <BotonRetirarAnuncio anuncio={anuncio} onFallo={onFallo} />
       </div>
     </>
   );
