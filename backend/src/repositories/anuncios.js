@@ -1,4 +1,5 @@
-import { ApiError } from '../errors.js';
+import { ApiError, errorInterno } from '../errors.js';
+import { transicionNoPermitida } from '../services/transiciones-anuncio.js';
 import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,10 +12,11 @@ export function anuncioNoEncontrado() {
 
 const fecha = (valor) => (valor === null || valor === undefined ? null : new Date(valor).toISOString());
 
-// Fila de la tabla → objeto `anuncio` de la API («Base común»).
-// CA30: hasta que US-13 y US-14 estén en dev, la rama de US-12 no tiene fotos
-// ni modalidad/precio: el anuncio se devuelve como donación, sin precio ni fotos.
-export function aAnuncio(fila) {
+// Fila de la tabla → objeto `anuncio` de la API («Base común»). `fotos` ya
+// viene en el formato de la API y ordenado por `orden` (US-13).
+// CA30: hasta que US-14 esté en dev, la rama no tiene modalidad ni precio:
+// el anuncio se devuelve como donación, sin precio.
+export function aAnuncio(fila, fotos = []) {
   return {
     id: fila.id,
     centro_id: fila.centro_id,
@@ -27,9 +29,32 @@ export function aAnuncio(fila) {
     modalidad: 'donacion',
     precio_unitario_centimos: null,
     estado: fila.estado,
-    fotos: [],
+    fotos,
     publicado_en: fecha(fila.publicado_en),
     creado_en: fecha(fila.creado_en),
+    actualizado_en: fecha(fila.actualizado_en),
+  };
+}
+
+// Fila de `anuncio_fotos` → foto del objeto `anuncio` (US-13 CA17).
+export function aFoto(fila, urlFoto) {
+  return { id: fila.id, url: urlFoto(fila.ruta), orden: fila.orden, es_principal: fila.es_principal };
+}
+
+// Fila de la tabla → `resumen` de la lista «Mis anuncios» (US-18, CA12). `foto_principal_url`
+// la añade listarMios (US-13); sin fotos, null. CA30 de US-12: sin US-14 en dev, como donación.
+export function aResumen(fila) {
+  return {
+    id: fila.id,
+    titulo: fila.titulo,
+    categoria: fila.categoria,
+    deporte: fila.deporte,
+    unidades_disponibles: fila.unidades_disponibles,
+    modalidad: 'donacion',
+    precio_unitario_centimos: null,
+    estado: fila.estado,
+    foto_principal_url: fila.foto_principal_url ?? null,
+    publicado_en: fecha(fila.publicado_en),
     actualizado_en: fecha(fila.actualizado_en),
   };
 }
@@ -37,7 +62,12 @@ export function aAnuncio(fila) {
 const COLUMNAS = `id, centro_id, titulo, descripcion, categoria, deporte,
   unidades_disponibles, estado_material, estado, publicado_en, creado_en, actualizado_en`;
 
-export function createAnunciosRepository(database) {
+// Clase 23 de PostgreSQL: una restricción (CHECK, UNIQUE, FK) ha rechazado los
+// datos. Con los datos ya validados es un fallo del servidor (500), no una caída (503).
+const esViolacionDeRestriccion = (error) => typeof error?.code === 'string' && error.code.startsWith('23');
+
+// `urlFoto(ruta)` construye la URL pública de una foto del bucket (US-13 CA17).
+export function createAnunciosRepository(database, { urlFoto = () => null } = {}) {
   async function consultar(sql, values) {
     try {
       return await database.query(sql, values);
@@ -47,31 +77,79 @@ export function createAnunciosRepository(database) {
     }
   }
 
+  // Fotos de varios anuncios en una consulta, en su orden: id → [foto].
+  async function fotosDe(anuncioIds) {
+    const porAnuncio = new Map(anuncioIds.map((id) => [id, []]));
+    if (anuncioIds.length === 0) return porAnuncio;
+    const { rows } = await consultar(
+      `SELECT id, anuncio_id, ruta, orden, es_principal
+       FROM public.anuncio_fotos
+       WHERE anuncio_id = ANY($1::uuid[])
+       ORDER BY anuncio_id, orden`,
+      [anuncioIds],
+    );
+    for (const fila of rows) porAnuncio.get(fila.anuncio_id)?.push(aFoto(fila, urlFoto));
+    return porAnuncio;
+  }
+
   return {
-    // US-12: crea el anuncio del centro de la sesión, siempre `activo` (CA13, CA21, CA22).
-    // El centro se busca por usuario_id en la misma consulta; publicado_en,
-    // creado_en y actualizado_en toman la misma hora del servidor (now()).
-    async crear(usuarioId, datos) {
-      const { rows } = await consultar(
-        `INSERT INTO public.anuncios (
-           centro_id, titulo, descripcion, categoria, deporte,
-           unidades_disponibles, estado_material, estado, publicado_en
-         )
-         SELECT c.id, $2, $3, $4, $5, $6, $7, 'activo', now()
-         FROM public.centros c
-         WHERE c.usuario_id = $1
-         RETURNING ${COLUMNAS}`,
-        [
-          usuarioId, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
-          datos.unidades_disponibles, datos.estado_material,
-        ],
-      );
-      // Una cuenta sin centro no debería existir (US-01 crea los dos juntos).
+    fotosDe,
+
+    // US-13: centro de la sesión, necesario para la ruta de las fotos en Storage
+    // antes de crear el anuncio. Una cuenta sin centro no debería existir
+    // (US-01 crea los dos juntos).
+    async centroDe(usuarioId) {
+      const { rows } = await consultar('SELECT id FROM public.centros WHERE usuario_id = $1', [usuarioId]);
       if (rows.length === 0) throw new Error('La cuenta de la sesión no tiene centro.');
-      return aAnuncio(rows[0]);
+      return rows[0].id;
     },
 
-    // US-12 (CA20, CA24): solo los anuncios del centro de la sesión que no están retirados.
+    // US-12 y US-13: crea el anuncio `activo` del centro y sus fotos en una
+    // única transacción (CA19, CA20): o se guardan todas las filas o ninguna.
+    // `id` lo genera el servidor antes, porque forma parte de la ruta de las
+    // fotos; publicado_en, creado_en y actualizado_en toman la misma hora (now()).
+    async crear({ id, centroId, datos, fotos }) {
+      try {
+        return await database.transaction(async (client) => {
+          const { rows } = await client.query(
+            `INSERT INTO public.anuncios (
+               id, centro_id, titulo, descripcion, categoria, deporte,
+               unidades_disponibles, estado_material, estado, publicado_en
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'activo', now())
+             RETURNING ${COLUMNAS}`,
+            [
+              id, centroId, datos.titulo, datos.descripcion, datos.categoria, datos.deporte,
+              datos.unidades_disponibles, datos.estado_material,
+            ],
+          );
+          const { rows: filasFotos } = await client.query(
+            `INSERT INTO public.anuncio_fotos (id, anuncio_id, ruta, tipo_mime, bytes, orden, es_principal)
+             SELECT f.id, $1, f.ruta, f.tipo_mime, f.bytes, f.orden, f.es_principal
+             FROM unnest($2::uuid[], $3::text[], $4::text[], $5::integer[], $6::smallint[], $7::boolean[])
+               AS f(id, ruta, tipo_mime, bytes, orden, es_principal)
+             RETURNING id, ruta, orden, es_principal`,
+            [
+              id,
+              fotos.map((foto) => foto.id),
+              fotos.map((foto) => foto.ruta),
+              fotos.map((foto) => foto.tipo_mime),
+              fotos.map((foto) => foto.bytes),
+              fotos.map((foto) => foto.orden),
+              fotos.map((foto) => foto.es_principal),
+            ],
+          );
+          filasFotos.sort((a, b) => a.orden - b.orden);
+          return aAnuncio(rows[0], filasFotos.map((fila) => aFoto(fila, urlFoto)));
+        });
+      } catch (error) {
+        console.error(`No se pudo crear el anuncio: ${error?.code ?? 'error desconocido'}`);
+        if (esViolacionDeRestriccion(error)) throw errorInterno();
+        throw databaseUnavailable();
+      }
+    },
+
+    // US-12 (CA20, CA24): solo los anuncios del centro de la sesión que no están
+    // retirados, con sus fotos en orden (US-13).
     async obtener(usuarioId, id) {
       if (typeof id !== 'string' || !UUID.test(id)) throw anuncioNoEncontrado();
       const { rows } = await consultar(
@@ -84,7 +162,77 @@ export function createAnunciosRepository(database) {
         [usuarioId, id],
       );
       if (rows.length === 0) throw anuncioNoEncontrado();
-      return aAnuncio(rows[0]);
+      const fotos = await fotosDe([rows[0].id]);
+      return aAnuncio(rows[0], fotos.get(rows[0].id));
+    },
+
+    // E03 «Estados del anuncio y transiciones» (US-16; después US-17 y US-70).
+    // Cambia el estado en un único UPDATE que solo actúa si el estado actual está
+    // en `desde`: con dos peticiones a la vez, la segunda ya no lo encuentra y
+    // recibe 409 (US-16 CA10). Renueva actualizado_en y no toca ningún otro dato
+    // ni publicado_en (US-16 CA5). entregado_en y retirado_en solo tienen valor
+    // en su estado, como exigen los CHECK de la tabla.
+    async transicionar(usuarioId, id, { desde, hacia }) {
+      if (typeof id !== 'string' || !UUID.test(id)) throw anuncioNoEncontrado();
+      const centro = 'SELECT c.id FROM public.centros c WHERE c.usuario_id = $1';
+      const { rows } = await consultar(
+        `UPDATE public.anuncios
+         SET estado = $3::text,
+             actualizado_en = now(),
+             entregado_en = CASE WHEN $3::text = 'entregado' THEN now() END,
+             retirado_en = CASE WHEN $3::text = 'retirado' THEN now() END
+         WHERE id = $2 AND centro_id = (${centro}) AND estado = ANY($4::text[])
+         RETURNING ${COLUMNAS}`,
+        [usuarioId, id, hacia, [...desde]],
+      );
+      if (rows.length > 0) {
+        const fotos = await fotosDe([rows[0].id]);
+        return aAnuncio(rows[0], fotos.get(rows[0].id));
+      }
+
+      // No ha cambiado nada: o no es un anuncio visible del centro (404, como en
+      // «Propiedad») o su estado no permite la acción (409 con el estado actual).
+      const { rows: [actual] } = await consultar(
+        `SELECT estado FROM public.anuncios
+         WHERE id = $2 AND centro_id = (${centro}) AND estado <> 'retirado'`,
+        [usuarioId, id],
+      );
+      if (!actual) throw anuncioNoEncontrado();
+      throw transicionNoPermitida(actual.estado);
+    },
+
+    // US-18 (CA3, CA4, CA10, CA14): anuncios del centro de la sesión salvo los
+    // retirados, del último modificado al más antiguo (a igualdad, id
+    // descendente). Si se pide una página mayor que la última, se devuelve la
+    // última, con su número en `pagina`.
+    async listarMios(usuarioId, { pagina, porPagina }) {
+      const centro = 'SELECT c.id FROM public.centros c WHERE c.usuario_id = $1';
+      const { rows: [{ total }] } = await consultar(
+        `SELECT count(*)::integer AS total
+         FROM public.anuncios a
+         WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'`,
+        [usuarioId],
+      );
+      const ultima = Math.max(1, Math.ceil(total / porPagina));
+      const paginaServida = Math.min(pagina, ultima);
+
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.categoria, a.deporte, a.unidades_disponibles,
+                a.estado, a.publicado_en, a.actualizado_en
+         FROM public.anuncios a
+         WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'
+         ORDER BY a.actualizado_en DESC, a.id DESC
+         LIMIT $2 OFFSET $3`,
+        [usuarioId, porPagina, (paginaServida - 1) * porPagina],
+      );
+      const fotos = await fotosDe(rows.map((fila) => fila.id));
+      const principal = (id) => fotos.get(id).find((foto) => foto.es_principal)?.url ?? null;
+      return {
+        anuncios: rows.map((fila) => aResumen({ ...fila, foto_principal_url: principal(fila.id) })),
+        total,
+        pagina: paginaServida,
+        por_pagina: porPagina,
+      };
     },
   };
 }

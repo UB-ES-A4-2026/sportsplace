@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ApiError, methodNotAllowed } from '../errors.js';
 import { getAuth, getCentros, requireAuth } from '../middleware/auth.js';
 import { validarRegistro } from '../validation/registro.js';
+import { validarRecuperacion, validarRestablecimiento } from '../validation/recuperacion.js';
 import { validarReenvio } from '../validation/reenvio.js';
 
 function requiredStrings(body, fields) {
@@ -52,6 +53,28 @@ export function authRouter() {
     response.status(204).end();
   });
 
+  // US-04: pedir un enlace para cambiar la contraseña. Responde siempre 204,
+  // exista o no la cuenta (CA19, CA23).
+  // CA15 (#152): Supabase da el email por confirmado al verificar un enlace de
+  // recuperación, así que a una cuenta sin confirmar (o inexistente) no se le
+  // envía: se responde el mismo 204 sin llamar a Supabase.
+  router.post('/recuperar-contrasena', async (request, response) => {
+    const { email } = validarRecuperacion(request.body);
+    const auth = getAuth(request);
+    if (await getCentros(request).cuentaConfirmada(email)) {
+      await auth.requestPasswordReset(email);
+    }
+    response.status(204).end();
+  });
+
+  // US-04: fijar la contraseña nueva con el token_hash del enlace (CA20). No
+  // devuelve sesión (CA21): después se entra con la contraseña nueva (CA5).
+  router.post('/restablecer-contrasena', async (request, response) => {
+    const { tokenHash, password } = validarRestablecimiento(request.body);
+    await getAuth(request).resetPassword(tokenHash, password);
+    response.status(204).end();
+  });
+
   // US-03: entrar con email y contraseña.
   router.post('/login', async (request, response) => {
     requiredStrings(request.body, {
@@ -81,6 +104,8 @@ export function authRouter() {
   router.all('/registro', methodNotAllowed(['POST']));
   router.all('/confirmar', methodNotAllowed(['POST']));
   router.all('/reenviar-confirmacion', methodNotAllowed(['POST']));
+  router.all('/recuperar-contrasena', methodNotAllowed(['POST']));
+  router.all('/restablecer-contrasena', methodNotAllowed(['POST']));
   router.all('/login', methodNotAllowed(['POST']));
   router.all('/refresh', methodNotAllowed(['POST']));
   router.all('/me', methodNotAllowed(['GET']));
