@@ -8,6 +8,10 @@ import { ApiError } from '../errors.js';
 export const ACCIONES = Object.freeze({
   pausar: Object.freeze({ desde: Object.freeze(['activo']), hacia: 'pausado' }), // US-16 CA6
   reactivar: Object.freeze({ desde: Object.freeze(['pausado']), hacia: 'activo' }), // US-16 CA7
+  // US-17 CA7. Entregar es final: el UPDATE pone entregado_en = now() (CA5).
+  reservar: Object.freeze({ desde: Object.freeze(['activo']), hacia: 'reservado' }),
+  'quitar-reserva': Object.freeze({ desde: Object.freeze(['reservado']), hacia: 'activo' }),
+  entregar: Object.freeze({ desde: Object.freeze(['activo', 'reservado']), hacia: 'entregado' }),
   // US-70 CA7/CA8: se retira desde cualquier estado salvo entregado (y retirado,
   // que ya no se encuentra: 404). `borrador` llegará con US-20.
   retirar: Object.freeze({
