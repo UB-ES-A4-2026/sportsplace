@@ -17,6 +17,20 @@ Validación de infraestructura del sprint: [validación DevOps](docs/sprint-0-va
 Sprint 1: [pruebas e2e con Playwright (T12-7)](docs/pruebas-e2e.md) y
 [base de pruebas aislada y semilla de QA (T12-8)](docs/base-pruebas.md).
 
+T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pruebas.md).
+**Entorno de pruebas:** [https://sportsplace-pruebas.onrender.com](https://sportsplace-pruebas.onrender.com).
+Está alojado en **Render, plan gratuito**, en un único Web Service para la web y
+la API mediante el `Dockerfile` de la raíz. Tiene configurado el despliegue desde
+`dev` con **Auto-Deploy: After CI Checks Pass**; se acepta el arranque en frío.
+El Auto-Deploy de la PR #145 y el `deploy:check` contra la URL real quedaron
+[comprobados y aceptados el 29/10/2026](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6500493326).
+El workflow [Smoke Render (T12-6)](.github/workflows/smoke-render.yml) programa una
+comprobación con cada push a `dev`: espera a que `/api/health` identifique ese mismo
+commit y ejecuta `deploy:check` contra la URL HTTPS. La espera se ejecuta en una
+rama de CI conservada para que no bloquee los checks que Render necesita para
+desplegar. La guía explica el flujo, el límite de espera y la primera ejecución
+automática que debe enlazarse en #86 después de integrar esta ampliación.
+
 ## Tecnologías
 
 - Frontend: React con Vite, en JavaScript.
@@ -578,6 +592,8 @@ docker compose run --rm --build dbtools
 La CLI mantiene el historial de las migraciones aplicadas. Los siguientes cambios del esquema se añaden en nuevos archivos SQL; no se edita una migración ya aplicada ni se duplican sus cambios manualmente en el panel. Referencia: [migraciones de Supabase](https://supabase.com/docs/guides/deployment/database-migrations).
 
 Las pruebas SQL están en [supabase/tests/centros.sql](supabase/tests/centros.sql). Se ejecutan en una base de pruebas después de aplicar la migración, con un usuario administrador y los roles `anon` y `authenticated`. Verifican las restricciones y los permisos dentro de una transacción que termina en `ROLLBACK`, sin conservar centros de prueba.
+
+La tabla `codigos_postales` (US-68) se carga con la migración `20261028100100_semilla_codigos_postales.sql`, generada a partir de los códigos postales de España de [GeoNames](https://www.geonames.org/) bajo licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Sus pruebas están en [supabase/tests/codigos_postales.sql](supabase/tests/codigos_postales.sql).
 
 La evidencia local y los criterios todavía pendientes se registran en [TR-03: validación](docs/TR-03-validacion.md). TR-03 podrá cerrarse cuando se confirme el acceso del equipo, se revise y aplique el esquema al Supabase compartido, la migración esté integrada en el repositorio y el servidor compruebe la conexión real con ese proyecto.
 
