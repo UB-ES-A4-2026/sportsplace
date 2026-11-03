@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
 import { after, before, beforeEach, test } from 'node:test';
 import { anuncioNoEncontrado } from '../src/repositories/anuncios.js';
 import { marcarEnterosConDecimales, validarAnuncio } from '../src/validation/anuncios.js';
-import { postJson, startApi } from './helpers.js';
+import { fotoJpg, formularioAnuncio, startApi } from './helpers.js';
 
 // US-14: modalidad y precio por unidad (CA1, CA2, CA8, CA9, CA11, E2E-5).
 const base = {
@@ -95,15 +94,19 @@ test('US-12 CA17 y US-14: los errores de modalidad y precio salen junto a los de
 });
 
 // API: POST /api/anuncios y GET /api/anuncios/:id con un repositorio simulado.
+// Desde US-13 se publica en multipart (`datos` JSON y al menos una foto).
 const fakeAuth = {
   getUser: async (token) => (token === 'token-a' ? { id: 'usuario-a', email: 'a@example.com', email_confirmado: true } : null),
 };
 let filas;
 const fakeAnuncios = {
-  async crear(usuarioId, datos) {
+  async centroDe() {
+    return 'centro-a';
+  },
+  async crear({ id, centroId, datos }) {
     const ahora = '2026-11-03T10:15:00.000Z';
     const anuncio = {
-      id: randomUUID(), centro_id: 'centro-a', ...datos, estado: 'activo', fotos: [],
+      id, centro_id: centroId, ...datos, estado: 'activo', fotos: [],
       publicado_en: ahora, creado_en: ahora, actualizado_en: ahora,
     };
     filas.push(anuncio);
@@ -116,18 +119,21 @@ const fakeAnuncios = {
   },
 };
 
+const fakeFotos = { subir: async () => {}, borrar: async () => {} };
+
 let api;
-before(async () => { api = await startApi({ auth: fakeAuth, anuncios: fakeAnuncios }); });
+before(async () => { api = await startApi({ auth: fakeAuth, anuncios: fakeAnuncios, fotos: fakeFotos }); });
 after(() => api.close());
 beforeEach(() => { filas = []; });
 
 const conToken = { Authorization: 'Bearer token-a' };
-const publicar = (cuerpo) => postJson(`${api.baseUrl}/api/anuncios`, cuerpo, conToken);
-const publicarTexto = (texto) => fetch(`${api.baseUrl}/api/anuncios`, {
+// `datos` puede ser un objeto o el texto JSON tal cual (para probar 850.0).
+const publicar = (datos) => fetch(`${api.baseUrl}/api/anuncios`, {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json', ...conToken },
-  body: texto,
+  headers: conToken,
+  body: formularioAnuncio({ datos, fotos: [{ contenido: fotoJpg }] }),
 });
+const publicarTexto = publicar;
 
 test('US-14 E2E-1 (API): publicar una venta de 8,50 € responde 201 con 850 céntimos y la ficha lo muestra', async () => {
   const response = await publicar(venta);
