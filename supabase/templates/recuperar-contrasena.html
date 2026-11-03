@@ -1,0 +1,16 @@
+<!--
+  T04-1 / US-04: plantilla «Reset password» de Supabase Auth.
+  Copiar en Authentication → Emails → Reset password.
+  Asunto: Cambia tu contraseña de Sportsplace
+  Email OTP Expiration: 3600 segundos.
+  El enlace abre la web; T04-2 y T04-3 completan el cambio de contraseña.
+-->
+<h2>Cambia tu contraseña de Sportsplace</h2>
+
+<p>Hola,</p>
+
+<p>Has pedido cambiar tu contraseña de Sportsplace. El enlace caduca en 1 hora.</p>
+
+<p><a href="{{ .SiteURL }}/restablecer-contrasena?token_hash={{ .TokenHash }}&type=recovery">Cambiar contraseña</a></p>
+
+<p>Si no has sido tú, ignora este mensaje.</p>

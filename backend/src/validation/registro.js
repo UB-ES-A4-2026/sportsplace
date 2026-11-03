@@ -18,6 +18,22 @@ function texto(valor) {
   return typeof valor === 'string' ? valor.trim() : valor;
 }
 
+// Reglas compartidas de email y contraseña (US-01, US-66 y US-04).
+// Devuelven el mensaje de error o null si el valor es válido.
+// El email se valida ya recortado; la contraseña no se recorta nunca.
+export function errorDeEmail(email) {
+  if (typeof email !== 'string' || email === '') return 'El email es obligatorio.';
+  if (email.length > 254 || !EMAIL.test(email)) return 'El email no es válido.';
+  return null;
+}
+
+export function errorDePassword(password) {
+  if (typeof password !== 'string' || password === '') return 'La contraseña es obligatoria.';
+  if (password.length < PASSWORD_MIN) return `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`;
+  if (Buffer.byteLength(password) > PASSWORD_MAX_BYTES) return 'La contraseña es demasiado larga.';
+  return null;
+}
+
 // US-01: valida el alta y devuelve los datos limpios del centro.
 export function validarRegistro(body = {}) {
   const details = {};
@@ -38,22 +54,13 @@ export function validarRegistro(body = {}) {
   }
 
   const email = texto(body.email);
-  if (typeof email !== 'string' || email === '') {
-    details.email = 'El email es obligatorio.';
-  } else if (email.length > 254 || !EMAIL.test(email)) {
-    details.email = 'El email no es válido.';
-  } else {
-    centro.email = email.toLowerCase();
-  }
+  const errorEmail = errorDeEmail(email);
+  if (errorEmail) details.email = errorEmail;
+  else centro.email = email.toLowerCase();
 
   const { password } = body;
-  if (typeof password !== 'string' || password === '') {
-    details.password = 'La contraseña es obligatoria.';
-  } else if (password.length < PASSWORD_MIN) {
-    details.password = `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`;
-  } else if (Buffer.byteLength(password) > PASSWORD_MAX_BYTES) {
-    details.password = 'La contraseña es demasiado larga.';
-  }
+  const errorPassword = errorDePassword(password);
+  if (errorPassword) details.password = errorPassword;
 
   if (body.acepta_politica_privacidad !== true) {
     details.acepta_politica_privacidad = 'Debes aceptar la política de privacidad.';
