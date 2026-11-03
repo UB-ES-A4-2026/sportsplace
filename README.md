@@ -414,6 +414,7 @@ El archivo `.env` contiene:
 | `LOCAL_UID` / `LOCAL_GID` | Usuario y grupo del contenedor de desarrollo. Por defecto, 1000. Ajustarlos al usuario local en Linux. |
 | `SUPABASE_URL` | URL del proyecto compartido; la utiliza Supabase Auth en el backend. Opcional para el arranque inicial. |
 | `SUPABASE_PUBLISHABLE_KEY` | Clave publicable que utiliza el backend para Supabase Auth. Opcional para el arranque inicial. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clave privada de Storage, solo para el backend. Permite subir y borrar fotos en `anuncios` cuando T13-2 esté integrado. Nunca usarla en `VITE_*`. |
 | `DATABASE_URL` | URI PostgreSQL privada que utiliza el servidor. Necesaria para comprobar TR-03. |
 | `MIGRATION_DATABASE_URL` | URI privada de un usuario con permisos para migrar. Opcional: si está vacía, las herramientas utilizan `DATABASE_URL`. |
 | `DATABASE_SSL_CA_FILE` | Ruta del certificado CA para verificar PostgreSQL. En Docker: `/app/.certs/supabase-ca.crt`. |
@@ -423,6 +424,8 @@ La URL y la clave **publicable** se obtienen en el panel del proyecto Supabase, 
 Compose conserva también las variables públicas `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` de la base inicial, pero el cliente web integrado no las utiliza para acceder a Supabase. Las variables `VITE_*` son visibles en el navegador: no poner en ellas contraseñas, claves `secret` ni `service_role`. El archivo `.env.example` conserva valores vacíos y `.env` está excluido de Git y de las imágenes.
 
 `DATABASE_URL` y `MIGRATION_DATABASE_URL` contienen credenciales privadas. Solo se configuran en el `.env` local, nunca con un prefijo `VITE_`, en el README, en capturas ni en comentarios de GitHub. La clave publicable de Supabase no sustituye a la contraseña de PostgreSQL.
+
+La preparación del bucket `anuncios`, sus permisos, la dependencia de US-12 y la validación de T13-1 están en [Storage de anuncios](docs/storage-anuncios.md).
 
 #### Preparar la conexión PostgreSQL para TR-03
 
@@ -592,6 +595,8 @@ docker compose run --rm --build dbtools
 La CLI mantiene el historial de las migraciones aplicadas. Los siguientes cambios del esquema se añaden en nuevos archivos SQL; no se edita una migración ya aplicada ni se duplican sus cambios manualmente en el panel. Referencia: [migraciones de Supabase](https://supabase.com/docs/guides/deployment/database-migrations).
 
 Las pruebas SQL están en [supabase/tests/centros.sql](supabase/tests/centros.sql). Se ejecutan en una base de pruebas después de aplicar la migración, con un usuario administrador y los roles `anon` y `authenticated`. Verifican las restricciones y los permisos dentro de una transacción que termina en `ROLLBACK`, sin conservar centros de prueba.
+
+La tabla `codigos_postales` (US-68) se carga con la migración `20261028100100_semilla_codigos_postales.sql`, generada a partir de los códigos postales de España de [GeoNames](https://www.geonames.org/) bajo licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Sus pruebas están en [supabase/tests/codigos_postales.sql](supabase/tests/codigos_postales.sql).
 
 La evidencia local y los criterios todavía pendientes se registran en [TR-03: validación](docs/TR-03-validacion.md). TR-03 podrá cerrarse cuando se confirme el acceso del equipo, se revise y aplique el esquema al Supabase compartido, la migración esté integrada en el repositorio y el servidor compruebe la conexión real con ese proyecto.
 

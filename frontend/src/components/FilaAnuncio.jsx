@@ -39,7 +39,8 @@ export default function FilaAnuncio({ anuncio, children }) {
             Editar
           </Link>
         )}
-        <MenuMas>{children}</MenuMas>
+        {/* Con `key` por estado, el menú se cierra cuando la acción cambia el estado (p. ej. tras «Pausar»). */}
+        <MenuMas key={anuncio.estado}>{children}</MenuMas>
       </div>
     </li>
   );

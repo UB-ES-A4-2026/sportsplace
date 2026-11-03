@@ -10,6 +10,8 @@ const valido = {
   deporte: 'futbol',
   unidades_disponibles: 12,
   estado_material: 'buen_estado',
+  modalidad: 'venta',
+  precio_unitario_centimos: 850,
 };
 
 function errores(cuerpo) {
@@ -30,7 +32,7 @@ test('US-12 CA5/CA22: un anuncio correcto devuelve solo sus campos, recortados',
   assert.deepEqual(validarAnuncio({ ...valido, titulo: '   Balón   ' }), { ...valido, titulo: 'Balón' });
 });
 
-test('US-12 CA17/E2E-2: sin datos devuelve los seis errores a la vez', () => {
+test('US-12 CA17/E2E-2: sin datos devuelve los errores de todos los campos a la vez', () => {
   assert.deepEqual(errores({}), {
     titulo: 'El título es obligatorio.',
     descripcion: 'La descripción es obligatoria.',
@@ -38,13 +40,14 @@ test('US-12 CA17/E2E-2: sin datos devuelve los seis errores a la vez', () => {
     deporte: 'Elige un deporte.',
     unidades_disponibles: 'Indica las unidades disponibles.',
     estado_material: 'Elige el estado del material.',
+    modalidad: 'Elige si es venta o donación.',
   });
 });
 
 test('US-12 CA18: un cuerpo que no es un objeto cuenta como vacío', () => {
   for (const cuerpo of [[], null, undefined, 'texto', 42]) {
     assert.deepEqual(Object.keys(errores(cuerpo)), [
-      'titulo', 'descripcion', 'categoria', 'deporte', 'unidades_disponibles', 'estado_material',
+      'titulo', 'descripcion', 'categoria', 'deporte', 'unidades_disponibles', 'estado_material', 'modalidad',
     ]);
   }
 });
@@ -131,6 +134,7 @@ test('US-12 E2E-5: datos incorrectos y claves de más devuelven los errores de c
     deporte: 'Elige un deporte.',
     unidades_disponibles: 'Las unidades deben ser un número entero entre 1 y 9999.',
     estado_material: 'Elige el estado del material.',
+    modalidad: 'Elige si es venta o donación.',
   });
 });
 
