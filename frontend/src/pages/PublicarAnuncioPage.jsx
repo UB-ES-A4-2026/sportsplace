@@ -8,8 +8,8 @@ export default function PublicarAnuncioPage() {
   const navigate = useNavigate();
 
   // CA4: con `replace`, «Atrás» no vuelve al formulario relleno. La ficha muestra el aviso verde de `state.aviso`.
-  async function publicar(cuerpo) {
-    const anuncio = await crearAnuncio(cuerpo);
+  async function publicar(cuerpo, fotos) {
+    const anuncio = await crearAnuncio(cuerpo, fotos);
     navigate(`/anuncios/${encodeURIComponent(anuncio.id)}`, {
       replace: true,
       state: { aviso: { tipo: 'exito', texto: AVISO_PUBLICADO } },

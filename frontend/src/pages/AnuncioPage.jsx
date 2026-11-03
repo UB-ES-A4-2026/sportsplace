@@ -11,6 +11,7 @@ import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
 import FranjaPausado from '../components/FranjaPausado.jsx';
 import FranjaReservaEntrega from '../components/FranjaReservaEntrega.jsx';
+import GaleriaAnuncio from '../components/GaleriaAnuncio.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
 export default function AnuncioPage() {
@@ -98,7 +99,9 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
       {/* US-17: franja naranja si está reservado y azul si está entregado. */}
       <FranjaReservaEntrega anuncio={anuncio} />
 
-      {/* [Depende de US-13] galería · [Depende de US-14] precio o «Donación · Gratis» */}
+      <GaleriaAnuncio titulo={anuncio.titulo} fotos={anuncio.fotos} />
+
+      {/* [Depende de US-14] precio o «Donación · Gratis» */}
 
       <table className="ficha-datos">
         <tbody>
