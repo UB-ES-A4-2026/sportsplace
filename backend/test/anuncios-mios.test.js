@@ -203,7 +203,7 @@ function fakeDatabase(respuestas) {
 
 test('US-18 CA3/CA4: listarMios filtra por el centro de la sesión, sin retirados, y ordena por actualizado_en e id', async () => {
   const fila = crearFila('centro-a', 7);
-  const database = fakeDatabase([[{ total: 45 }], [fila]]);
+  const database = fakeDatabase([[{ total: 45 }], [fila], []]);
   const resultado = await createAnunciosRepository(database).listarMios('u1', { pagina: 2, porPagina: 20 });
 
   assert.deepEqual(resultado, { anuncios: [aResumen(fila)], total: 45, pagina: 2, por_pagina: 20 });
@@ -212,6 +212,23 @@ test('US-18 CA3/CA4: listarMios filtra por el centro de la sesión, sin retirado
   assert.deepEqual(conteo.values, ['u1']);
   assert.match(pagina.sql, /AND a\.estado <> 'retirado' ORDER BY a\.actualizado_en DESC, a\.id DESC LIMIT \$2 OFFSET \$3$/);
   assert.deepEqual(pagina.values, ['u1', 20, 20]);
+});
+
+test('US-18 CA12 y US-13: foto_principal_url es la URL de la foto principal, o null sin fotos', async () => {
+  const conFotos = crearFila('centro-a', 2);
+  const sinFotos = crearFila('centro-a', 1);
+  const fotos = [
+    { id: 'f1', anuncio_id: conFotos.id, ruta: 'c/a/1.jpg', orden: 1, es_principal: false },
+    { id: 'f2', anuncio_id: conFotos.id, ruta: 'c/a/2.png', orden: 2, es_principal: true },
+  ];
+  const database = fakeDatabase([[{ total: 2 }], [conFotos, sinFotos], fotos]);
+  const urlFoto = (ruta) => `https://storage.example/${ruta}`;
+  const { anuncios } = await createAnunciosRepository(database, { urlFoto })
+    .listarMios('u1', { pagina: 1, porPagina: 20 });
+
+  assert.deepEqual(anuncios.map((a) => a.foto_principal_url), ['https://storage.example/c/a/2.png', null]);
+  assert.match(database.log[2].sql, /FROM public\.anuncio_fotos WHERE anuncio_id = ANY\(\$1::uuid\[\]\)/);
+  assert.deepEqual(database.log[2].values, [[conFotos.id, sinFotos.id]]);
 });
 
 test('US-18 CA10: listarMios sirve la última página si se pide una mayor, y la 1 si no hay anuncios', async () => {
