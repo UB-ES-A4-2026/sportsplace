@@ -41,7 +41,7 @@ export function aFoto(fila, urlFoto) {
 }
 
 // Fila de la tabla → `resumen` de la lista «Mis anuncios» (US-18, CA12). `foto_principal_url`
-// la añade listarMios (US-13); sin fotos, null. CA30 de US-12: sin US-14 en dev, como donación.
+// la añade listarMios (US-13); sin fotos, null. La modalidad y el precio son los de la fila (US-14, CA7).
 export function aResumen(fila) {
   return {
     id: fila.id,
@@ -49,8 +49,8 @@ export function aResumen(fila) {
     categoria: fila.categoria,
     deporte: fila.deporte,
     unidades_disponibles: fila.unidades_disponibles,
-    modalidad: 'donacion',
-    precio_unitario_centimos: null,
+    modalidad: fila.modalidad,
+    precio_unitario_centimos: fila.precio_unitario_centimos,
     estado: fila.estado,
     foto_principal_url: fila.foto_principal_url ?? null,
     publicado_en: fecha(fila.publicado_en),
@@ -222,7 +222,7 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
 
       const { rows } = await consultar(
         `SELECT a.id, a.titulo, a.categoria, a.deporte, a.unidades_disponibles,
-                a.estado, a.publicado_en, a.actualizado_en
+                a.modalidad, a.precio_unitario_centimos, a.estado, a.publicado_en, a.actualizado_en
          FROM public.anuncios a
          WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'
          ORDER BY a.actualizado_en DESC, a.id DESC
