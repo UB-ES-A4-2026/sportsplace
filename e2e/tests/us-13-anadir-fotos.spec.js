@@ -34,6 +34,8 @@ const VALIDO_API = {
   deporte: 'futbol',
   unidades_disponibles: 12,
   estado_material: 'buen_estado',
+  // US-14: `modalidad` es obligatoria desde T14-1; «donacion» no arrastra el campo de precio.
+  modalidad: 'donacion',
 };
 
 const MENSAJES = {
@@ -86,6 +88,7 @@ function campos(page) {
     deporte: page.getByLabel('Deporte'),
     unidades: page.getByLabel('Unidades disponibles'),
     estado: page.getByLabel('Estado del material'),
+    donacion: page.getByRole('radio', { name: 'Donación', exact: true }),
     anadir: page.getByRole('button', { name: '+ Añadir fotos' }),
     publicar: page.getByRole('button', { name: /^Publicar$|^Publicando…$/ }),
   };
@@ -99,6 +102,8 @@ async function rellenarDatos(page) {
   await c.deporte.selectOption({ label: VALIDO.deporte });
   await c.unidades.fill(VALIDO.unidades);
   await c.estado.selectOption({ label: VALIDO.estado });
+  // US-14: sin modalidad no se publica. Los casos de precio son de us-14-modalidad-precio.spec.js.
+  await c.donacion.check();
 }
 
 // «+ Añadir fotos» abre el selector del sistema (CA1); se eligen los archivos como lo haría el usuario.

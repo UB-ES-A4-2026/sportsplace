@@ -12,6 +12,7 @@ import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
 import FranjaPausado from '../components/FranjaPausado.jsx';
 import FranjaReservaEntrega from '../components/FranjaReservaEntrega.jsx';
 import GaleriaAnuncio from '../components/GaleriaAnuncio.jsx';
+import PrecioAnuncio from '../components/PrecioAnuncio.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
 export default function AnuncioPage() {
@@ -99,9 +100,11 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
       {/* US-17: franja naranja si está reservado y azul si está entregado. */}
       <FranjaReservaEntrega anuncio={anuncio} />
 
+      {/* E03: título → galería (US-13) → precio (US-14) → tabla */}
       <GaleriaAnuncio titulo={anuncio.titulo} fotos={anuncio.fotos} />
 
-      {/* [Depende de US-14] precio o «Donación · Gratis» */}
+      {/* CA6 y CA7 (US-14): «8,50 € / unidad» o «Donación · Gratis». */}
+      <p className="ficha-precio"><PrecioAnuncio anuncio={anuncio} grande /></p>
 
       <table className="ficha-datos">
         <tbody>

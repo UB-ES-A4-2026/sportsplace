@@ -16,6 +16,8 @@ export const DEPORTES = [
 
 export const ESTADOS_MATERIAL = ['nuevo', 'como_nuevo', 'buen_estado', 'usado', 'para_reparar'];
 
+export const MODALIDADES = ['venta', 'donacion'];
+
 // Claves numéricas que la API solo acepta como entero JSON: `3.0` o `1e3`
 // llegan a JavaScript como 3 y 1000, así que se marcan al leer el JSON.
 const CAMPOS_ENTEROS = new Set(['unidades_disponibles', 'precio_unitario_centimos']);
@@ -64,6 +66,23 @@ function validarUnidades(valor) {
   return { valor };
 }
 
+// US-14 (CA2, CA9, CA11): la regla del precio depende de la modalidad.
+function validarPrecio(valor, modalidad) {
+  if (modalidad === 'donacion') {
+    // «Si es donación, debe ser null o no venir.» Cualquier otro valor, también 0, se rechaza.
+    if (valor !== undefined && valor !== null) return { error: 'Una donación no puede tener precio.' };
+    return { valor: null };
+  }
+  if (valor === undefined || valor === null || valor === '') {
+    return { error: 'Indica el precio por unidad.' };
+  }
+  // Céntimos enteros (solo entero JSON): 0, 10000000, 8.5, 850.0 o "850" se rechazan.
+  if (!Number.isInteger(valor) || valor < 1 || valor > 9999999) {
+    return { error: 'El precio debe estar entre 0,01 € y 99.999,99 €.' };
+  }
+  return { valor };
+}
+
 const REGLAS = {
   titulo: (valor) => validarTexto(valor, {
     min: 5,
@@ -93,8 +112,8 @@ const REGLAS = {
   }),
 };
 
-// US-12: valida los datos de un anuncio y devuelve solo los campos conocidos,
-// ya recortados. Comprueba todos los campos a la vez (CA17); cualquier otra
+// US-12 y US-14: valida los datos de un anuncio y devuelve solo los campos
+// conocidos, ya recortados (en una donación, `precio_unitario_centimos` es null). Comprueba todos los campos a la vez (CA17); cualquier otra
 // clave del cuerpo (`estado`, `centro_id`, `id`...) se ignora (CA21).
 // Un cuerpo que no es un objeto (p. ej. `[]`) cuenta como vacío (CA18).
 export function validarAnuncio(cuerpo) {
@@ -106,6 +125,21 @@ export function validarAnuncio(cuerpo) {
     const { valor, error } = regla(datos[campo]);
     if (error) details[campo] = error;
     else anuncio[campo] = valor;
+  }
+
+  // US-14 (CA1, CA8): modalidad obligatoria. El precio solo se valida con una
+  // modalidad válida, porque su regla depende de ella (CA2).
+  const modalidad = validarOpcion(datos.modalidad, MODALIDADES, {
+    obligatorio: 'Elige si es venta o donación.',
+    invalido: 'La modalidad no es válida.',
+  });
+  if (modalidad.error) {
+    details.modalidad = modalidad.error;
+  } else {
+    anuncio.modalidad = modalidad.valor;
+    const precio = validarPrecio(datos.precio_unitario_centimos, modalidad.valor);
+    if (precio.error) details.precio_unitario_centimos = precio.error;
+    else anuncio.precio_unitario_centimos = precio.valor;
   }
 
   if (Object.keys(details).length > 0) {
