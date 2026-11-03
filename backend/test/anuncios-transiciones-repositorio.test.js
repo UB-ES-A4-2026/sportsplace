@@ -40,11 +40,23 @@ test('US-16 CA6/CA10: un único UPDATE condicionado al estado actual y al centro
 
   assert.equal(anuncio.estado, 'pausado');
   assert.equal(anuncio.actualizado_en, '2026-11-04T09:00:00.000Z');
-  assert.equal(database.log.length, 1);
+  // La segunda consulta solo lee las fotos del anuncio (US-13): el cambio de estado es un único UPDATE.
+  assert.equal(database.log.filter((consulta) => /^UPDATE/.test(consulta.sql)).length, 1);
   const [{ sql, values }] = database.log;
   assert.match(sql, /^UPDATE public\.anuncios SET estado = \$3::text, actualizado_en = now\(\),/);
   assert.match(sql, /WHERE id = \$2 AND centro_id = \(SELECT c\.id FROM public\.centros c WHERE c\.usuario_id = \$1\) AND estado = ANY\(\$4::text\[\]\) RETURNING/);
   assert.deepEqual(values, ['u1', id, 'pausado', ['activo']]);
+});
+
+test('US-16 y US-13 CA17: el anuncio que devuelve la transición lleva sus fotos', async () => {
+  const fotos = [{ id: 'f1', anuncio_id: id, ruta: `c1/${id}/1.jpg`, orden: 1, es_principal: true }];
+  const database = fakeDatabase([[fila], fotos]);
+  const urlFoto = (ruta) => `https://storage.example/${ruta}`;
+  const anuncio = await createAnunciosRepository(database, { urlFoto }).transicionar('u1', id, ACCIONES.pausar);
+
+  assert.deepEqual(anuncio.fotos, [{ id: 'f1', url: `https://storage.example/c1/${id}/1.jpg`, orden: 1, es_principal: true }]);
+  assert.match(database.log[1].sql, /FROM public\.anuncio_fotos/);
+  assert.deepEqual(database.log[1].values, [[id]]);
 });
 
 test('US-16 CA5: el UPDATE solo toca estado, actualizado_en y las fechas de entregado/retirado', async () => {

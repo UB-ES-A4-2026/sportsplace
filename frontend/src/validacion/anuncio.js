@@ -118,7 +118,7 @@ export function validarAnuncio(valores) {
 
 // Cuerpo de POST /api/anuncios (US-12 CA15): textos recortados y unidades como entero JSON.
 // Con US-14 lleva `modalidad` y, solo en una venta, `precio_unitario_centimos` en céntimos enteros (CA5, CA8).
-// Las fotos las añadirá US-13.
+// Las fotos no van aquí: viajan como partes aparte del multipart (US-13 CA12).
 export function cuerpoDelAnuncio(valores) {
   return {
     titulo: valores.titulo.trim(),
@@ -134,15 +134,22 @@ export function cuerpoDelAnuncio(valores) {
 // ¿Se ha tocado el formulario? Decide si «Cancelar» abre el diálogo «¿Salir sin publicar?» (US-12 CA9).
 // En «Publicar anuncio» los valores iniciales están vacíos, así que equivale a «algún campo tiene valor».
 // Comparar con los iniciales deja el componente listo para un formulario que ya viene relleno (US-15, US-19).
-export function haCambiado(valores, iniciales = VALORES_VACIOS) {
-  return [...CAMPOS_ANUNCIO, 'modalidad', 'precio']
-    .some((campo) => String(valores[campo] ?? '') !== String(iniciales[campo] ?? ''));
+// `hayFotos`: ya se ha añadido alguna foto (US-13 CA9), que también cuenta como dato escrito.
+// La modalidad y el precio (US-14) también cuentan.
+export function haCambiado(valores, iniciales = VALORES_VACIOS, { hayFotos = false } = {}) {
+  return hayFotos
+    || [...CAMPOS_ANUNCIO, 'modalidad', 'precio']
+      .some((campo) => String(valores[campo] ?? '') !== String(iniciales[campo] ?? ''));
 }
 
-// Se queda con los mensajes de `details` de un 400 DATOS_INVALIDOS que corresponden a campos del formulario (CA12).
+// Se queda con los mensajes de `details` de un 400 DATOS_INVALIDOS que corresponden a campos del formulario (CA12)
+// o a la sección de fotos (`fotos`, US-13).
 export function erroresDelServidor(details) {
   if (!details || typeof details !== 'object') return {};
-  return Object.fromEntries(
-    CAMPOS_CON_ERROR.filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
+  const errores = Object.fromEntries(
+    [...CAMPOS_CON_ERROR, 'fotos'].filter((campo) => typeof details[campo] === 'string').map((campo) => [campo, details[campo]]),
   );
+  // «La foto principal no es válida.» (`foto_principal`) se enseña bajo la sección de fotos, sin pisar su propio error.
+  if (typeof details.foto_principal === 'string' && !errores.fotos) errores.fotos = details.foto_principal;
+  return errores;
 }

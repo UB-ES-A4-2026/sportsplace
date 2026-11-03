@@ -9,6 +9,7 @@ import BotonPausarReactivar from '../components/BotonPausarReactivar.jsx';
 import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
 import FranjaPausado from '../components/FranjaPausado.jsx';
+import GaleriaAnuncio from '../components/GaleriaAnuncio.jsx';
 import PrecioAnuncio from '../components/PrecioAnuncio.jsx';
 
 // US-12 T12-4: /anuncios/:id · ficha propia del anuncio (GET /api/anuncios/:id).
@@ -95,7 +96,8 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
       {/* US-16: franja gris bajo el título mientras está pausado; cambia con el estado sin recargar (CA3). */}
       <FranjaPausado estado={anuncio.estado} />
 
-      {/* [Depende de US-13] galería (E03: título → galería → precio → tabla) */}
+      {/* E03: título → galería (US-13) → precio (US-14) → tabla */}
+      <GaleriaAnuncio titulo={anuncio.titulo} fotos={anuncio.fotos} />
 
       {/* CA6 y CA7 (US-14): «8,50 € / unidad» o «Donación · Gratis». */}
       <p className="ficha-precio"><PrecioAnuncio anuncio={anuncio} grande /></p>

@@ -5,7 +5,11 @@
 // los casos comprueban el cuerpo que envía la web (petición interceptada) y lo que guarda la API.
 // Los textos de la ficha («8,50 € / unidad», «Donación · Gratis») los añade T14-4 (#64).
 // Los ayudantes están copiados de us-12-publicar-anuncio.spec.js: importarlos registraría sus tests otra vez.
+//
+// Desde US-13 publicar exige al menos una foto y POST /api/anuncios es multipart (`datos` + `fotos`):
+// `rellenar` añade una foto y `publicar` lee el JSON de la parte `datos` que envía la web.
 import { test, expect, entrar } from '../fixtures.js';
+import { archivo } from './fixtures/imagenes.js';
 
 // CA3 · conversión a céntimos en la web (sin coma flotante).
 const CONVERSION = [
@@ -56,6 +60,9 @@ const VALIDO_API = {
 
 const URL_FICHA = /\/anuncios\/[0-9a-f-]{36}$/;
 
+// Una foto JPG pequeña y válida: estos casos no prueban las fotos, solo las necesitan para publicar.
+const FOTO = archivo('foto-1.jpg', 50 * 1024);
+
 // ---------------------------------------------------------------- utilidades
 
 // Token de la API para los casos que llaman a la API directamente.
@@ -74,13 +81,22 @@ function campos(page) {
     deporte: page.getByLabel('Deporte'),
     unidades: page.getByLabel('Unidades disponibles'),
     estado: page.getByLabel('Estado del material'),
+    anadirFotos: page.getByRole('button', { name: '+ Añadir fotos' }),
     modalidad: (etiqueta) => page.getByRole('radio', { name: etiqueta, exact: true }),
     precio: page.getByLabel('Precio por unidad (€)'),
     publicar: page.getByRole('button', { name: /^Publicar$|^Publicando…$/ }),
   };
 }
 
-// Rellena los campos de US-12 y marca la modalidad. Con `precio` (también ''), lo escribe.
+// Añade una foto con «+ Añadir fotos» (US-13), como lo haría el usuario.
+async function anadirFoto(page) {
+  const selector = page.waitForEvent('filechooser');
+  await campos(page).anadirFotos.click();
+  await (await selector).setFiles([FOTO]);
+  await expect(page.getByText('1/8 fotos', { exact: true })).toBeVisible();
+}
+
+// Rellena los campos de US-12, añade una foto y marca la modalidad. Con `precio` (también ''), lo escribe.
 async function rellenar(page, modalidad, precio) {
   const c = campos(page);
   await c.titulo.fill(VALIDO.titulo);
@@ -89,6 +105,7 @@ async function rellenar(page, modalidad, precio) {
   await c.deporte.selectOption({ label: VALIDO.deporte });
   await c.unidades.fill(VALIDO.unidades);
   await c.estado.selectOption({ label: VALIDO.estado });
+  await anadirFoto(page);
   await c.modalidad(modalidad).check();
   if (precio !== undefined) await c.precio.fill(precio);
 }
@@ -104,11 +121,24 @@ function contarPublicaciones(page) {
   return contador;
 }
 
-// Pulsa «Publicar», espera la ficha y devuelve el cuerpo enviado y el id del anuncio creado.
+// Chromium no entrega a Playwright el cuerpo de una petición con archivos (`postData()` es null),
+// así que la parte `datos` del multipart se guarda en la página justo antes de enviarla.
+async function capturarDatos(page) {
+  await page.addInitScript(() => {
+    const fetchOriginal = globalThis.fetch;
+    globalThis.fetch = (recurso, opciones) => {
+      if (opciones?.body instanceof FormData) globalThis.__datosEnviados = opciones.body.get('datos');
+      return fetchOriginal(recurso, opciones);
+    };
+  });
+}
+
+// Pulsa «Publicar», espera la ficha y devuelve los datos enviados y el id del anuncio creado.
 async function publicar(page) {
   const peticion = page.waitForRequest(esPublicacion);
   await campos(page).publicar.click();
-  const cuerpo = (await peticion).postDataJSON();
+  await peticion;
+  const cuerpo = JSON.parse(await page.evaluate(() => globalThis.__datosEnviados));
   await expect(page).toHaveURL(URL_FICHA);
   return { cuerpo, id: page.url().split('/').pop() };
 }
@@ -120,6 +150,7 @@ async function leerAnuncio(request, token, id) {
 }
 
 async function abrirFormulario(page, cuentas) {
+  await capturarDatos(page);
   await entrar(page, cuentas.centroA, cuentas.password);
   await page.goto('/anuncios/nuevo');
 }
@@ -199,11 +230,11 @@ test.describe('US-14 · Modalidad y precio', () => {
 
   test('E2E-5 · API: donación con precio → 400', async ({ request, cuentas }) => {
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
-    // En esta rama POST /api/anuncios todavía es JSON; con US-13 pasará a multipart.
-    const res = await request.post('/api/anuncios', {
-      headers: { Authorization: `Bearer ${token}` },
-      data: { ...VALIDO_API, modalidad: 'donacion', precio_unitario_centimos: 500 },
-    });
+    // Desde US-13, POST /api/anuncios es multipart: `datos` con el JSON y una foto válida.
+    const formulario = new FormData();
+    formulario.append('datos', JSON.stringify({ ...VALIDO_API, modalidad: 'donacion', precio_unitario_centimos: 500 }));
+    formulario.append('fotos', new Blob([FOTO.buffer], { type: FOTO.mimeType }), FOTO.name);
+    const res = await request.post('/api/anuncios', { headers: { Authorization: `Bearer ${token}` }, multipart: formulario });
     expect(res.status()).toBe(400);
     const { error } = await res.json();
     expect(error.code).toBe('DATOS_INVALIDOS');
