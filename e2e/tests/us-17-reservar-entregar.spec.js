@@ -74,6 +74,11 @@ function boton(ambito, nombre) {
   return ambito.getByRole('button', { name: nombre, exact: true });
 }
 
+// Fila de «Mis anuncios» con ese título.
+function fila(page, titulo) {
+  return page.locator('li').filter({ has: page.getByRole('link', { name: titulo, exact: true }) }).last();
+}
+
 function dialogoEntregar(page) {
   return page.getByRole('dialog', { name: '¿Marcar como entregado?' });
 }
@@ -298,6 +303,71 @@ test('US-17 · E2E-4 · pausado', async ({ page, request, cuentas }) => {
     });
   }
   expect((await filaDe(id)).estado).toBe('pausado');
+});
+
+test('US-17 · CA1 · desde «Mis anuncios»: reservar, quitar reserva y entregar en el menú «Más ▾» (#199)', async ({ page, cuentas }) => {
+  // Fechas de ahora: así son las primeras filas de la lista.
+  const ahora = new Date().toISOString();
+  const comunes = { centro_id: centros.a, publicado_en: ahora, creado_en: ahora, actualizado_en: ahora };
+  const titulo = 'Colchonetas de gimnasia';
+  const id = await insertarAnuncio({ ...comunes, titulo });
+  const tituloPausado = 'Aros pausados';
+  await insertarAnuncio({ ...comunes, titulo: tituloPausado, estado: 'pausado' });
+
+  await entrar(page, cuentas.centroA, cuentas.password);
+  await page.getByRole('link', { name: 'Mis anuncios', exact: true }).click();
+  await expect(page).toHaveURL('/mis-anuncios');
+  await marcarPagina(page);
+  const activa = fila(page, titulo);
+  await expect(activa.getByText('Activo', { exact: true })).toBeVisible();
+
+  // Pausado: el menú no tiene acciones de esta historia (CA1, CA6).
+  const pausada = fila(page, tituloPausado);
+  await boton(pausada, 'Más ▾').click();
+  await expect(boton(pausada, 'Reactivar')).toBeVisible();
+  for (const nombre of [RESERVAR, QUITAR, ENTREGAR]) await expect(boton(pausada, nombre)).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  // Activo: «Marcar como reservado» y «Marcar como entregado», entre «Pausar» y «Retirar anuncio».
+  await boton(activa, 'Más ▾').click();
+  const opciones = activa.locator('.menu-mas-opciones > button');
+  await expect(opciones).toHaveText(['Pausar', RESERVAR, ENTREGAR, 'Retirar anuncio']);
+  await boton(activa, RESERVAR).click();
+
+  // CA4: aviso y la fila pasa a «Reservado» sin recargar; su menú tiene «Quitar reserva» y «Marcar como entregado».
+  await expect(page.getByText('Anuncio reservado.')).toBeVisible();
+  await expect(activa.getByText('Reservado', { exact: true })).toBeVisible();
+  expect((await filaDe(id)).estado).toBe('reservado');
+  await boton(activa, 'Más ▾').click();
+  await expect(opciones).toHaveText([QUITAR, ENTREGAR, 'Retirar anuncio']);
+  await boton(activa, QUITAR).click();
+  await expect(page.getByText('Reserva quitada.')).toBeVisible();
+  await expect(activa.getByText('Activo', { exact: true })).toBeVisible();
+  expect((await filaDe(id)).estado).toBe('activo');
+
+  // CA3: «Marcar como entregado» abre el diálogo; «Cancelar» no cambia nada.
+  await boton(activa, 'Más ▾').click();
+  await boton(activa, ENTREGAR).click();
+  const dialogo = dialogoEntregar(page);
+  await expect(dialogo).toBeVisible();
+  await boton(dialogo, 'Cancelar').click();
+  await expect(dialogo).toBeHidden();
+  expect((await filaDe(id)).estado).toBe('activo');
+
+  // Confirmar: «Entregado» y la fila se queda sin menú (CA6: ninguna acción en entregado).
+  // Tras «Cancelar» el menú sigue abierto (el diálogo está dentro de él), como con «Retirar anuncio».
+  await expect(boton(activa, 'Más ▾')).toHaveAttribute('aria-expanded', 'true');
+  await boton(activa, ENTREGAR).click();
+  await expect(dialogo).toBeVisible();
+  await boton(dialogo, ENTREGAR).click();
+  await expect(dialogo).toBeHidden();
+  await expect(page.getByText('Anuncio entregado.')).toBeVisible();
+  await expect(activa.getByText('Entregado', { exact: true })).toBeVisible();
+  await expect(boton(activa, 'Más ▾')).toHaveCount(0);
+  await sigueSinRecargar(page);
+  const entregado = await filaDe(id);
+  expect(entregado.estado).toBe('entregado');
+  expect(entregado.entregado_en).not.toBeNull();
 });
 
 // ---------------------------------------------------------------- criterios sueltos

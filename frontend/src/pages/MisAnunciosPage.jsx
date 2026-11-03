@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { listarMisAnuncios } from '../api/anuncios.js';
-import { accionDePausa, AVISO_RETIRADO, puedeRetirar } from '../anuncios/acciones.js';
+import { accionDePausa, accionesDeReservaYEntrega, AVISO_RETIRADO, puedeRetirar } from '../anuncios/acciones.js';
 import {
   conFilaActualizada,
   paginaCorregida,
@@ -13,6 +13,7 @@ import {
   totalDePaginas,
 } from '../anuncios/misAnuncios.js';
 import Aviso from '../components/Aviso.jsx';
+import BotonesReservaEntrega from '../components/BotonesReservaEntrega.jsx';
 import BotonPausarReactivar from '../components/BotonPausarReactivar.jsx';
 import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import FilaAnuncio from '../components/FilaAnuncio.jsx';
@@ -133,11 +134,16 @@ function Lista({ lista, pagina, irAPagina, onActualizado, onAviso, onRetirado, o
 
       <ul className="lista-anuncios">
         {/* Acciones de cada fila (CA6) en el menú «Más ▾», solo las que el estado permite (sin menú vacío):
-            US-16 «Pausar»/«Reactivar» y US-70 «Retirar anuncio». [Depende de US-15, US-17, US-19 y US-90] el resto. */}
+            US-16 «Pausar»/«Reactivar», US-17 reservar, quitar reserva y entregar (CA1; en el mismo orden que la ficha)
+            y US-70 «Retirar anuncio». [Depende de US-19 y US-90] el resto. */}
         {lista.anuncios.map((anuncio) => (
           <FilaAnuncio key={anuncio.id} anuncio={anuncio}>
             {accionDePausa(anuncio.estado) && (
               <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo}
+                className="menu-mas-opcion" />
+            )}
+            {accionesDeReservaYEntrega(anuncio.estado).length > 0 && (
+              <BotonesReservaEntrega anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo}
                 className="menu-mas-opcion" />
             )}
             {puedeRetirar(anuncio.estado) && (
