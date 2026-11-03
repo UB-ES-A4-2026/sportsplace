@@ -113,10 +113,9 @@ describe('Unidades disponibles (CA28)', () => {
     });
   }
 
-  test('texto que el navegador no entiende como número (value vacío + badInput) → error de formato', () => {
-    assert.equal(validarCampo('unidades_disponibles', '', { ilegible: true }), rango);
-    assert.equal(validarAnuncio({ ...CORRECTO, unidades_disponibles: '' }, { unidadesIlegibles: true })
-      .unidades_disponibles, rango);
+  test('#134: con espacios o con coma (escrito tal cual en el campo de texto) se rechaza', () => {
+    assert.equal(validarCampo('unidades_disponibles', '2 5'), rango);
+    assert.equal(validarCampo('unidades_disponibles', ' 12 '), undefined);
   });
 
   test('se envía como entero JSON', () => {
@@ -151,8 +150,8 @@ describe('haCambiado (CA9)', () => {
     assert.equal(haCambiado({ ...VALORES_VACIOS, categoria: 'otros' }), true);
   });
 
-  test('texto ilegible en unidades cuenta como dato escrito', () => {
-    assert.equal(haCambiado(VALORES_VACIOS, VALORES_VACIOS, { unidadesIlegibles: true }), true);
+  test('haber añadido fotos cuenta como dato escrito (US-13 CA9)', () => {
+    assert.equal(haCambiado(VALORES_VACIOS, VALORES_VACIOS, { hayFotos: true }), true);
   });
 
   test('con valores iniciales (US-15), compara con ellos', () => {
@@ -162,10 +161,23 @@ describe('haCambiado (CA9)', () => {
 });
 
 describe('erroresDelServidor (CA12)', () => {
-  test('se queda con los campos del formulario e ignora el resto', () => {
+  test('se queda con los campos del formulario y con `fotos`, e ignora el resto', () => {
     assert.deepEqual(
-      erroresDelServidor({ titulo: 'El título no puede tener saltos de línea.', fotos: 'Añade al menos una foto.' }),
-      { titulo: 'El título no puede tener saltos de línea.' },
+      erroresDelServidor({
+        titulo: 'El título no puede tener saltos de línea.',
+        fotos: 'Añade al menos una foto.',
+        otro: 'No es un campo del formulario.',
+      }),
+      { titulo: 'El título no puede tener saltos de línea.', fotos: 'Añade al menos una foto.' },
+    );
+  });
+
+  test('`foto_principal` se enseña bajo la sección de fotos, salvo que `fotos` ya tenga error', () => {
+    assert.deepEqual(erroresDelServidor({ foto_principal: 'La foto principal no es válida.' }),
+      { fotos: 'La foto principal no es válida.' });
+    assert.deepEqual(
+      erroresDelServidor({ fotos: 'Añade al menos una foto.', foto_principal: 'La foto principal no es válida.' }),
+      { fotos: 'Añade al menos una foto.' },
     );
   });
 

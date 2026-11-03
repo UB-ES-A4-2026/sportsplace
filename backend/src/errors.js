@@ -9,6 +9,10 @@ export class ApiError extends Error {
   }
 }
 
+export function errorInterno() {
+  return new ApiError(500, 'ERROR_INTERNO', 'Se ha producido un error inesperado.');
+}
+
 export function sendError(response, status, code, message, details) {
   const error = { code, message };
   if (details) error.details = details;
