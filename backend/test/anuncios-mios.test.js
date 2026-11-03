@@ -56,6 +56,8 @@ function crearFila(centroId, n, estado = 'activo') {
     deporte: 'futbol',
     unidades_disponibles: n,
     estado_material: 'buen_estado',
+    modalidad: 'donacion',
+    precio_unitario_centimos: null,
     estado,
     publicado_en: ahora,
     creado_en: ahora,
@@ -91,6 +93,24 @@ test('US-18 CA11/CA12: sin parámetros responde la página 1 de 20 con el resume
     por_pagina: 20,
   });
   assert.deepEqual(llamadas, [{ usuarioId: 'usuario-a', pagina: 1, porPagina: 20 }]);
+});
+
+test('US-14 CA7: el resumen de una venta trae su modalidad y su precio en céntimos', async () => {
+  filas.push({ ...crearFila('centro-a', 1), modalidad: 'venta', precio_unitario_centimos: 850 });
+  const [resumen] = (await (await mios()).json()).anuncios;
+
+  assert.equal(resumen.modalidad, 'venta');
+  assert.equal(resumen.precio_unitario_centimos, 850);
+});
+
+test('US-14 CA7: listarMios lee la modalidad y el precio de la tabla', async () => {
+  const fila = { ...crearFila('centro-a', 7), modalidad: 'venta', precio_unitario_centimos: 850 };
+  const database = fakeDatabase([[{ total: 1 }], [fila], []]);
+  const { anuncios: [resumen] } = await createAnunciosRepository(database).listarMios('u1', { pagina: 1, porPagina: 20 });
+
+  assert.equal(resumen.modalidad, 'venta');
+  assert.equal(resumen.precio_unitario_centimos, 850);
+  assert.match(database.log[1].sql, /a\.modalidad, a\.precio_unitario_centimos/);
 });
 
 test('US-18 CA15/E2E-3: con 21 anuncios, la página 1 tiene 20 y la 2 tiene 1', async () => {

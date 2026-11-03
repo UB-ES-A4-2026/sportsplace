@@ -6,10 +6,12 @@ import { lineaDeFechas, resultadoDeLaCarga } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
 import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import Aviso from '../components/Aviso.jsx';
+import BotonesReservaEntrega from '../components/BotonesReservaEntrega.jsx';
 import BotonPausarReactivar from '../components/BotonPausarReactivar.jsx';
 import BotonRetirarAnuncio from '../components/BotonRetirarAnuncio.jsx';
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx';
 import FranjaPausado from '../components/FranjaPausado.jsx';
+import FranjaReservaEntrega from '../components/FranjaReservaEntrega.jsx';
 import GaleriaAnuncio from '../components/GaleriaAnuncio.jsx';
 import PrecioAnuncio from '../components/PrecioAnuncio.jsx';
 
@@ -96,6 +98,8 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
       </div>
       {/* US-16: franja gris bajo el título mientras está pausado; cambia con el estado sin recargar (CA3). */}
       <FranjaPausado estado={anuncio.estado} />
+      {/* US-17: franja naranja si está reservado y azul si está entregado. */}
+      <FranjaReservaEntrega anuncio={anuncio} />
 
       {/* E03: título → galería (US-13) → precio (US-14) → tabla */}
       <GaleriaAnuncio titulo={anuncio.titulo} fotos={anuncio.fotos} />
@@ -131,6 +135,8 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
         {/* US-16 CA1-CA4: «Pausar» (activo) o «Reactivar» (pausado), sin diálogo; aviso verde y la ficha cambia en sitio.
             Con un 409 (estado desfasado, E2E-4), aviso rojo y se recarga el anuncio. */}
         <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+        {/* US-17: «Marcar como reservado», «Quitar reserva» y «Marcar como entregado» según el estado (CA1-CA6). */}
+        <BotonesReservaEntrega anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
         {/* US-70 CA1: solo en borrador, activo, pausado y reservado (el botón no se pinta en entregado). Al retirar,
             va a /mis-anuncios con replace y el aviso «Anuncio retirado.» (CA4). */}
         <BotonRetirarAnuncio anuncio={anuncio} onFallo={onFallo} />
