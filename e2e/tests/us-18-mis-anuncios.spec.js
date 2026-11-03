@@ -154,6 +154,20 @@ test('US-18 · E2E-1 · «Donación · Gratis» en la fila (US-14 CA7)', async (
   await expect(fila(page, 'Material de prueba 21').getByText('Donación · Gratis')).toBeVisible();
 });
 
+// US-14 CA6 (T14-4, #193): la fila de una venta muestra «8,50 € / unidad». Depende de #201 (`/api/anuncios/mios` con la modalidad real).
+test('US-18 · E2E-1 · precio de una venta en la fila (US-14 CA6)', async ({ page, cuentas }) => {
+  await retirarTodos(centros.b);
+  const comunes = { centro_id: centros.b, retirado_en: null, actualizado_en: new Date().toISOString(), entregado_en: null };
+  await insertarAnuncio({ ...comunes, titulo: 'Anuncio de venta de B', estado: 'activo', modalidad: 'venta', precio_unitario_centimos: 850 });
+  await insertarAnuncio({ ...comunes, titulo: 'Anuncio de donacion de B', estado: 'activo', modalidad: 'donacion', precio_unitario_centimos: null });
+
+  await entrar(page, cuentas.centroB, cuentas.password);
+  await irAMisAnuncios(page);
+  await expect(fila(page, 'Anuncio de venta de B').getByText('8,50 € / unidad')).toBeVisible();
+  await expect(fila(page, 'Anuncio de venta de B').getByText('Donación · Gratis')).toHaveCount(0);
+  await expect(fila(page, 'Anuncio de donacion de B').getByText('Donación · Gratis')).toBeVisible();
+});
+
 // [Depende de US-15] botón principal «Editar» según el estado (CA6). Se activa (quitar el fixme) cuando US-15 llegue a dev.
 test.fixme('US-18 · E2E-1 · botón principal de la fila (Editar)', async ({ page, cuentas }) => {
   await retirarTodos(centros.b);
