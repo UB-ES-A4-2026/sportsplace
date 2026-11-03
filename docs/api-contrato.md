@@ -54,8 +54,9 @@ Cualquier error de la API tiene esta forma:
 | 404 | `NO_ENCONTRADO` | La ruta o el recurso no existe. |
 | 405 | `METODO_NO_PERMITIDO` | Método HTTP no admitido en esa ruta. |
 | 409 | `EMAIL_YA_REGISTRADO` | Ya existe una cuenta con ese email. |
+| 409 | `ANUNCIO_NO_EDITABLE` | El anuncio está entregado y ya no se puede modificar (US-15). |
 | 409 | `TRANSICION_NO_PERMITIDA` | El estado actual del anuncio no permite esa acción; `details.estado_actual` dice cuál es (E03, US-16). |
-| 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo JSON supera 100 kB, o la petición multipart de `POST /api/anuncios` supera 40 MB (41.943.040 bytes). |
+| 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo JSON supera 100 kB, o la petición multipart de `POST /api/anuncios` o `PATCH /api/anuncios/:id` supera 40 MB (41.943.040 bytes). |
 | 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
 | 503 | `BASE_DATOS_NO_DISPONIBLE` | PostgreSQL no responde o no está configurado. |
@@ -121,6 +122,7 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/anuncios` | US-12, US-13, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
+| `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
 | `PATCH /api/centros/mio` | US-07 | Sí, con email confirmado | Alex |
 | `PUT /api/centros/mio/ubicacion` | US-68 | Sí, con email confirmado | Alex |
@@ -332,6 +334,58 @@ Privada: `requireAuth` + `requireEmailConfirmado`.
 - `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 
+### `PATCH /api/anuncios/:id` (US-15)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Modifica un anuncio del centro de la sesión. Cuerpo `multipart/form-data` (US-15 CA11), como `POST /api/anuncios`:
+
+| Parte | Contenido |
+|---|---|
+| `datos` | Texto JSON con el anuncio **completo** (los mismos campos que al publicar, no es un parche parcial) más `fotos_conservar`. Como máximo 100 kB. |
+| `fotos` | De 0 a 8 fotos **nuevas**, JPG, PNG o WebP de 5 MB como máximo cada una, en orden. Una parte `fotos` por archivo. |
+| `foto_principal` | Obligatoria. `existente:<id>` (una foto de `fotos_conservar`) o `nueva:<índice 1..n>` (una de las nuevas). |
+
+`datos`:
+
+```json
+{
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones Mikasa usados una temporada, sin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "unidades_disponibles": 10,
+  "estado_material": "buen_estado",
+  "modalidad": "venta",
+  "precio_unitario_centimos": 700,
+  "fotos_conservar": ["<id de F2>"]
+}
+```
+
+`fotos_conservar` es el array ordenado de ids de las fotos actuales que se quedan (vacío si se cambian todas).
+
+```js
+const formulario = new FormData();
+formulario.append('datos', JSON.stringify({ ...datos, fotos_conservar: idsConservados }));
+for (const archivo of fotosNuevas) formulario.append('fotos', archivo);
+formulario.append('foto_principal', principal); // 'existente:<id>' o 'nueva:<n>'
+fetch(`/api/anuncios/${id}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` }, body: formulario });
+```
+
+- `200 { "anuncio": anuncio }`. No cambia `estado` ni `publicado_en`; `actualizado_en` se renueva siempre, aunque no cambie ningún dato.
+- Fotos (CA8, CA12): el orden final es primero las de `fotos_conservar` en su orden y después las nuevas, con `orden` 1..n. Las conservadas mantienen su `id` y su URL; las que no están en `fotos_conservar` se borran de `anuncio_fotos` y de Storage; las nuevas se suben a `<centro_id>/<anuncio_id>/<foto_id>.<ext>`.
+- Se pueden editar los anuncios `activo`, `pausado` y `reservado`.
+- Modalidad y precio (US-14): mismas reglas que al publicar. Al pasar de venta a donación, `precio_unitario_centimos` se guarda como `null` (CA19); se puede enviar `null` o no enviarlo.
+- Reglas y mensajes: los mismos que `POST /api/anuncios` («Tabla de campos» de E03 y tabla de modalidad y precio). `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.», con una entrada en `details` por cada campo incorrecto; no se modifica nada ni se sube ninguna foto.
+  - `details.datos` «Faltan los datos del anuncio.»: falta la parte `datos`, no es JSON o el cuerpo no es multipart.
+  - `details.fotos`: total final (conservadas + nuevas) 0 → «Añade al menos una foto.»; más de 8 → «Puedes añadir 8 fotos como máximo.»; tipo o tamaño de una nueva, como al publicar.
+  - `details.fotos_conservar` «Alguna foto no pertenece a este anuncio.»: falta, no es un array de ids distintos o algún id no es una foto de este anuncio (CA13). La pertenencia se comprueba contra la base de datos después del resto de validaciones.
+  - `details.foto_principal` «La foto principal no es válida.»: falta, no tiene el formato `existente:<id>` / `nueva:<n>` o no apunta a una foto final.
+- Las claves de `datos` `estado`, `centro_id`, `id`, `publicado_en` (y cualquier otra no prevista) se ignoran.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID (con un `:id` que no es UUID, antes de leer el cuerpo).
+- `409 ANUNCIO_NO_EDITABLE`, `message` «Este anuncio ya no se puede editar.», si está `entregado`. Se comprueba antes de subir las fotos y otra vez dentro de la transacción, con el anuncio bloqueado: si otra persona del centro lo marca como entregado mientras se edita, también 409.
+- `413 PETICION_DEMASIADO_GRANDE`: la petición entera supera 40 MB.
+- Atomicidad (CA16): datos y fotos se guardan en una transacción. Si algo falla, el anuncio y sus fotos quedan como estaban y se borran las nuevas ya subidas (`503 ALMACENAMIENTO_NO_DISPONIBLE`, `503 BASE_DATOS_NO_DISPONIBLE` o `500 ERROR_INTERNO`, como al publicar). Las fotos quitadas se borran de Storage solo después de confirmar la transacción.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`.
+
 ### `GET /api/centros/mio` (US-07)
 
 Privada (`requireAuth`). Devuelve el centro al que pertenece el usuario (en este sprint, el de `centros.usuario_id`; US-84 lo amplía a miembros).
@@ -467,7 +521,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica 
 - `entregado` → `409 TRANSICION_NO_PERMITIDA` con `details.estado_actual`.
 - Ya retirado, inexistente, de otro centro o id que no es UUID → `404 NO_ENCONTRADO`.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
-- `/api/anuncios/:id` admite `GET` y `DELETE`; con otro método, `405` con `Allow: GET, DELETE`.
+- `/api/anuncios/:id` admite `GET`, `PATCH` y `DELETE`; con otro método, `405` con `Allow: GET, PATCH, DELETE`.
 - US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
 
 ## Configuración del correo de recuperación (T04-1 / US-04)

@@ -2,10 +2,12 @@ import { Router } from 'express';
 import { methodNotAllowed } from '../errors.js';
 import { getAnuncios, getFotosStorage, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
 import { leerPublicacion } from '../middleware/multipart.js';
+import { anuncioNoEncontrado, esIdDeAnuncio } from '../repositories/anuncios.js';
+import { editarAnuncio } from '../services/editar-anuncio.js';
 import { publicarAnuncio } from '../services/publicar-anuncio.js';
 import { ACCIONES } from '../services/transiciones-anuncio.js';
 import { validarPaginacion } from '../validation/anuncios.js';
-import { validarPublicacion } from '../validation/fotos.js';
+import { validarEdicion, validarPublicacion } from '../validation/fotos.js';
 
 // E03: todas las rutas de anuncios son privadas y exigen el email confirmado.
 export function anunciosRouter() {
@@ -40,6 +42,24 @@ export function anunciosRouter() {
     response.json({ anuncio });
   });
 
+  // US-15: modificar un anuncio publicado (CA5, CA7-CA17, CA20) con el mismo
+  // multipart que al publicar: `datos` (con `fotos_conservar`), `fotos` nuevas
+  // y `foto_principal`. `estado` y el resto de claves no previstas se ignoran.
+  // Un :id que no es un UUID responde 404 antes de mirar el cuerpo («Propiedad»).
+  router.patch('/:id', async (request, response) => {
+    if (!esIdDeAnuncio(request.params.id)) throw anuncioNoEncontrado();
+    const { anuncio: datos, ...fotos } = validarEdicion(await leerPublicacion(request));
+    const anuncio = await editarAnuncio({
+      anuncios: getAnuncios(request),
+      storage: getFotosStorage(request),
+      usuarioId: request.usuario.id,
+      id: request.params.id,
+      datos,
+      ...fotos,
+    });
+    response.json({ anuncio });
+  });
+
   // E03: cambio de estado sin cuerpo; responde 200 { anuncio } o 404/409.
   // US-17 reutiliza `transicion` con reservar, quitar-reserva y entregar.
   const transicion = (accion) => async (request, response) => {
@@ -66,7 +86,7 @@ export function anunciosRouter() {
 
   router.all('/', methodNotAllowed(['POST']));
   router.all('/mios', methodNotAllowed(['GET']));
-  router.all('/:id', methodNotAllowed(['GET', 'DELETE']));
+  router.all('/:id', methodNotAllowed(['GET', 'PATCH', 'DELETE']));
 
   return router;
 }

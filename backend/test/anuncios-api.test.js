@@ -232,5 +232,5 @@ test('US-12: métodos no admitidos responden 405', async () => {
 
   const ficha = await fetch(`${api.baseUrl}/api/anuncios/${randomUUID()}`, { method: 'POST', headers: conToken('token-a') });
   assert.equal(ficha.status, 405);
-  assert.equal(ficha.headers.get('allow'), 'GET, DELETE');
+  assert.equal(ficha.headers.get('allow'), 'GET, PATCH, DELETE');
 });
