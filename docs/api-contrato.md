@@ -4,6 +4,8 @@ Responsables: Anass y Alex (backend), revisado con Lucía y Marta (frontend). Sp
 
 Este documento es el acuerdo entre backend y frontend para las historias del Sprint 0: US-01, US-02, US-03 y US-67. Si un endpoint cambia, se actualiza aquí en la misma pull request.
 
+T04-1 añade la configuración del correo de recuperación de US-04. T04-2 añade sus endpoints (`POST /api/auth/recuperar-contrasena` y `/restablecer-contrasena`) y T04-3 sus pantallas; la plantilla por sí sola no completa el flujo.
+
 ## Decisiones
 
 | Decisión | Elegido | Motivo |
@@ -44,7 +46,8 @@ Cualquier error de la API tiene esta forma:
 |---|---|---|
 | 400 | `DATOS_INVALIDOS` | Faltan campos o tienen un formato incorrecto. |
 | 400 | `JSON_INVALIDO` | El cuerpo no es JSON válido. |
-| 400 | `ENLACE_INVALIDO` | El enlace de confirmación no existe, ya se ha usado o ha caducado. |
+| 400 | `ENLACE_INVALIDO` | El enlace de confirmación o de recuperación de la contraseña (US-04) no existe, ya se ha usado o ha caducado. |
+| 400 | `CODIGO_POSTAL_DESCONOCIDO` | El código postal tiene un formato válido pero no está en `codigos_postales` (US-68). |
 | 401 | `NO_AUTENTICADO` | Falta el token, ha caducado o la sesión se ha cerrado. |
 | 401 | `CREDENCIALES_INCORRECTAS` | Email o contraseña incorrectos (no se dice cuál). |
 | 403 | `EMAIL_NO_CONFIRMADO` | La cuenta todavía no ha confirmado su email. |
@@ -106,12 +109,18 @@ Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anu
 | `POST /api/auth/registro` | US-01 | No | Anass |
 | `POST /api/auth/confirmar` | US-02 | No | Anass y Alex |
 | `POST /api/auth/reenviar-confirmacion` | US-66 | No | Anass |
+| `POST /api/auth/recuperar-contrasena` | US-04 | No | Anass |
+| `POST /api/auth/restablecer-contrasena` | US-04 | No | Anass |
 | `POST /api/auth/login` | US-03 | No | Alex |
 | `POST /api/auth/refresh` | US-03 | No | Alex |
 | `GET /api/auth/me` | US-03, US-67 | Sí | Alex |
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
+| `GET /api/centros/mio` | US-07 | Sí | Alex |
+| `PATCH /api/centros/mio` | US-07 | Sí, con email confirmado | Alex |
+| `PUT /api/centros/mio/ubicacion` | US-68 | Sí, con email confirmado | Alex |
 | `POST /api/anuncios/:id/pausar` | US-16 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/reactivar` | US-16 | Sí (email confirmado) | Anass |
 | `DELETE /api/anuncios/:id` | US-70 | Sí (email confirmado) | Anass |
@@ -122,6 +131,13 @@ Fechas ISO 8601 en UTC. Mientras US-13 y US-14 no estén en `dev`, todos los anu
 ### `GET /api/health`
 
 `200 { "status": "ok", "service": "sportsplace-api" }`
+
+En Render añade el campo opcional `commit` con el SHA completo de 40 caracteres
+hexadecimales de `RENDER_GIT_COMMIT`, normalizado a minúsculas. Sin esa variable o
+con un valor inválido se omite el campo. `/health` es un alias de la misma sonda;
+ambas respuestas conservan `Cache-Control: no-store`. El smoke de T12-6 compara
+`commit` con el SHA de `dev` esperado antes de comprobar la web publicada. Esta
+sonda no acredita Auth ni la conexión PostgreSQL.
 
 ### `POST /api/auth/registro` (US-01)
 
@@ -177,6 +193,34 @@ Para cuando el enlace de confirmación ha caducado o se ha perdido el email. La 
 - La respuesta es la misma si el email no tiene cuenta o ya está confirmado, para no revelar qué emails están registrados. El frontend muestra siempre un mensaje del tipo "Si hay una cuenta pendiente con ese email, te hemos enviado un enlace nuevo".
 - `400 DATOS_INVALIDOS` con `details.email` si falta el email o su formato no es válido (misma regla que en el registro).
 - `429 DEMASIADOS_INTENTOS` si se piden enlaces demasiado seguidos (Supabase limita los reenvíos); `503 AUTH_NO_DISPONIBLE`.
+
+### `POST /api/auth/recuperar-contrasena` (US-04)
+
+Pública. Pide el email «Cambia tu contraseña de Sportsplace» (plantilla *Reset password* de T04-1), que enlaza a `/restablecer-contrasena?token_hash=…&type=recovery`.
+
+```json
+{ "email": "piscina@clubnatacio.cat" }
+```
+
+- `204` sin cuerpo, **exista o no la cuenta**: la respuesta (código, cuerpo y cabeceras) es idéntica para un email registrado, uno no registrado y uno sin confirmar (CA23). El email se recorta y se pasa a minúsculas antes de enviarlo (CA25).
+- El email solo se envía si la cuenta existe y tiene el email confirmado (se comprueba en `auth.users`). A una cuenta sin confirmar no se le envía, porque Supabase da el email por confirmado al verificar un enlace de recuperación y eso rompería CA15 (#152); la respuesta sigue siendo el mismo `204`.
+- `400 DATOS_INVALIDOS` con `details.email`: misma regla y mensajes que en el registro («El email es obligatorio.», «El email no es válido.», máximo 254 caracteres).
+- `400 JSON_INVALIDO`, `429 DEMASIADOS_INTENTOS`, `503 AUTH_NO_DISPONIBLE`, `503 BASE_DATOS_NO_DISPONIBLE` (no se ha podido comprobar la cuenta).
+
+### `POST /api/auth/restablecer-contrasena` (US-04)
+
+Pública. La página `/restablecer-contrasena` envía el `token_hash` del enlace y la contraseña nueva (la web ya ha comprobado que las dos contraseñas coinciden):
+
+```json
+{ "token_hash": "...", "password": "Natacio2026!" }
+```
+
+- `204` sin cuerpo y **sin sesión**: después se entra con `POST /api/auth/login` (US-04 CA5).
+- El servidor hace `verifyOtp({ type: 'recovery', token_hash })`, cambia la contraseña con la sesión de recuperación de ese usuario y cierra **todas** sus sesiones (`signOut` con `scope: 'global'`): sus `refresh_token` dan `401 NO_AUTENTICADO` y la contraseña anterior da `401 CREDENCIALES_INCORRECTAS` (CA14). Elegir la misma contraseña que la anterior se acepta (CA26).
+- `400 DATOS_INVALIDOS`: `details.token_hash` «Falta el token del enlace.» y/o `details.password` con los mensajes del registro («La contraseña es obligatoria.», «La contraseña debe tener al menos 8 caracteres.», «La contraseña es demasiado larga.»; 8 caracteres a 72 bytes, sin recortar espacios). Si Supabase rechaza la contraseña por débil, `details.password` «La contraseña es demasiado débil.».
+- `400 ENLACE_INVALIDO` «El enlace para cambiar la contraseña no es válido o ha caducado.»: enlace usado (solo sirve una vez), caducado (3600 s), sustituido por uno pedido después o inventado (CA11-CA13).
+- `400 JSON_INVALIDO`, `429 DEMASIADOS_INTENTOS`, `503 AUTH_NO_DISPONIBLE`.
+- El `token_hash` no se escribe en los logs del servidor (CA24).
 
 ### `POST /api/auth/login` (US-03)
 
@@ -249,6 +293,110 @@ Privada: `requireAuth` + `requireEmailConfirmado`.
 - `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», si no existe, es de otro centro, está retirado o `:id` no es un UUID. Las cuatro respuestas son idénticas, para no revelar qué anuncios existen.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 
+### `GET /api/centros/mio` (US-07)
+
+Privada (`requireAuth`). Devuelve el centro al que pertenece el usuario (en este sprint, el de `centros.usuario_id`; US-84 lo amplía a miembros).
+
+- `200 { "centro": centro }`:
+
+```json
+{
+  "id": "uuid", "nombre": "Club Natació Exemple", "email": "centro@example.com",
+  "localidad": "Barcelona", "direccion": null, "codigo_postal": "08001", "telefono": "+34 931 234 567",
+  "descripcion": "Club de natación…", "email_contacto": "material@clubnatacio.cat",
+  "web": "https://clubnatacio.cat", "creado_en": "2026-10-09T10:00:00.000Z",
+  "provincia": "Barcelona", "latitud": 41.3888, "longitud": 2.159
+}
+```
+
+`provincia`, `latitud` y `longitud` (números) las pone el servidor a partir del código postal (US-68). Son `null` en los centros que todavía no han indicado su ubicación.
+
+- `401 NO_AUTENTICADO`.
+- `404 NO_ENCONTRADO` si la cuenta no tiene ningún centro (no debería pasar: el alta crea los dos en la misma transacción).
+- `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `PATCH /api/centros/mio` (US-07)
+
+Privada (`requireAuth` + `requireEmailConfirmado`). Cuerpo con cualquiera de estos campos; los que no se envían no cambian y `null` o `""` borra un opcional:
+
+```json
+{ "nombre": "Club Natació Exemple", "descripcion": "…", "telefono": "+34 931 234 567", "email_contacto": "material@clubnatacio.cat", "web": "https://clubnatacio.cat" }
+```
+
+Se recortan los espacios antes de validar. Los límites se cuentan por caracteres (un emoji es 1).
+
+| Campo | Regla | Mensaje en `details` |
+|---|---|---|
+| `nombre` | Obligatorio, 1-160 | «El nombre del centro es obligatorio.», «Como máximo 160 caracteres.» |
+| `descripcion` | Opcional, 0-1000, admite saltos de línea | «Como máximo 1000 caracteres.» |
+| `telefono` | Opcional, dígitos, espacios y un `+` inicial, 9-30 | «El teléfono no es válido.», «Como máximo 30 caracteres.» |
+| `email_contacto` | Opcional, misma regla que el email del alta, se guarda en minúsculas | «El email no es válido.» |
+| `web` | Opcional, máx. 255, `http://` o `https://` y dominio con punto | «La web debe empezar por http:// o https://.», «La web no es válida.», «Como máximo 255 caracteres.» |
+
+- `200 { "centro": centro }` con los datos actualizados. Cada `PATCH` correcto actualiza `centros.actualizado_en`.
+- `400 DATOS_INVALIDOS` con `details` por campo. Un campo desconocido o no editable (`email`, `usuario_id`, `localidad`…) da `details.<campo>` «Este campo no se puede modificar.».
+- `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `503 BASE_DATOS_NO_DISPONIBLE`.
+
+No existe ninguna ruta para editar otro centro por id.
+
+### `PUT /api/centros/mio/ubicacion` (US-68)
+
+Privada (`requireAuth` + `requireEmailConfirmado`). Fija la ubicación del centro propio; se envían siempre los tres campos:
+
+```json
+{ "direccion": "Carrer de la Piscina 12", "codigo_postal": "08025", "localidad": "Barcelona" }
+```
+
+Se recortan los espacios antes de validar. Las claves que no son estas tres (p. ej. `provincia`, `latitud`) se ignoran.
+
+| Campo | Regla | Mensaje en `details` |
+|---|---|---|
+| `direccion` | Opcional, 0-255; vacía se guarda como `null` | «Como máximo 255 caracteres.» |
+| `codigo_postal` | Obligatorio, 5 cifras entre `01000` y `52999` | «El código postal es obligatorio.», «El código postal debe tener 5 cifras.», «El código postal no es de España.» |
+| `localidad` | Obligatoria, 1-120; la escribe el usuario | «La localidad es obligatoria.», «Como máximo 120 caracteres.» |
+
+- `200 { "centro": centro }` (como en `GET /api/centros/mio`). El servidor busca el código postal en `codigos_postales` y copia `provincia`, `latitud` y `longitud` en el centro en la misma sentencia; también actualiza `actualizado_en`.
+- `400 DATOS_INVALIDOS` con `details` por campo.
+- `400 CODIGO_POSTAL_DESCONOCIDO`, `message` y `details.codigo_postal` «No conocemos este código postal. Revísalo.», si el formato es válido pero el código no está en la tabla. No se cambia nada.
+- `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `405` con otros métodos, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `GET /api/anuncios/mios` (US-18)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del centro de la sesión, paginada: `GET /api/anuncios/mios?pagina=1&por_pagina=20`.
+
+- `pagina`: entero mayor que 0, por defecto 1. `por_pagina`: entero de 1 a 50, por defecto 20.
+- `200`:
+
+```json
+{
+  "anuncios": [
+    {
+      "id": "uuid",
+      "titulo": "Balones de fútbol talla 5",
+      "categoria": "balones",
+      "deporte": "futbol",
+      "unidades_disponibles": 12,
+      "modalidad": "donacion",
+      "precio_unitario_centimos": null,
+      "estado": "activo",
+      "foto_principal_url": null,
+      "publicado_en": "2026-11-03T10:15:00.000Z",
+      "actualizado_en": "2026-11-03T10:15:00.000Z"
+    }
+  ],
+  "total": 21,
+  "pagina": 1,
+  "por_pagina": 20
+}
+```
+
+- Incluye los anuncios en `borrador`, `activo`, `pausado`, `reservado` y `entregado`; nunca los `retirado` ni los de otros centros. `total` cuenta los mismos.
+- Orden: `actualizado_en` descendente y, a igualdad, `id` descendente.
+- Si `pagina` es mayor que la última, se devuelve la última y `pagina` trae su número (con 0 anuncios, la 1). La web debe usar ese valor (CA10).
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «Debe ser un número entero mayor que 0.» y/o `details.por_pagina` «Debe ser un número entre 1 y 50.». Solo se aceptan dígitos: `2.5`, `-1`, `abc`, un valor vacío o el parámetro repetido se rechazan.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- Mientras US-13 y US-14 no estén en `dev`, `foto_principal_url` es `null`, `modalidad` es `"donacion"` y `precio_unitario_centimos` es `null` (US-12, CA30).
+
 ### Cambios de estado de un anuncio (E03)
 
 Siguen la tabla «Estados del anuncio y transiciones» de E03. Cada cambio es un único `UPDATE ... WHERE id = … AND centro_id = <centro de la sesión> AND estado IN (<estados de origen>)`: si el estado actual no está en la lista no se cambia nada, así que dos peticiones simultáneas no pueden saltarse la regla (una recibe `200` y la otra `409`). El servicio común está en `backend/src/services/transiciones-anuncio.js` (tabla de acciones) y en `transicionar` del repositorio de anuncios. Acciones: `pausar`, `reactivar` (US-16), `reservar`, `quitar-reserva`, `entregar` (US-17) y `retirar` (US-70, con `DELETE`).
@@ -296,6 +444,59 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica 
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `/api/anuncios/:id` admite `GET` y `DELETE`; con otro método, `405` con `Allow: GET, DELETE`.
 - US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
+
+## Configuración del correo de recuperación (T04-1 / US-04)
+
+Responsable: Carlos. Referencias: [tarea #90](https://github.com/UB-ES-A4-2026/sportsplace/issues/90), [historia #89](https://github.com/UB-ES-A4-2026/sportsplace/issues/89) y [US-04, CA10 y CA11](especificacion/E01-E02-registro-y-perfil.md). No necesita cambios en la tabla `centros` ni variables nuevas en la web.
+
+### Aplicar en Supabase
+
+1. Abrir el proyecto del entorno que se va a probar. En **Authentication → URL Configuration**, comprobar **Site URL**: `http://localhost:5173` para el entorno local. El enlace usa ese valor; debe corresponder a la web de ese entorno. No cambiarlo por la URL de la API.
+2. En **Authentication → Emails → Reset password**, fijar el asunto exacto **Cambia tu contraseña de Sportsplace** y copiar el contenido de [recuperar-contrasena.html](../supabase/templates/recuperar-contrasena.html). Guardar y volver a abrir para comprobar la persistencia.
+3. En la configuración del proveedor **Email**, fijar **Email OTP Expiration** a **3600 segundos**. Guardar y recargar para verificarlo. Es una configuración del proveedor de email, compartida con otros enlaces de Auth; registrar su valor junto con la plantilla.
+4. En **Authentication → Emails → SMTP Settings**, conservar el SMTP personalizado existente. La [validación del Sprint 0](sprint-0-validacion-devops.md#resultado-de-la-revisión-manual-comunicada-por-carlos) registra Gmail con puerto 465 y recepción real. Comprobar que sigue habilitado sin mostrar ni reemplazar su contraseña de aplicación. No sustituirlo por el servicio de correo de prueba de Supabase.
+
+El botón debe decir **Cambiar contraseña** y tener exactamente este destino en la plantilla:
+
+```html
+{{ .SiteURL }}/restablecer-contrasena?token_hash={{ .TokenHash }}&type=recovery
+```
+
+No sustituir `.TokenHash` por `.Token` ni por `.ConfirmationURL`: el navegador abre la página de Sportsplace y el backend de T04-2 verifica el token de tipo `recovery`. No se muestra ni se guarda el enlace real en logs o evidencias públicas.
+
+### Probar el correo real
+
+1. Usar una cuenta de pruebas existente cuyo buzón controle la persona que realiza la comprobación. No repetir su registro ni eliminarla para forzar el envío. Tener disponible la web correspondiente a **Site URL**.
+2. Desde **Authentication → Users**, abrir esa cuenta y usar la acción de enviar recuperación de contraseña una sola vez. Cuando T04-2 y T04-3 estén integradas en la historia, repetir la validación mediante el formulario `/recuperar-contrasena` para probar el flujo de la aplicación. Una prueba directa desde el panel solo acredita la configuración y la entrega del correo.
+3. Comprobar en el buzón la recepción del asunto **Cambia tu contraseña de Sportsplace**, el botón **Cambiar contraseña**, la indicación de caducidad de una hora y el destino de la web con ruta `/restablecer-contrasena`, `token_hash` no vacío y `type=recovery`. Registrar hora de petición y recepción, sin dirección del buzón, token, contraseña ni URL completa.
+4. Con T04-2 y T04-3 disponibles, QA valida el cambio de contraseña y los restantes CA de US-04. Para CA11, probar enlaces distintos a los 59 y 61 minutos: el primero funciona y el segundo devuelve `ENLACE_INVALIDO`. No solicitar un nuevo enlace para una cuenta mientras se mide el anterior: solo sirve el último (CA13). No atribuir estas comprobaciones a una inspección estática de la plantilla.
+5. Adjuntar a la issue o PR la fecha, entorno, commit, valor de caducidad comprobado y resultado de recepción. La tarea requiere configuración aplicada, correo real probado, revisión ajena y fusión de su PR en `story/US-04-recuperar-contrasena-olvido`.
+
+### Estado de la configuración
+
+Verificado el **23/10/2026** en `sportsplace-dev`, con la sesión de Carlos:
+
+- Plantilla **Reset password** guardada; asunto y HTML coinciden con el archivo versionado después de recargar el panel.
+- **Email OTP expiration = 3600 s**, ya configurado al abrir el proveedor Email.
+- **Site URL = http://localhost:5173** y SMTP personalizado habilitado con puerto **465**, conservados.
+
+La incidencia SMTP quedó resuelta al guardar una **contraseña de aplicación de
+Google** en el panel. Los intentos previos devolvían 535 (credenciales rechazadas)
+y 534 (contraseña de aplicación requerida); no se publicó esa credencial.
+
+La última solicitud, realizada el **23/10/2026 a las 22:14 (Europe/Madrid)**,
+produjo un correo recibido a las **22:14** en el buzón de pruebas. La inspección
+del mensaje el **24/10/2026** verificó:
+
+- Asunto **Cambia tu contraseña de Sportsplace** y botón **Cambiar contraseña**.
+- Texto **El enlace caduca en 1 hora.**
+- Destino en `http://localhost:5173`, ruta `/restablecer-contrasena`, parámetro
+  `token_hash` no vacío y `type=recovery`, sin registrar el token ni la URL completa.
+
+Esta evidencia acredita la entrega real y el contenido de la plantilla de T04-1.
+No se utilizó el enlace ni se cambió la contraseña de una cuenta. Los endpoints,
+pantallas y casos de caducidad de 59/61 minutos requieren T04-2 y T04-3.
+**Pendiente:** aprobación del último commit e integración mediante merge commit.
 
 ## Rutas privadas y confirmación del email (US-02)
 
