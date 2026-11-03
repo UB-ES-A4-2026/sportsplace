@@ -4,6 +4,7 @@ import { formatearFecha } from '../anuncios/ficha.js';
 import { textoCategoriaDeporte, textoUnidades } from '../anuncios/misAnuncios.js';
 import EtiquetaEstado from './EtiquetaEstado.jsx';
 import MenuMas from './MenuMas.jsx';
+import PrecioAnuncio from './PrecioAnuncio.jsx';
 
 // Fila de «Mis anuncios» (US-18): miniatura, título (→ ficha), categoría y deporte, unidades, estado y fecha.
 // `children`: las acciones del menú «Más ▾» (US-16, US-17, US-70, US-19, US-90), cada una con su botón.
@@ -23,7 +24,9 @@ export default function FilaAnuncio({ anuncio, children }) {
           <span>{textoCategoriaDeporte(anuncio)}</span>
           {' · '}
           <span>{textoUnidades(anuncio.unidades_disponibles)}</span>
-          {/* [Depende de US-14] precio «8,50 € / unidad» o «Donación · Gratis» (T14-4) */}
+          {' · '}
+          {/* US-14 CA6 y CA7: «8,50 € / unidad» o la etiqueta «Donación · Gratis». */}
+          <PrecioAnuncio anuncio={anuncio} />
         </p>
         <p className="fila-estado">
           <EtiquetaEstado estado={anuncio.estado} />

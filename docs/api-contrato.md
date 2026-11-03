@@ -129,6 +129,9 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/anuncios/:id/pausar` | US-16 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/reactivar` | US-16 | Sí (email confirmado) | Anass |
 | `DELETE /api/anuncios/:id` | US-70 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios/:id/reservar` | US-17 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios/:id/quitar-reserva` | US-17 | Sí (email confirmado) | Anass |
+| `POST /api/anuncios/:id/entregar` | US-17 | Sí (email confirmado) | Anass |
 
 ### `GET /api/health`
 
@@ -489,11 +492,11 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del ce
 - `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «Debe ser un número entero mayor que 0.» y/o `details.por_pagina` «Debe ser un número entre 1 y 50.». Solo se aceptan dígitos: `2.5`, `-1`, `abc`, un valor vacío o el parámetro repetido se rechazan.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `foto_principal_url` es la URL pública de la foto con `es_principal` (US-13) o `null` si el anuncio no tiene fotos.
-- Mientras US-14 no esté en `dev`, `modalidad` es `"donacion"` y `precio_unitario_centimos` es `null` (US-12, CA30).
+- `modalidad` y `precio_unitario_centimos` son los del anuncio (US-14, CA7): `"donacion"` con `null`, o `"venta"` con el precio en céntimos.
 
 ### Cambios de estado de un anuncio (E03)
 
-Siguen la tabla «Estados del anuncio y transiciones» de E03. Cada cambio es un único `UPDATE ... WHERE id = … AND centro_id = <centro de la sesión> AND estado IN (<estados de origen>)`: si el estado actual no está en la lista no se cambia nada, así que dos peticiones simultáneas no pueden saltarse la regla (una recibe `200` y la otra `409`). El servicio común está en `backend/src/services/transiciones-anuncio.js` (tabla de acciones) y en `transicionar` del repositorio de anuncios; US-17 y US-70 añaden ahí sus acciones.
+Siguen la tabla «Estados del anuncio y transiciones» de E03. Cada cambio es un único `UPDATE ... WHERE id = … AND centro_id = <centro de la sesión> AND estado IN (<estados de origen>)`: si el estado actual no está en la lista no se cambia nada, así que dos peticiones simultáneas no pueden saltarse la regla (una recibe `200` y la otra `409`). El servicio común está en `backend/src/services/transiciones-anuncio.js` (tabla de acciones) y en `transicionar` del repositorio de anuncios. Acciones: `pausar`, `reactivar` (US-16), `reservar`, `quitar-reserva`, `entregar` (US-17) y `retirar` (US-70, con `DELETE`).
 
 Un cambio de estado renueva `actualizado_en` y no modifica ningún otro campo ni `publicado_en`.
 
@@ -511,6 +514,21 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo (si llega uno, se 
 ### `POST /api/anuncios/:id/reactivar` (US-16)
 
 Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. `pausado` → `activo`; `200 { "anuncio": anuncio }`.
+
+### `POST /api/anuncios/:id/reservar`, `/quitar-reserva` y `/entregar` (US-17)
+
+Privadas: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo; `200 { "anuncio": anuncio }`.
+
+| Ruta | Desde | Hacia |
+|---|---|---|
+| `POST /api/anuncios/:id/reservar` | `activo` | `reservado` |
+| `POST /api/anuncios/:id/quitar-reserva` | `reservado` | `activo` |
+| `POST /api/anuncios/:id/entregar` | `activo` o `reservado` | `entregado`, con `entregado_en = now()` |
+
+- `entregado` es final: después, cualquier transición (y `DELETE`) responde `409 TRANSICION_NO_PERMITIDA`. Entregar dos veces → la segunda `409`.
+- Desde `pausado` no se puede reservar ni entregar (`409` con `estado_actual: "pausado"`): hay que reactivar antes.
+- Ningún cambio de estado modifica `unidades_disponibles`, el precio ni las fotos.
+- Errores comunes de «Cambios de estado de un anuncio».
 
 ### `DELETE /api/anuncios/:id` (US-70)
 
