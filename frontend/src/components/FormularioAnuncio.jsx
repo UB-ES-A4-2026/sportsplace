@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { ErrorApi } from '../api/cliente.js';
 import {
   anadirFotos,
+  fotosCambiadas,
   FOTOS_VACIAS,
   marcarPrincipal,
   quitarFoto,
@@ -33,11 +34,13 @@ import SeccionModalidadPrecio from './SeccionModalidadPrecio.jsx';
 // Campos, reglas y mensajes de la «Tabla de campos» de E03. Valida todo al enviar, revalida cada campo
 // al cambiarlo tras el primer intento, muestra los `details` de un 400 bajo su campo y conserva los datos si falla.
 //
+// - `fotosIniciales`: fotos con las que empieza la sección (al editar, las actuales del anuncio; US-15).
 // - `onEnviar(cuerpo, fotos)`: hace la petición y, si va bien, navega. Si lanza un ErrorApi, el formulario muestra el error.
 // - `dialogoSalir`: { titulo, texto, confirmar, cancelar } del diálogo que abre «Cancelar» con datos (CA9).
 // - `destinoCancelar`: adónde lleva «Cancelar» (o «Salir» en el diálogo).
 export default function FormularioAnuncio({
   valoresIniciales = VALORES_VACIOS,
+  fotosIniciales = FOTOS_VACIAS,
   textoEnviar,
   textoEnviando,
   dialogoSalir,
@@ -48,7 +51,7 @@ export default function FormularioAnuncio({
   const formulario = useRef(null);
   const enviandoAhora = useRef(false);
   const [valores, setValores] = useState(valoresIniciales);
-  const [fotos, setFotos] = useState(FOTOS_VACIAS);
+  const [fotos, setFotos] = useState(fotosIniciales);
   const [mensajesFotos, setMensajesFotos] = useState([]);
   const [errores, setErrores] = useState({});
   const [intentado, setIntentado] = useState(false);
@@ -114,7 +117,8 @@ export default function FormularioAnuncio({
 
   function quitarLaFoto(id) {
     const { estado, quitada } = quitarFoto(fotos, id);
-    if (quitada?.vista) {
+    // Solo se liberan las miniaturas creadas aquí; las fotos actuales (US-15) usan su URL pública.
+    if (quitada?.vista && vistas.current.has(quitada.vista)) {
       URL.revokeObjectURL(quitada.vista);
       vistas.current.delete(quitada.vista);
     }
@@ -175,7 +179,7 @@ export default function FormularioAnuncio({
 
   // CA9: sin tocar, «Cancelar» sale directamente; con datos, pregunta antes.
   function cancelar() {
-    if (haCambiado(valores, valoresIniciales, { hayFotos: fotos.fotos.length > 0 })) {
+    if (haCambiado(valores, valoresIniciales, { hayFotos: fotosCambiadas(fotos, fotosIniciales) })) {
       setDialogoAbierto(true);
     }
     else navigate(destinoCancelar);

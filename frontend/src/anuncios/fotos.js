@@ -1,6 +1,7 @@
 // Fotos del anuncio en el formulario (E03, US-13 T13-3): validación de archivos, foto principal y cuerpo multipart.
 // Todo son funciones puras sobre `{ fotos, principalId }` para poder probarlas sin navegador:
 //   - `fotos`: [{ id, archivo, vista }] en el orden en que se añadieron (CA8). `vista` es la URL de la miniatura.
+//     Al editar (US-15), las fotos actuales son { id, existente: true, vista, nombre }: sin archivo, con su URL.
 //   - `principalId`: id de la foto principal, o null si no hay fotos.
 
 export const MAX_FOTOS = 8;
@@ -91,12 +92,20 @@ export function indicePrincipal(estado) {
 }
 
 export function pesoTotal(estado) {
-  return estado.fotos.reduce((suma, foto) => suma + foto.archivo.size, 0);
+  // Las fotos que ya están en el servidor (US-15) no se vuelven a subir.
+  return estado.fotos.reduce((suma, foto) => suma + (foto.archivo?.size ?? 0), 0);
 }
 
 // CA11: ¿hay que mostrar «Subiendo fotos…» durante el envío?
 export function subidaLenta(estado) {
   return pesoTotal(estado) > BYTES_SUBIDA_LENTA;
+}
+
+// ¿Han cambiado las fotos respecto a las iniciales? (otras fotos, otro orden u otra principal). Con las iniciales
+// vacías (publicar), equivale a «hay alguna foto». Sirve para el diálogo de «Cancelar» (US-12 CA9, US-15 CA3).
+export function fotosCambiadas(estado, iniciales = FOTOS_VACIAS) {
+  const ids = (lista) => lista.fotos.map((foto) => foto.id).join(',');
+  return ids(estado) !== ids(iniciales) || (estado.fotos.length > 0 && estado.principalId !== iniciales.principalId);
 }
 
 // CA12: POST /api/anuncios pasa a multipart/form-data con la parte `datos` (JSON de US-12/US-14), las partes

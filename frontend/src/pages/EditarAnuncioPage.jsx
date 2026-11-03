@@ -6,6 +6,7 @@ import {
   AVISO_GUARDADO,
   cuerpoDeLaEdicion,
   DIALOGO_DESCARTAR,
+  fotosDelAnuncio,
   MENSAJE_NO_EDITABLE,
   puedeEditar,
   valoresDelAnuncio,
@@ -15,7 +16,7 @@ import AnuncioNoEncontrado from '../components/AnuncioNoEncontrado.jsx';
 import FormularioAnuncio from '../components/FormularioAnuncio.jsx';
 
 // US-15 T15-2: /anuncios/:id/editar · «Editar anuncio», el formulario de US-12 con los datos actuales
-// (PATCH /api/anuncios/:id, contrato de T15-1).
+// y fotos actuales (PATCH /api/anuncios/:id, contrato de T15-1).
 export default function EditarAnuncioPage() {
   const { id } = useParams();
   const [intento, setIntento] = useState(0);
@@ -72,13 +73,15 @@ export default function EditarAnuncioPage() {
 
 function FormularioEdicion({ anuncio }) {
   const navigate = useNavigate();
+  // Se calculan una vez: son la referencia para saber si «Cancelar» tiene que preguntar (CA3).
+  const [iniciales] = useState(() => ({ valores: valoresDelAnuncio(anuncio), fotos: fotosDelAnuncio(anuncio) }));
   const ficha = `/anuncios/${encodeURIComponent(anuncio.id)}`;
 
   // CA4: tras guardar, a la ficha con `replace` y «Cambios guardados.». CA20: si mientras tanto se ha entregado (409),
   // a la ficha con «Este anuncio ya no se puede editar.». El resto de fallos los muestra el formulario (CA5, CA10).
-  async function guardar(cuerpo) {
+  async function guardar(cuerpo, fotos) {
     try {
-      await editarAnuncio(anuncio.id, cuerpoDeLaEdicion(cuerpo, anuncio));
+      await editarAnuncio(anuncio.id, cuerpoDeLaEdicion(cuerpo, fotos));
     } catch (fallo) {
       if (fallo instanceof ErrorApi && fallo.status === 409 && fallo.code === 'ANUNCIO_NO_EDITABLE') {
         navigate(ficha, { replace: true, state: { aviso: { tipo: 'error', texto: MENSAJE_NO_EDITABLE } } });
@@ -91,7 +94,8 @@ function FormularioEdicion({ anuncio }) {
 
   return (
     <FormularioAnuncio
-      valoresIniciales={valoresDelAnuncio(anuncio)}
+      valoresIniciales={iniciales.valores}
+      fotosIniciales={iniciales.fotos}
       textoEnviar="Guardar cambios"
       textoEnviando="Guardando…"
       dialogoSalir={DIALOGO_DESCARTAR}
