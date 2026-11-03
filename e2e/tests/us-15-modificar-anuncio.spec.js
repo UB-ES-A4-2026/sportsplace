@@ -415,6 +415,42 @@ test.describe('US-15 · Modificar un anuncio ya publicado', () => {
 // EMAIL_NO_CONFIRMADO y el 413 los cubren los tests del backend (anuncios-editar.test.js); CA21 depende de US-32.
 
 test.describe('US-15 · Resto de criterios', () => {
+  test('CA1 · «Editar» en la fila de «Mis anuncios» y en la ficha según el estado', async ({ page, request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const estados = [
+      ['activo', 'Conos de entrenamiento (activo)'],
+      ['pausado', 'Conos de entrenamiento (pausado)'],
+      ['reservado', 'Conos de entrenamiento (reservado)'],
+      ['entregado', 'Conos de entrenamiento (entregado)'],
+    ];
+    const ids = {};
+    for (const [estado, titulo] of estados) {
+      ({ id: ids[estado] } = await publicarAnuncio(request, token, { titulo }));
+      // Recientes, para que salgan en la primera página de «Mis anuncios» (orden por actualizado_en).
+      await db.query(
+        `UPDATE public.anuncios SET estado = $2, actualizado_en = now(),
+           entregado_en = CASE WHEN $2 = 'entregado' THEN now() END WHERE id = $1`,
+        [ids[estado], estado],
+      );
+    }
+
+    await entrar(page, cuentas.centroA, cuentas.password);
+    await page.goto('/mis-anuncios');
+    for (const [estado, titulo] of estados) {
+      const fila = page.locator(':is(li, tr, article)')
+        .filter({ has: page.getByRole('link', { name: titulo, exact: true }) }).last();
+      await expect(fila).toBeVisible();
+      await expect(enlaceEditar(fila), estado).toHaveCount(estado === 'entregado' ? 0 : 1);
+    }
+
+    // En la ficha: también en reservado (activo, pausado y entregado ya los recorren E2E-1, E2E-3 y E2E-4).
+    await abrirFicha(page, ids.reservado, 'Conos de entrenamiento (reservado)');
+    await expect(enlaceEditar(page)).toBeVisible();
+    await enlaceEditar(page).click();
+    await expect(page).toHaveURL(`/anuncios/${ids.reservado}/editar`);
+    await expect(page.getByLabel('Título')).toHaveValue('Conos de entrenamiento (reservado)');
+  });
+
   test('CA9 · guardar sin cambios responde 200 y renueva actualizado_en', async ({ request, cuentas }) => {
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
     const { id, fotos } = await publicarAnuncio(request, token);
