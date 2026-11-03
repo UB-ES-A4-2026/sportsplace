@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
-import { archivo } from './fixtures/imagenes.js';
+import { archivo, relleno } from './fixtures/imagenes.js';
 
 const TITULO = 'Balones de fútbol talla 5';
 
@@ -27,6 +27,8 @@ const DATOS_API = {
 const AVISO_GUARDADO = 'Cambios guardados.';
 const NO_EDITABLE = 'Este anuncio ya no se puede editar.';
 const FRANJA_PAUSADO = 'Este anuncio está pausado: los demás centros no lo ven.';
+const MENSAJE_GENERICO = 'No se ha podido completar la acción. Inténtalo de nuevo.';
+const INEXISTENTE = '00000000-0000-4000-8000-000000000000';
 const HACE_UN_DIA = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
 function imagenReal(nombre, mimeType) {
@@ -405,5 +407,177 @@ test.describe('US-15 · Modificar un anuncio ya publicado', () => {
     expect(res.status()).toBe(404);
     expect((await res.json()).error).toMatchObject({ code: 'NO_ENCONTRADO', message: 'Anuncio no encontrado.' });
     expect(await estadoEnBd(id)).toEqual(antes);
+  });
+});
+
+// ---------------------------------------------------------------- resto de criterios (QA de #66)
+// CA que los seis flujos no recorren. CA16 (atomicidad ante fallos de Storage o de la BD), el 403
+// EMAIL_NO_CONFIRMADO y el 413 los cubren los tests del backend (anuncios-editar.test.js); CA21 depende de US-32.
+
+test.describe('US-15 · Resto de criterios', () => {
+  test('CA9 · guardar sin cambios responde 200 y renueva actualizado_en', async ({ request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const { id, fotos } = await publicarAnuncio(request, token);
+    const antes = await estadoEnBd(id);
+
+    const res = await editarPorApi(request, token, id, {
+      datos: { ...DATOS_API, fotos_conservar: fotos.map((foto) => foto.id) },
+      principal: `existente:${fotos[0].id}`,
+    });
+    expect(res.status()).toBe(200);
+    expect((await res.json()).anuncio).toMatchObject({ id, unidades_disponibles: 12, precio_unitario_centimos: 850 });
+
+    const despues = await estadoEnBd(id);
+    expect(despues.fotos).toEqual(antes.fotos);
+    const { actualizado_en: renovado, ...resto } = despues.fila;
+    const { actualizado_en: anterior, ...restoAntes } = antes.fila;
+    expect(resto).toEqual(restoAntes);
+    expect(new Date(renovado).getTime()).toBeGreaterThan(new Date(anterior).getTime());
+  });
+
+  test('CA12 y CA13 · total de fotos, fotos ajenas y principal no válida', async ({ request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const { id, fotos } = await publicarAnuncio(request, token);
+    const { fotos: deOtro } = await publicarAnuncio(request, token);
+    const antes = await estadoEnBd(id);
+    const conservar = fotos.map((foto) => foto.id);
+
+    const casos = [
+      // CA12: 0 fotos finales y 2 conservadas + 7 nuevas = 9.
+      [{ datos: { ...DATOS_API, fotos_conservar: [] } }, 'fotos', 'Añade al menos una foto.'],
+      [{ datos: { ...DATOS_API, fotos_conservar: conservar }, fotos: relleno(7), principal: `existente:${conservar[0]}` },
+        'fotos', 'Puedes añadir 8 fotos como máximo.'],
+      // CA13: una foto de otro anuncio, y una principal que no queda entre las finales.
+      [{ datos: { ...DATOS_API, fotos_conservar: [conservar[0], deOtro[0].id] }, principal: `existente:${conservar[0]}` },
+        'fotos_conservar', 'Alguna foto no pertenece a este anuncio.'],
+      [{ datos: { ...DATOS_API, fotos_conservar: [conservar[1]] }, principal: `existente:${conservar[0]}` },
+        'foto_principal', 'La foto principal no es válida.'],
+    ];
+    for (const [cuerpo, campo, mensaje] of casos) {
+      const res = await editarPorApi(request, token, id, cuerpo);
+      expect(res.status(), `${campo}: ${mensaje}`).toBe(400);
+      const { error } = await res.json();
+      expect(error.code).toBe('DATOS_INVALIDOS');
+      expect(error.details[campo], campo).toBe(mensaje);
+    }
+    expect(await estadoEnBd(id)).toEqual(antes);
+  });
+
+  test('CA15 · sin sesión 401; inexistente y retirado 404', async ({ request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const { id, fotos } = await publicarAnuncio(request, token);
+    const cuerpo = {
+      datos: { ...DATOS_API, fotos_conservar: fotos.map((foto) => foto.id) },
+      principal: `existente:${fotos[0].id}`,
+    };
+
+    const sinSesion = await request.patch(`/api/anuncios/${id}`, { multipart: multipart(cuerpo) });
+    expect(sinSesion.status()).toBe(401);
+
+    const inexistente = await editarPorApi(request, token, INEXISTENTE, cuerpo);
+    expect(inexistente.status()).toBe(404);
+    expect((await inexistente.json()).error.code).toBe('NO_ENCONTRADO');
+
+    const retirada = await request.delete(`/api/anuncios/${id}`, { headers: cabeceras(token) });
+    expect(retirada.ok()).toBe(true);
+    const retirado = await editarPorApi(request, token, id, cuerpo);
+    expect(retirado.status()).toBe(404);
+    expect((await retirado.json()).error.code).toBe('NO_ENCONTRADO');
+  });
+
+  test('CA18 · quitar todas las fotos no envía nada', async ({ page, request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const { id } = await publicarAnuncio(request, token);
+    const antes = await estadoEnBd(id);
+
+    await entrar(page, cuentas.centroA, cuentas.password);
+    await abrirFicha(page, id);
+    await abrirEdicion(page, id);
+    const ediciones = contarEdiciones(page, id);
+
+    await page.getByRole('button', { name: 'Quitar foto 2' }).click();
+    await page.getByRole('button', { name: 'Quitar foto 1' }).click();
+    await expect(page.locator('li.foto')).toHaveCount(0);
+    await boton(page, 'Guardar cambios').click();
+
+    await expect(page.getByText('Añade al menos una foto.', { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(`/anuncios/${id}/editar`);
+    expect(ediciones.n).toBe(0);
+    expect(await estadoEnBd(id)).toEqual(antes);
+  });
+
+  test('CA19 · de venta a donación guarda el precio a null', async ({ page, request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const { id } = await publicarAnuncio(request, token);
+
+    await entrar(page, cuentas.centroA, cuentas.password);
+    await abrirFicha(page, id);
+    await abrirEdicion(page, id);
+    await page.getByRole('radio', { name: 'Donación', exact: true }).check();
+    await expect(page.getByLabel('Precio por unidad (€)')).toHaveCount(0);
+    await boton(page, 'Guardar cambios').click();
+
+    await expect(page).toHaveURL(`/anuncios/${id}`);
+    await expect(page.getByText(AVISO_GUARDADO, { exact: true })).toBeVisible();
+    await expect(page.getByText('Donación · Gratis', { exact: true })).toBeVisible();
+    expect(await filaDe(id)).toMatchObject({ modalidad: 'donacion', precio_unitario_centimos: null });
+  });
+
+  test('CA20 · si otro lo entrega mientras se edita, 409 y vuelta a la ficha', async ({ page, request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const { id } = await publicarAnuncio(request, token);
+
+    await entrar(page, cuentas.centroA, cuentas.password);
+    await abrirFicha(page, id);
+    await abrirEdicion(page, id);
+    await page.getByLabel('Unidades disponibles').fill('3');
+
+    // Otro miembro del centro lo marca como entregado mientras tanto.
+    await db.query(`UPDATE public.anuncios SET estado = 'entregado', entregado_en = now() WHERE id = $1`, [id]);
+    const antes = await estadoEnBd(id);
+    await boton(page, 'Guardar cambios').click();
+
+    await expect(page).toHaveURL(`/anuncios/${id}`);
+    await expect(page.getByRole('alert').filter({ hasText: NO_EDITABLE })).toBeVisible();
+    await expect(page.getByText('Entregado', { exact: true })).toBeVisible();
+    await expect(enlaceEditar(page)).toHaveCount(0);
+    expect(await estadoEnBd(id)).toEqual(antes);
+  });
+
+  test('CA10 · con un error de red o un 500 se conservan los datos y la foto nueva', async ({ page, request, cuentas }) => {
+    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
+    const { id } = await publicarAnuncio(request, token);
+    const antes = await estadoEnBd(id);
+
+    await entrar(page, cuentas.centroA, cuentas.password);
+    await abrirFicha(page, id);
+    await abrirEdicion(page, id);
+    await page.getByLabel('Unidades disponibles').fill('9');
+    const selector = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: '+ Añadir fotos' }).click();
+    await (await selector).setFiles(NUEVA);
+    await expect(page.locator('li.foto img')).toHaveCount(3);
+
+    // Primero sin conexión y después un 500: aviso rojo genérico y todo sigue en el formulario.
+    for (const fallar of [(route) => route.abort('internetdisconnected'), (route) => route.fulfill({ status: 500 })]) {
+      await page.route(`**/api/anuncios/${id}`, (route) => (
+        route.request().method() === 'PATCH' ? fallar(route) : route.continue()));
+      await boton(page, 'Guardar cambios').click();
+      await expect(page.getByRole('alert').filter({ hasText: MENSAJE_GENERICO })).toBeVisible();
+      await expect(page).toHaveURL(`/anuncios/${id}/editar`);
+      await expect(page.getByLabel('Unidades disponibles')).toHaveValue('9');
+      await expect(page.locator('li.foto img')).toHaveCount(3);
+      await expect(page.locator('li.foto img').last()).toHaveAttribute('alt', 'nueva.jpg');
+      await expect(boton(page, 'Guardar cambios')).toBeEnabled();
+      await page.unroute(`**/api/anuncios/${id}`);
+    }
+    expect(await estadoEnBd(id)).toEqual(antes);
+
+    // Con la red de vuelta, el mismo formulario se guarda con la foto nueva.
+    await boton(page, 'Guardar cambios').click();
+    await expect(page).toHaveURL(`/anuncios/${id}`);
+    await expect(page.getByText(AVISO_GUARDADO, { exact: true })).toBeVisible();
+    expect(await filaDe(id)).toMatchObject({ unidades_disponibles: 9 });
+    expect(await fotosDe(id)).toHaveLength(3);
   });
 });
