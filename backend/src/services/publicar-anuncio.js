@@ -14,24 +14,29 @@ export async function publicarAnuncio({ anuncios, storage, usuarioId, datos, fot
     return { ...foto, id: fotoId, ruta: `${centroId}/${id}/${fotoId}.${foto.extension}` };
   });
 
-  // Se espera a todas las subidas aunque una falle, para no borrar antes de
-  // que acaben las demás. Se borran todas las rutas, no solo las que han
-  // respondido bien: una subida que ha fallado por tiempo puede haber llegado
-  // a guardarse (borrar una ruta que no existe no da error).
   const rutas = preparadas.map((foto) => foto.ruta);
-  const resultados = await Promise.allSettled(
-    preparadas.map((foto) => storage.subir(foto.ruta, foto.contenido, foto.tipo_mime)),
-  );
-  const fallo = resultados.find((resultado) => resultado.status === 'rejected');
-  if (fallo) {
-    await storage.borrar(rutas);
-    throw fallo.reason;
-  }
+  await subirFotos(storage, preparadas);
 
   try {
     return await anuncios.crear({ id, centroId, datos, fotos: preparadas });
   } catch (error) {
     await storage.borrar(rutas);
     throw error;
+  }
+}
+
+// Sube las fotos preparadas (con `ruta`). Se espera a todas las subidas aunque
+// una falle, para no borrar antes de que acaben las demás. Se borran todas las
+// rutas, no solo las que han respondido bien: una subida que ha fallado por
+// tiempo puede haber llegado a guardarse (borrar una ruta que no existe no da
+// error). También la usa la edición (US-15).
+export async function subirFotos(storage, fotos) {
+  const resultados = await Promise.allSettled(
+    fotos.map((foto) => storage.subir(foto.ruta, foto.contenido, foto.tipo_mime)),
+  );
+  const fallo = resultados.find((resultado) => resultado.status === 'rejected');
+  if (fallo) {
+    await storage.borrar(fotos.map((foto) => foto.ruta));
+    throw fallo.reason;
   }
 }

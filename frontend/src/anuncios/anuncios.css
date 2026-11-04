@@ -91,3 +91,9 @@
   .menu-mas-opciones { right: auto; left: 0; }
   .paginacion { gap: 10px; }
 }
+
+/* Editar anuncio (US-15 T15-2): «Editar» como botón secundario en la ficha y como botón principal de la fila */
+.pagina .boton-enlace-secundario { color: #174f46; background: #fff; box-shadow: inset 0 0 0 1px #cdd9d0; }
+.pagina .boton-enlace-secundario:hover { background: #eef4ef; }
+.ficha-acciones .boton-enlace { margin-top: 0; }
+.fila-acciones .boton-enlace { margin-top: 0; padding: 8px 12px; }

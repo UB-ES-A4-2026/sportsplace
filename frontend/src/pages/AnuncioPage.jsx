@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { puedeEditar } from '../anuncios/editar.js';
 import { obtenerAnuncio } from '../api/anuncios.js';
 import { lineaDeFechas, resultadoDeLaCarga } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
@@ -125,6 +126,12 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
 
       {/* Zona «Acciones»: la rellenan US-15 (Editar), US-16 (Pausar/Reactivar), US-17, US-70 (Retirar) y US-19. */}
       <div className="ficha-acciones">
+        {/* US-15 CA1: «Editar» (secundario) en activo, pausado y reservado; no en entregado. */}
+        {puedeEditar(anuncio.estado) && (
+          <Link to={`/anuncios/${encodeURIComponent(anuncio.id)}/editar`} className="boton-enlace boton-enlace-secundario">
+            Editar
+          </Link>
+        )}
         {/* US-16 CA1-CA4: «Pausar» (activo) o «Reactivar» (pausado), sin diálogo; aviso verde y la ficha cambia en sitio.
             Con un 409 (estado desfasado, E2E-4), aviso rojo y se recarga el anuncio. */}
         <BotonPausarReactivar anuncio={anuncio} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />

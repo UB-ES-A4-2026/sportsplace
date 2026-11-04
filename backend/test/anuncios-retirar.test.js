@@ -146,7 +146,7 @@ test('US-70: con la base de datos caída responde 503 BASE_DATOS_NO_DISPONIBLE',
 test('US-70: /:id admite GET y DELETE; el resto responde 405 con Allow', async () => {
   const response = await fetch(`${api.baseUrl}/api/anuncios/${randomUUID()}`, { method: 'PUT', headers: conToken('token-a') });
   assert.equal(response.status, 405);
-  assert.equal(response.headers.get('allow'), 'GET, DELETE');
+  assert.equal(response.headers.get('allow'), 'GET, PATCH, DELETE');
 });
 
 test('US-70 CA7: el repositorio retira con un UPDATE (no DELETE) que pone retirado_en', async () => {

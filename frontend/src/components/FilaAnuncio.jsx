@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { puedeEditar } from '../anuncios/editar.js';
 import { formatearFecha } from '../anuncios/ficha.js';
 import { textoCategoriaDeporte, textoUnidades } from '../anuncios/misAnuncios.js';
 import EtiquetaEstado from './EtiquetaEstado.jsx';
@@ -34,7 +35,13 @@ export default function FilaAnuncio({ anuncio, children }) {
       </div>
 
       <div className="fila-acciones">
-        {/* Botón principal: [Depende de US-15] «Editar» · [Depende de US-20] «Completar y publicar». */}
+        {/* Botón principal visible (US-18 CA6): US-15 «Editar» en activo, pausado y reservado. [Depende de US-20]
+            «Completar y publicar» en borrador. */}
+        {puedeEditar(anuncio.estado) && (
+          <Link to={`/anuncios/${encodeURIComponent(anuncio.id)}/editar`} className="boton-enlace boton-enlace-secundario">
+            Editar
+          </Link>
+        )}
         {/* Con `key` por estado, el menú se cierra cuando la acción cambia el estado (p. ej. tras «Pausar»). */}
         <MenuMas key={anuncio.estado}>{children}</MenuMas>
       </div>

@@ -200,5 +200,5 @@ test('US-16: POST sobre /:id sigue sin estar permitido', async () => {
     method: 'POST', headers: { Authorization: 'Bearer token-a' },
   });
   assert.equal(response.status, 405);
-  assert.equal(response.headers.get('allow'), 'GET, DELETE');
+  assert.equal(response.headers.get('allow'), 'GET, PATCH, DELETE');
 });
