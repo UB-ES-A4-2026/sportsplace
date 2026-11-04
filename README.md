@@ -22,10 +22,12 @@ T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pru
 Está alojado en **Render, plan gratuito**, en un único Web Service para la web y
 la API mediante el `Dockerfile` de la raíz; se acepta el arranque en frío.
 El flujo acordado pasa a ser **`story/...` → `dev` → `staging` → `main`**:
-`staging` será la rama desplegada para QA, con **Auto-Deploy: After CI Checks Pass**.
-La transición requiere integrar esta configuración y completar los pasos de
-[activación de staging](docs/despliegue-pruebas.md#transición-de-dev-a-staging).
-Hasta verificar esos pasos, la evidencia existente corresponde al despliegue desde `dev`.
+`staging` es la rama configurada en Render para QA, con **Auto-Deploy: After CI Checks Pass**.
+La rama y su protección se activaron el 4/11/2026; el cambio de rama en Render
+inició un despliegue correcto de `c8bb2e1`.
+[Capturas, checks y alcance de la evidencia](docs/evidencias/staging-2026-11-04/README.md).
+Queda registrar la primera promoción por PR `dev` → `staging`, con su Auto-Deploy
+y smoke posteriores del mismo commit; el primer smoke de creación precedió al cambio de Render.
 El Auto-Deploy de la PR #145 y el `deploy:check` contra la URL real quedaron
 [comprobados y aceptados el 29/10/2026](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6500493326).
 El workflow [Smoke Render (T12-6)](.github/workflows/smoke-render.yml) pasa a programar una
@@ -92,7 +94,7 @@ chore/T01-5-ci             ─┘                      integración   QA     ent
                                                               Render
 ```
 
-`main` y `dev` están protegidas: solo reciben cambios mediante pull request con al menos una aprobación de otra persona, conversaciones resueltas y CI en verde. La protección se aplica también a los administradores. Antes de activar `staging`, Carlos debe copiar en ella la protección completa de `dev`, incluidos los mismos checks y las opciones de revisión; documentar el flujo no acredita haber aplicado esa configuración.
+`main`, `dev` y `staging` están protegidas: solo reciben cambios mediante pull request con al menos una aprobación de otra persona, conversaciones resueltas y CI en verde. La protección se aplica también a los administradores. Carlos ha copiado en `staging` las opciones de revisión de `dev`; se han verificado los cuatro checks de GitHub Actions en ambas ramas. La evidencia distingue esa lectura pública de las opciones copiadas desde el panel.
 
 Se utiliza **`staging`**, en lugar del nombre inicial `test`, para conservar las 16 ramas existentes `test/T...`. Git no permite crear una rama `test` mientras existen ramas con el prefijo `test/`. Se mantienen sus nombres y sus historiales.
 
