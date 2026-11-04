@@ -529,13 +529,13 @@ La copia y sus dependencias quedan en el contenedor temporal. No invocar el serv
 
 El workflow ([.github/workflows/ci.yml](.github/workflows/ci.yml)) se ejecuta en cada pull request y en cada push a `main`, `dev` y `staging`. Con Node.js 24 instala las dependencias con `npm ci` y ejecuta cinco jobs: backend (lint y tests), frontend (lint, tests disponibles y build), herramientas (lint y tests), imagen Docker de despliegue (build y comprobación HTTP local) y E2E con Playwright y Supabase local aislado. El smoke remoto es otro workflow y solo se programa con los pushes a la rama desplegada `staging`.
 
-Para reproducir el CI completo en local antes de abrir una pull request, ejecutar desde la raíz:
+Para reproducir el lint, los tests unitarios de backend/tools y el build del frontend en local antes de abrir una pull request, ejecutar desde la raíz:
 
 ```bash
 docker run --rm -v "${PWD}:/repo:ro" -w /tmp/sportsplace-ci node:24-bookworm-slim sh -c "cp -R /repo/backend /repo/tools /repo/frontend . && cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
 ```
 
-El contenedor lee el repositorio y copia las tres carpetas a su espacio temporal. Las dependencias y la compilación se generan dentro de ese espacio, que se elimina al terminar; así no crea archivos con propietario root en la carpeta de trabajo de Linux.
+El contenedor lee el repositorio y copia las tres carpetas a su espacio temporal. Las dependencias y la compilación se generan dentro de ese espacio, que se elimina al terminar; así no crea archivos con propietario root en la carpeta de trabajo de Linux. Este comando no reproduce los otros dos jobs: la imagen se valida con la [guía de despliegue](docs/despliegue-pruebas.md) y los E2E con la [guía de Playwright](docs/pruebas-e2e.md).
 
 ### Problemas habituales
 

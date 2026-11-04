@@ -78,7 +78,7 @@ simulada se declara como tal y no acredita disponibilidad real de PostgreSQL.
 ## CI y revisión
 
 [ci.yml](../.github/workflows/ci.yml) ejecuta el job en **todas las PR**, incluidas
-las dirigidas a `story/*` y `dev`, y en los push a `main`/`dev`. No tiene filtros de
+las dirigidas a `story/*`, `dev`, `staging` y `main`, y en los push a `main`/`dev`/`staging`. No tiene filtros de
 rutas ni `continue-on-error`. El frontend ejecuta `npm test --if-present` para recoger
 los tests que se incorporen con sus historias, conservando lint y build.
 
@@ -88,7 +88,7 @@ credenciales cloud ni volcados de variables. Los servicios se detienen al finali
 también si una prueba falla.
 
 Carlos debe configurar **E2E (Playwright)** como check obligatorio para `story/*`
-y `dev`, conservando los checks y revisiones existentes. Se activa cuando el workflow
+y `dev`, conservando los checks y revisiones existentes. Al activar `staging`, copiar también esa protección, incluido E2E. Se activa cuando el workflow
 esté disponible en las ramas afectadas: una rama que todavía no lo contiene no puede
 producir ese check. La evidencia de una PR real y la configuración de protección se
 registran en la PR de T12-7; no se deducen de una ejecución local.
