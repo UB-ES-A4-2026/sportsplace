@@ -1,5 +1,6 @@
 import { ApiError } from '../errors.js';
 import { databaseUnavailable } from '../repositories/centros.js';
+import { storageUnavailable } from '../services/storage-fotos.js';
 import { authUnavailable, emailNotConfirmed } from '../services/supabase-auth.js';
 
 export function bearerToken(request) {
@@ -18,6 +19,18 @@ export function getCentros(request) {
   const centros = request.app.get('centros');
   if (!centros) throw databaseUnavailable();
   return centros;
+}
+
+export function getAnuncios(request) {
+  const anuncios = request.app.get('anuncios');
+  if (!anuncios) throw databaseUnavailable();
+  return anuncios;
+}
+
+export function getFotosStorage(request) {
+  const fotos = request.app.get('fotos');
+  if (!fotos) throw storageUnavailable();
+  return fotos;
 }
 
 // Exige una sesión válida y deja el usuario en request.usuario.
