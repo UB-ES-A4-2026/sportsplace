@@ -2,8 +2,8 @@
 // Usa la plantilla de T12-7 y la semilla de T12-8. Cada caso crea sus propios anuncios copiando una fila
 // de la semilla (sirve con o sin las columnas de US-13/US-14) y los retira al acabar.
 //
-// La parte de E2E-3 con `PATCH /api/anuncios/:id` (409 ANUNCIO_NO_EDITABLE) depende de US-15, que todavía
-// no está en dev: queda en un test aparte en `fixme`, con las aserciones escritas.
+// La parte de E2E-3 con `PATCH /api/anuncios/:id` (409 ANUNCIO_NO_EDITABLE) va en un test aparte: llegó con US-15.
+import { readFileSync } from 'node:fs';
 import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
@@ -271,16 +271,37 @@ test('US-17 · E2E-3 · estado final', async ({ page, request, cuentas }) => {
   expect(await filaDe(id)).toEqual(antes);
 });
 
-// [Depende de US-15] PATCH /api/anuncios/:id todavía no existe en esta historia (llega con T15-1).
-// Se activa (quitar el fixme) cuando US-15 esté en dev e integrada en la rama.
-test.fixme('US-17 · E2E-3 · estado final: PATCH → 409 ANUNCIO_NO_EDITABLE (US-15)', async ({ request, cuentas }) => {
+// PATCH /api/anuncios/:id (US-15) con un cuerpo válido: la validación va antes que el estado, así que el
+// 409 solo se ve con datos que pasarían en un anuncio editable.
+function edicionValida() {
+  const formulario = new FormData();
+  formulario.append('datos', JSON.stringify({
+    titulo: 'Porterías entregadas (PATCH)',
+    descripcion: 'Dos porterías de fútbol sala con sus redes.',
+    categoria: 'balones',
+    deporte: 'futbol',
+    unidades_disponibles: 2,
+    estado_material: 'buen_estado',
+    modalidad: 'venta',
+    precio_unitario_centimos: 850,
+    fotos_conservar: [],
+  }));
+  const foto = readFileSync(new URL('./fixtures/balones1.jpg', import.meta.url));
+  formulario.append('fotos', new Blob([foto], { type: 'image/jpeg' }), 'balones1.jpg');
+  formulario.append('foto_principal', 'nueva:1');
+  return formulario;
+}
+
+test('US-17 · E2E-3 · estado final: PATCH → 409 ANUNCIO_NO_EDITABLE (US-15)', async ({ request, cuentas }) => {
   const id = await insertarAnuncio({
     centro_id: centros.a, titulo: 'Porterías entregadas (PATCH)', estado: 'entregado', entregado_en: HACE_UN_DIA,
   });
+  const antes = await filaDe(id);
   const auth = { Authorization: `Bearer ${await tokenDe(request, cuentas.centroA, cuentas.password)}` };
-  const res = await request.patch(`/api/anuncios/${id}`, { headers: auth, multipart: { datos: '{}' } });
+  const res = await request.patch(`/api/anuncios/${id}`, { headers: auth, multipart: edicionValida() });
   expect(res.status()).toBe(409);
   expect((await res.json()).error.code).toBe('ANUNCIO_NO_EDITABLE');
+  expect(await filaDe(id)).toEqual(antes);
 });
 
 test('US-17 · E2E-4 · pausado', async ({ page, request, cuentas }) => {
