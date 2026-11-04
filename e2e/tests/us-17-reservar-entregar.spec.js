@@ -8,6 +8,7 @@ import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
 import { fixtureAnuncios, seedAnuncios } from '../../tools/scripts/e2e-fixtures.js';
+import { archivo } from './fixtures/imagenes.js';
 
 // Fila activa de A de la semilla: sirve de plantilla para copiar todas las columnas del esquema.
 const PLANTILLA = fixtureAnuncios()[0].id;
@@ -271,16 +272,33 @@ test('US-17 · E2E-3 · estado final', async ({ page, request, cuentas }) => {
   expect(await filaDe(id)).toEqual(antes);
 });
 
-// [Depende de US-15] PATCH /api/anuncios/:id todavía no existe en esta historia (llega con T15-1).
-// Se activa (quitar el fixme) cuando US-15 esté en dev e integrada en la rama.
-test.fixme('US-17 · E2E-3 · estado final: PATCH → 409 ANUNCIO_NO_EDITABLE (US-15)', async ({ request, cuentas }) => {
+// PATCH /api/anuncios/:id (US-15) valida el cuerpo antes de mirar el estado: con datos vacíos respondería 400.
+// Se envía un anuncio válido con una foto nueva para llegar a la comprobación del estado.
+test('US-17 · E2E-3 · estado final: PATCH → 409 ANUNCIO_NO_EDITABLE (US-15)', async ({ request, cuentas }) => {
   const id = await insertarAnuncio({
     centro_id: centros.a, titulo: 'Porterías entregadas (PATCH)', estado: 'entregado', entregado_en: HACE_UN_DIA,
   });
   const auth = { Authorization: `Bearer ${await tokenDe(request, cuentas.centroA, cuentas.password)}` };
-  const res = await request.patch(`/api/anuncios/${id}`, { headers: auth, multipart: { datos: '{}' } });
+  const antes = await filaDe(id);
+  const datos = {
+    titulo: 'Porterías entregadas (PATCH)',
+    descripcion: 'Dos porterías de fútbol sala con sus redes, ya entregadas.',
+    categoria: 'porterias_redes',
+    deporte: 'futbol',
+    unidades_disponibles: 2,
+    estado_material: 'buen_estado',
+    modalidad: 'donacion',
+    fotos_conservar: [],
+  };
+  const res = await request.patch(`/api/anuncios/${id}`, {
+    headers: auth,
+    multipart: { datos: JSON.stringify(datos), fotos: archivo('porteria.jpg', 10 * 1024), foto_principal: 'nueva:1' },
+  });
   expect(res.status()).toBe(409);
-  expect((await res.json()).error.code).toBe('ANUNCIO_NO_EDITABLE');
+  expect((await res.json()).error).toMatchObject({
+    code: 'ANUNCIO_NO_EDITABLE', message: 'Este anuncio ya no se puede editar.',
+  });
+  expect(await filaDe(id)).toEqual(antes);
 });
 
 test('US-17 · E2E-4 · pausado', async ({ page, request, cuentas }) => {

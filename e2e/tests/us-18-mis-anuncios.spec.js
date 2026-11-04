@@ -168,8 +168,8 @@ test('US-18 · E2E-1 · precio de una venta en la fila (US-14 CA6)', async ({ pa
   await expect(fila(page, 'Anuncio de donacion de B').getByText('Donación · Gratis')).toBeVisible();
 });
 
-// [Depende de US-15] botón principal «Editar» según el estado (CA6). Se activa (quitar el fixme) cuando US-15 llegue a dev.
-test.fixme('US-18 · E2E-1 · botón principal de la fila (Editar)', async ({ page, cuentas }) => {
+// Botón principal «Editar» según el estado (CA6), de US-15.
+test('US-18 · E2E-1 · botón principal de la fila (Editar)', async ({ page, cuentas }) => {
   await retirarTodos(centros.b);
   const comunes = { centro_id: centros.b, retirado_en: null, actualizado_en: new Date().toISOString() };
   await insertarAnuncio({ ...comunes, titulo: 'Anuncio activo de B', estado: 'activo', entregado_en: null });
