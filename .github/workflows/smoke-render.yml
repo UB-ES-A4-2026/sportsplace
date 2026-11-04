@@ -3,11 +3,11 @@ run-name: T12-6 · ${{ github.event_name == 'push' && 'programar smoke' || 'smok
 
 on:
   push:
-    branches: [dev]
+    branches: [staging]
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Commit completo de dev que Render debe servir
+        description: Commit completo de staging que Render debe servir
         required: true
         type: string
 
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   dispatch:
-    name: Programar smoke de dev
+    name: Programar smoke de staging
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - name: Esperar a que Render sirva exactamente el commit de dev
+      - name: Esperar a que Render sirva exactamente el commit de staging
         run: npm --prefix tools run deploy:wait -- "$DEPLOY_URL" "$EXPECTED_COMMIT"
       - name: Smoke HTTP contra el entorno real
         run: npm --prefix tools run deploy:check -- "$DEPLOY_URL"

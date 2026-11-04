@@ -6,7 +6,7 @@ Propuesta para revisar por el equipo antes de incorporarla al repositorio. Compl
 
 - Leer `README.md`, la issue de la tarea y, para autenticación o interfaz, `docs/api-contrato.md`.
 - Comprobar la rama y los cambios locales. Conservar el trabajo de otras personas y no incluirlo por accidente en la propia PR.
-- Mantener `main` para las entregas y `dev` para la integración. Crear una rama `story/US-xx-descripcion` desde `dev` por historia, y las ramas de trabajo desde esa historia. No subir cambios directamente a `main`, `dev` ni programar directamente en `story/`.
+- Mantener `main` para las entregas, `dev` para la integración y `staging` para la versión desplegada en Render que valida QA. El flujo es `story/...` → `dev` → `staging` → `main`, siempre mediante PR. Crear una rama `story/US-xx-descripcion` desde `dev` por historia, y las ramas de trabajo desde esa historia. No subir cambios directamente a `main`, `dev` o `staging` ni programar directamente en `story/`. Antes de activar `staging`, copiar la protección completa de `dev` y completar la transición de `docs/despliegue-pruebas.md`.
 - Las ramas `feature/`, `test/`, `chore/` y `docs/` de una historia vuelven a su `story/` mediante PR. No existen TR: el trabajo técnico es una tarea de su historia. Implementar exactamente los criterios de aceptación de la historia; si algo no está especificado, preguntar en lugar de suponer.
 - Si una PR depende de otra, dejar explícita esa dependencia y comprobar su base antes de integrarla. No borrar una rama que siga siendo base de otra PR.
 
@@ -54,7 +54,7 @@ La conexión real se verifica con `docker compose exec backend npm run db:check`
 - Revisar el diff antes del commit, incluyendo los archivos preparados para subir.
 - Explicar en la PR el resultado, las comprobaciones ejecutadas y cualquier criterio pendiente. Un resultado de pruebas local no equivale a un CI verde en el último commit.
 - Solicitar una aprobación de otra persona. Tras modificar una versión aprobada, pedir revisión de la nueva versión.
-- Fusionar todas las PR mediante **Create a merge commit**; nunca **Squash and merge** ni **Rebase and merge** (el profesor pidió que las ramas sigan visibles en el historial). Las ramas de trabajo entran en su `story/`; la historia completa entra en `dev` por PR, con criterios cumplidos y validación de QA; `dev` se publica en `main` según el acuerdo del equipo. No eludir la protección de `main` ni de `dev`.
-- No borrar ramas después de fusionarlas, ni `main` y `dev` ni las ramas de trabajo.
+- Fusionar todas las PR mediante **Create a merge commit**; nunca **Squash and merge** ni **Rebase and merge** (el profesor pidió que las ramas sigan visibles en el historial). Las ramas de trabajo entran en su `story/`; la historia completa entra en `dev` por PR, con criterios cumplidos y validación de QA. `dev` se promueve a `staging`; después del CI, Render despliega y el smoke comprueba su commit. QA valida esa versión publicada antes de promover `staging` a `main`. La entrega del Sprint 1 en #212 (`dev` → `main`) es anterior a esta transición. No eludir la protección de ninguna de las tres ramas.
+- No borrar ramas después de fusionarlas, ni `main`, `dev` y `staging` ni las ramas de trabajo. Se usa `staging` para conservar las ramas existentes `test/...`, incompatibles con crear una rama literal `test`.
 - Usar `Refs #n` para una contribución parcial. Usar `Closes #n` cuando se complete la issue entera según `docs/definition-of-done.md`.
 - Actualizar documentación y seguimiento sin marcar como realizado algo preparado, simulado o aún pendiente de otra persona.
