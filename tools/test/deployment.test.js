@@ -89,7 +89,7 @@ test('las peticiones colgadas tienen un límite y el error final no expone su co
   }), (error) => /dentro del plazo/.test(error.message) && !error.message.includes('detalle remoto'));
 });
 
-test('el dispatcher manda el SHA de dev a una ref diferente y sin credenciales en el body', async () => {
+test('el dispatcher manda el SHA desplegable a una ref diferente y sin credenciales en el body', async () => {
   for (const dispatchStatus of [200, 204]) {
     const calls = [];
     await dispatchRenderSmoke({

@@ -1,19 +1,47 @@
 # T12-6 · Entorno de pruebas desplegado
 
 Responsable: Carlos. [Tarea #86](https://github.com/UB-ES-A4-2026/sportsplace/issues/86),
-historia US-12. **Estado: Auto-Deploy de #145 y smoke remoto manual comprobados y
-aceptados el 29/10/2026.** La imagen está integrada mediante #127 y esta guía mediante
-#145. La conexión PostgreSQL con TLS está acreditada por los logs del servidor.
-La [ampliación pedida por Alex](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6500493326)
-añade el smoke automático de cada push a `dev`: queda por integrar esta ampliación
-y registrar su primera ejecución automática real en verde. Alex cerrará #86 al
-aceptar esa evidencia; el plazo de la ampliación es el 30/10/2026 antes de las 14:00
-(Europe/Madrid). El flujo funcional de Auth se valida en las historias y en QA.
-La [decisión de #86](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6476683628)
-establece un único Web Service para web y API, despliegue desde `dev` después del
-CI y aceptación del arranque en frío.
+historia US-12. **Estado de #86: cerrada, con Auto-Deploy y smoke automático desde
+`dev` aceptados.** La imagen se integró mediante #127, la guía mediante #145 y el
+smoke automático mediante #147. La conexión PostgreSQL con TLS está acreditada por
+los logs del servidor. El flujo funcional de Auth se valida en las historias y en QA.
 
-## Servicio publicado y evidencia HTTP
+El acuerdo del 4/11/2026 añade una rama desplegada para QA: **`story/...` → `dev` →
+`staging` → `main`**. Se conserva un único Web Service para web y API, el arranque
+en frío y **After CI Checks Pass**. Esta actualización prepara el CI y el smoke para
+`staging`; no acredita por sí sola que Render o la protección ya hayan cambiado.
+La [transición](#transición-de-dev-a-staging) debe completarse después de la entrega
+del Sprint 1 en [#212](https://github.com/UB-ES-A4-2026/sportsplace/pull/212) y de
+integrar la PR de esta configuración.
+
+## Transición de dev a staging
+
+Se elige `staging` porque existen 16 ramas `test/T...`: Git no permite crear la rama
+literal `test` mientras existen esas referencias. Se conservan todas las ramas.
+La rama de integración y por defecto sigue siendo `dev`.
+
+Carlos coordina los siguientes pasos, conservando la evidencia de cada uno:
+
+- [ ] Fusionar la entrega #212 (`dev` → `main`) mediante merge commit, según el acuerdo del equipo.
+- [ ] Revisar e integrar en `dev` la PR que añade `staging` a los pushes del CI y cambia el disparador del smoke exclusivamente a `staging`.
+- [ ] Crear `staging` desde el `dev` actualizado, sin modificar ni borrar las ramas `test/...`.
+- [ ] Copiar a `staging` la protección completa de `dev`: PR, una aprobación ajena, conversaciones resueltas, checks, opciones de revisión y aplicación a administradores. Comparar ambas reglas después de guardar.
+- [ ] En Render, cambiar **Branch** a `staging` y conservar **Auto-Deploy: After CI Checks Pass**. Verificar el valor guardado al recargar Settings.
+- [ ] Registrar un push real a `staging` con el workflow integrado, sus cinco jobs del CI correctos, el Auto-Deploy de Render y el smoke remoto del mismo SHA completo en verde.
+- [ ] Registrar QA funcional de esa versión publicada antes de promoverla a `main`.
+
+Los checks obligatorios de `dev` que debe copiar `staging` son **Backend (lint y
+tests)**, **Frontend (lint y build)**, **Herramientas de migración (lint y tests)** y
+**E2E (Playwright)**. El CI también ejecuta **Imagen de despliegue (T12-6)**; no
+confundir los cinco jobs ejecutados con los cuatro checks de la regla actual.
+Copiar la protección incluye las demás opciones de `dev`, no solo esos nombres.
+
+Hasta completar y comprobar esta lista, no declarar activo el nuevo entorno. La
+evidencia de `dev` que figura más abajo se conserva como historial y no demuestra
+el despliegue automático de `staging`. El cambio de rama no aplica migraciones ni
+crea otra base de datos: siguen vigentes los procedimientos de Supabase.
+
+## Servicio publicado y evidencia histórica de dev
 
 | Dato | Valor |
 |---|---|
@@ -21,7 +49,7 @@ CI y aceptación del arranque en frío.
 | Servicio | `sportsplace-pruebas` |
 | Alojamiento | Render Free, Frankfurt (EU Central). |
 | Workspace / proyecto | `My Workspace` / `My project`. |
-| Rama | `dev` |
+| Rama de la evidencia histórica | `dev` (objetivo tras la transición: `staging`) |
 | Auto-Deploy guardado | `After CI Checks Pass` |
 | Commit del primer despliegue | [`e1adad1`](https://github.com/UB-ES-A4-2026/sportsplace/commit/e1adad1238d3a051e52ccd247fca5e816de0abcb) |
 | CI del commit | [Los cinco jobs correctos](https://github.com/UB-ES-A4-2026/sportsplace/actions/runs/40760662549). |
@@ -107,7 +135,7 @@ Sin variables privadas la API informa que esos servicios siguen sin configurar.
 
 | Campo | Valor |
 |---|---|
-| Branch | `dev` |
+| Branch | `staging`, después de completar la transición anterior. |
 | Language / Runtime | `Docker` |
 | Root Directory | Vacío: se necesita la raíz con `frontend/` y `backend/`. |
 | Dockerfile Path | `./Dockerfile` |
@@ -118,7 +146,7 @@ Sin variables privadas la API informa que esos servicios siguen sin configurar.
 | Auto-Deploy | `After CI Checks Pass` |
 
 3. Añadir las variables y, si procede, el CA como se explica abajo. Comprobar el
-   CI del commit de `dev` elegido antes de crear el servicio: **Create Web Service**
+   CI del commit de `staging` elegido antes de crear el servicio: **Create Web Service**
    inicia la primera construcción y el primer despliegue.
 4. Cuando el servicio esté disponible, anotar su nombre, cuenta/proyecto, commit
    publicado y URL **HTTPS real** que proporciona Render. Mantener web y API en
@@ -162,7 +190,8 @@ afecta también a sus correos. No se ha cambiado esa configuración en esta tare
 ## Despliegue automático y comprobación remota
 
 En **Render → servicio → Settings → Auto-Deploy**, guardar **After CI Checks Pass**
-para `dev`. Render espera a que terminen las comprobaciones del nuevo commit y no
+para `staging`, una vez integrada y activada la transición. Render espera a que
+terminen las comprobaciones del nuevo commit y no
 despliega si alguna falla o si no detecta ninguna. Para GitHub, considera aprobadas
 las conclusiones `success`, `neutral` y `skipped`; revisar también que los jobs
 requeridos se hayan ejecutado correctamente en GitHub.
@@ -170,24 +199,26 @@ requeridos se hayan ejecutado correctamente en GitHub.
 Se utiliza la integración nativa de GitHub con Render. Las variables privadas se
 guardan en Render, sin duplicarlas en GitHub para esta integración. Si otra
 automatización futura necesitase credenciales, se guardarían como secrets, nunca
-en el YAML. No desplegar automáticamente `main`, una historia ni una rama de tarea.
+en el YAML. Tras la transición, solo se despliega `staging`; `dev` conserva la
+integración y `main` la entrega aprobada. Las historias y ramas de tarea no se
+despliegan en este servicio.
 
 El job **Imagen de despliegue (T12-6)** de [CI](../.github/workflows/ci.yml) construye
-y comprueba esta imagen en cada PR y push a main/dev. Es una validación del paquete:
+y comprueba esta imagen en cada PR y push a `main`, `dev` o `staging`. Es una validación del paquete:
 no publica un servicio ni equivale a un despliegue remoto. Los otros jobs de CI y
 E2E conservan su función.
 
-### Smoke automático de cada push a dev
+### Smoke automático de cada push a staging
 
 [`.github/workflows/smoke-render.yml`](../.github/workflows/smoke-render.yml) tiene
 dos ejecuciones para evitar una dependencia circular con **After CI Checks Pass**:
 
-1. Cada push a `dev` ejecuta **Programar smoke de dev**. Usa el `GITHUB_TOKEN`
+1. Cada push a `staging` ejecuta el dispatcher **Programar smoke de staging**. Usa el `GITHUB_TOKEN`
    temporal del job, con `actions: write`, para lanzar `workflow_dispatch` del
    mismo workflow sobre la rama conservada `chore/T12-6-smoke-render-automatico`,
    pasando el SHA completo del push como `expected_sha`. Después termina.
 2. **Esperar commit y comprobar Render** se ejecuta sobre el SHA de esa rama
-   auxiliar, con `contents: read`. Descarga el commit objetivo de `dev`, espera
+   auxiliar, con `contents: read`. Descarga el commit objetivo de `staging`, espera
    hasta **30 minutos desde el inicio de la espera** (incluye el tiempo de CI,
    construcción y arranque en frío) y exige `status: ok`, `service: sportsplace-api`
    y `commit` exactamente igual al SHA esperado en `/api/health`. Consulta cada
@@ -201,23 +232,30 @@ dos ejecuciones para evitar una dependencia circular con **After CI Checks Pass*
 El run que espera al servicio **no pertenece al SHA que Render está esperando
 autorizar**. Poner esa espera dentro del CI del commit desplegable impediría que
 Render lo publicara mientras el smoke espera su publicación. El dispatcher falla
-si la rama auxiliar falta o apunta al propio SHA de `dev`, antes de crear ese ciclo.
+si la rama auxiliar falta o apunta al propio SHA que se va a desplegar, antes de crear ese ciclo.
 No necesita claves de Render, credenciales de Supabase ni dependencias npm.
 
 **Conservar `chore/T12-6-smoke-render-automatico`** después de fusionar la PR. Se usa
 como ref del runner y ya está incluida en la regla del equipo de conservar ramas.
-Render sigue desplegando únicamente `dev`. Si se cambia la ref del runner, actualizar
-`SMOKE_RUNNER_REF` y mantenerla en un SHA distinto del commit desplegable. La
-automatización queda operativa cuando este workflow está integrado en la rama por
-defecto `dev`; antes de esa integración no hay una ejecución automática real que
-se pueda acreditar. La primera evidencia se obtiene del propio merge de esta PR.
+El runner se mantiene en `3572138766c4bb2a1ddb289249aa9dd5950e545b`: recibe
+`expected_sha` y descarga ese commit, por lo que también admite el objetivo de
+`staging` sin modificar la rama auxiliar. Algunas etiquetas de su YAML conservado
+todavía mencionan `dev`; la versión comprobada es el SHA objetivo del nombre y del
+resumen del run, no el `head_sha` de esa rama auxiliar.
+
+Render debe desplegar únicamente `staging`. Si se cambia la ref del runner,
+actualizar `SMOKE_RUNNER_REF` y mantenerla en un SHA distinto del commit desplegable.
+El workflow debe seguir presente en la rama por defecto `dev` para poder recibir
+`workflow_dispatch`, y su disparador de push debe estar integrado en `staging`.
+No dejar simultáneamente un smoke por push a `dev` contra esta misma URL: ese commit
+ya no se despliega y la espera fallaría aunque el servicio estuviera sano.
 
 Si hay pushes muy seguidos y Render omite una versión intermedia, el smoke de esa
 versión agotará el plazo y fallará: una versión posterior no se registra como éxito
 del commit anterior. Si falla el CI, Render no despliega y la espera tampoco podrá
 dar un resultado correcto. Un reintento manual desde **Actions → Smoke Render
 (T12-6) → Run workflow** debe elegir la rama auxiliar e indicar el SHA completo de
-`dev` que se quiere comprobar; no sustituye la evidencia del disparador automático.
+`staging` que se quiere comprobar; no sustituye la evidencia del disparador automático.
 
 ### Reproducir la comprobación remota
 
@@ -236,27 +274,27 @@ Esta comprobación no acredita conexión PostgreSQL, Auth ni criterios funcional
 ```
 
 Para reproducir también la espera por versión, sustituir el marcador por el SHA
-completo de `dev` que se espera publicado:
+completo de `staging` que se espera publicado:
 
 ```bash
-npm --prefix tools run deploy:wait -- https://sportsplace-pruebas.onrender.com SHA_COMPLETO_DE_DEV
+npm --prefix tools run deploy:wait -- https://sportsplace-pruebas.onrender.com SHA_COMPLETO_DE_STAGING
 ```
 
-Después de obtener y comprobar la URL, actualizar el README y esta guía mediante
-una PR hacia `dev`, según la indicación específica de Alex en #86. Solicitar una
-aprobación ajena y fusionar con **Create a merge commit**, sin borrar la rama.
-Usar la integración de esta ampliación para registrar el commit de `dev`, CI,
-Auto-Deploy de Render y **enlace al run automático del smoke en verde** en #86.
-El primer despliegue al crear el servicio, una comprobación HTTP local o un smoke
-ejecutado a mano no acreditan esta ampliación. Hasta registrar esa ejecución se
-utiliza `Refs #86`; Alex mantiene y cierra el seguimiento de la issue.
+Después de integrar la transición, registrar la URL, el SHA de `staging`, el run
+de CI, el Auto-Deploy de Render y el **run automático del smoke en verde**. Un
+despliegue manual, una comprobación local o un smoke lanzado a mano no acreditan
+el disparador automático. Mantener aprobación ajena y **Create a merge commit** en
+las PR `dev` → `staging` y `staging` → `main`, sin borrar ninguna rama. QA valida la
+versión publicada antes de abrir la promoción final a `main`; un nuevo commit en
+`staging` requiere que la evidencia de QA corresponda a esa versión.
 
 Las migraciones al Supabase compartido siguen el procedimiento de
 [T12-8](base-pruebas.md#migraciones-nuevas-al-supabase-compartido), con revisión de
 Anass/Alex y ejecución coordinada. El arranque del contenedor no aplica SQL.
 
 La preparación de la imagen ya está integrada mediante la
-[PR #127](https://github.com/UB-ES-A4-2026/sportsplace/pull/127). Seguimiento de #86:
+[PR #127](https://github.com/UB-ES-A4-2026/sportsplace/pull/127). Evidencia histórica
+aceptada para el cierre de #86, anterior al cambio de rama:
 
 - [x] Servicio Render Free creado y URL HTTPS real documentada en `dev`.
 - [x] Variables y CA configurados en Render, sin publicar sus valores.
@@ -264,11 +302,11 @@ La preparación de la imagen ya está integrada mediante la
 - [x] Conexión PostgreSQL real desde el servicio con TLS verificado, acreditada en los logs.
 - [x] Auto-Deploy de #145 con commit, CI, fecha y versión publicada, aceptado por Alex.
 - [x] Documentación de #145 integrada mediante merge commit.
-- [x] Workflow de smoke por SHA preparado en esta ampliación, con espera limitada.
-- [ ] PR de esta ampliación hacia `dev`, aprobación ajena y fusión mediante merge commit.
-- [ ] Enlace a una ejecución automática real en verde después del merge en `dev`.
+- [x] Workflow de smoke por SHA integrado mediante #147, con espera limitada.
+- [x] Ejecución automática real en verde después del merge en `dev`: [run 40931635595](https://github.com/UB-ES-A4-2026/sportsplace/actions/runs/40931635595).
 
-Hasta entonces se utiliza `Refs #86` y no se declara la tarea terminada.
+Esa tarea cerrada no acredita la transición a `staging`; sus comprobaciones
+pendientes se mantienen en la lista de activación al principio de esta guía.
 
 Referencias de configuración: [Docker en Render](https://render.com/docs/docker),
 [despliegues y CI](https://render.com/docs/deploys),
