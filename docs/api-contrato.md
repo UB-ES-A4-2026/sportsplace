@@ -132,6 +132,7 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/anuncios/:id/reservar` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/quitar-reserva` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/entregar` | US-17 | Sí (email confirmado) | Anass |
+| `GET /api/pedidos/:id` | US-108 (US-32) | Sí (email confirmado) | Alex |
 
 ### `GET /api/health`
 
@@ -541,6 +542,19 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica 
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `/api/anuncios/:id` admite `GET`, `PATCH` y `DELETE`; con otro método, `405` con `Allow: GET, PATCH, DELETE`.
 - US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
+
+### `GET /api/pedidos/:id` (US-108, dentro de US-32)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Detalle de un pedido del que el centro de la sesión es comprador o vendedor.
+
+- `200 { "pedido": pedido }` con el objeto `pedido` de la base común de E06 (`docs/especificacion/E06-pedidos-y-pago.md`). Además: `anuncio.unidades_disponibles` (US-34 CA9) y `metodo_entrega` (US-40). `anuncio.titulo` es la copia guardada al pedir (`titulo_anuncio`) y `anuncio.foto_principal_url` la foto principal actual (o `null`).
+- `mi_papel`: `comprador` o `vendedor` según el centro de la sesión.
+- `comprador.email`/`telefono` y `vendedor.email`/`telefono` solo vienen en `aceptado` y `recibido`; en otro estado esas claves no aparecen (CA7, CA12). El email es el `email_contacto` del centro y, si no tiene, el de la cuenta.
+- Las columnas que aún no existen en `pedidos` (las añaden US-33, US-79, US-80 y US-39 con su migración) salen `null`: `respondido_en`, `motivo_codigo`, `motivo_texto`, `cerrado_por`, `pagado_en`, `cancelado_en`.
+- `acciones` se calcula en el servidor con la tabla de `backend/src/services/transiciones-pedido.js`, la misma que valida las transiciones (`comprobarTransicion`, CA13). Ahora: `aceptar` y `rechazar` para el vendedor en `pendiente`; `aceptar` no aparece si `unidades` > `anuncio.unidades_disponibles`. `marcar_pagado` (US-80) y `cancelar` (US-39) se añaden a la tabla con sus endpoints.
+- `404 NO_ENCONTRADO` «Pedido no encontrado.» si el id no es UUID, el pedido no existe o el centro no es parte (CA11, CA14).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- `/api/pedidos/:id` admite `GET`; con otro método, `405` con `Allow: GET`.
 
 ## Configuración del correo de recuperación (T04-1 / US-04)
 
