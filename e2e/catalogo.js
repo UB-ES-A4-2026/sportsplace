@@ -130,3 +130,42 @@ export function contarPeticiones(page) {
   });
   return urls;
 }
+
+// Con cada filtro implementado, un valor no aceptado responde 400 (US-22 CA12, US-73 CA11, US-74 CA6).
+export async function hayFiltroEnApi(request, token, consulta) {
+  return (await getCatalogo(request, token, consulta)).status() === 400;
+}
+
+// La barra de filtros (T21-6) empieza por el desplegable «Categoría» (US-22).
+export async function hayBarraFiltros(page) {
+  return (await hayPantallaCatalogo(page))
+    && page.getByRole('combobox', { name: 'Categoría' }).waitFor({ timeout: 5_000 }).then(() => true, () => false);
+}
+
+// Ruta y parámetros de la URL actual, sin depender del orden ni de si la coma va como «%2C».
+export function consulta(page) {
+  const url = new URL(page.url());
+  return { ruta: url.pathname, ...Object.fromEntries(url.searchParams) };
+}
+
+export function desplegable(page, nombre) {
+  return page.getByRole('combobox', { name: nombre, exact: true });
+}
+
+// Etiqueta de filtro activo «Nombre: Valor ×» (US-22 CA6).
+export function etiqueta(page, texto) {
+  return page.getByRole('main').getByText(texto, { exact: false }).first();
+}
+
+// Su «×»: o la etiqueta entera es un botón con ese texto, o el elemento más interno que la contiene lleva un botón.
+export function quitarEtiqueta(page, texto) {
+  const inicio = new RegExp(`^(quitar( filtro)?:? )?${texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+  const contenedor = page.getByRole('main').locator('*')
+    .filter({ hasText: texto, has: page.getByRole('button') }).last();
+  return page.getByRole('button', { name: inicio }).or(contenedor.getByRole('button').last()).first();
+}
+
+// «Limpiar filtros» sale en la barra y, sin resultados, también como botón (US-22 CA10): vale cualquiera.
+export function limpiarFiltros(page) {
+  return boton(page, 'Limpiar filtros').first();
+}
