@@ -202,10 +202,7 @@ test('US-96 · E2E-5 · vacío y error', async ({ page, cuentas }) => {
   await expect(tarjeta(page, 'Anuncio tras el error')).toBeVisible();
 });
 
-test('US-96 · CA2 y CA13 · sin sesión y «Cargando…»', async ({ page, cuentas }) => {
-  await page.goto('/catalogo');
-  await expect(page).toHaveURL('/entrar');
-
+test('US-96 · CA2 y CA13 · sin sesión y «Cargando…»', async ({ page, browser, cuentas }, testInfo) => {
   await entrarAlCatalogo(page, cuentas);
   let soltar;
   const pendiente = new Promise((resolve) => { soltar = resolve; });
@@ -214,6 +211,14 @@ test('US-96 · CA2 y CA13 · sin sesión y «Cargando…»', async ({ page, cuen
   await expect(page.getByText('Cargando…')).toBeVisible();
   soltar();
   await expect(page.getByText('Cargando…')).toHaveCount(0);
+
+  // CA2: en un navegador sin sesión, /catalogo lleva a /entrar.
+  const { baseURL, locale, timezoneId } = testInfo.project.use;
+  const contexto = await browser.newContext({ baseURL, locale, timezoneId });
+  const anonima = await contexto.newPage();
+  await anonima.goto('/catalogo');
+  await expect(anonima).toHaveURL('/entrar');
+  await contexto.close();
 });
 
 // ---------------------------------------------------------------- API
