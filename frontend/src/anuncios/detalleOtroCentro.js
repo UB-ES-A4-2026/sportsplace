@@ -85,3 +85,32 @@ export function destinoDeVolver(estadoDeLaRuta) {
   if (typeof desde !== 'string') return RUTA_CATALOGO;
   return desde === RUTA_CATALOGO || desde.startsWith(`${RUTA_CATALOGO}?`) ? desde : RUTA_CATALOGO;
 }
+
+// Bloque «Ofrecido por» (US-23): «12,4 km». Sin coordenadas de alguno de los dos centros la API da null y no se pinta.
+export function textoDistancia(km) {
+  if (typeof km !== 'number' || !Number.isFinite(km)) return null;
+  return `${km.toFixed(1).replace('.', ',')} km`;
+}
+
+// Qué se muestra en /anuncios/:id. La ruta la comparten la ficha de propietario (E03) y la vista de otro centro.
+// 1. GET /api/catalogo/:id: con `es_propio` → ficha de propietario (CA2, CA14); si no → vista de otro centro.
+// 2. Un 404 del catálogo puede ser un anuncio propio que no está a la vista de los demás (pausado o entregado): se
+//    pregunta a GET /api/anuncios/:id. Si también da 404, no existe o no está disponible (CA5, CA13).
+// 3. Cualquier otro fallo (red, 500, 503): «No se ha podido cargar. » con «Reintentar» (CA11).
+export const VISTAS = {
+  propietario: 'propietario',
+  otroCentro: 'otro-centro',
+  comprobarPropietario: 'comprobar-propietario',
+  noDisponible: 'no-disponible',
+  error: 'error',
+};
+
+export function vistaSegunCatalogo({ anuncio, fallo } = {}) {
+  if (anuncio) return esDelPropioCentro(anuncio) ? VISTAS.propietario : VISTAS.otroCentro;
+  return fallo?.status === 404 ? VISTAS.comprobarPropietario : VISTAS.error;
+}
+
+export function vistaSegunPropietario({ anuncio, fallo } = {}) {
+  if (anuncio) return VISTAS.propietario;
+  return fallo?.status === 404 ? VISTAS.noDisponible : VISTAS.error;
+}

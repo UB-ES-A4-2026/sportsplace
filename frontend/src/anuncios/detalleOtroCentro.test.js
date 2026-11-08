@@ -13,7 +13,11 @@ import {
   hayNavegacion,
   precioDelDetalle,
   textoAlternativoDeFoto,
+  textoDistancia,
   textoUnidades,
+  VISTAS,
+  vistaSegunCatalogo,
+  vistaSegunPropietario,
 } from './detalleOtroCentro.js';
 
 const FOTOS = [
@@ -131,5 +135,43 @@ describe('destinoDeVolver (CA1, T24-3)', () => {
     assert.equal(destinoDeVolver({ desde: '/mis-anuncios' }), RUTA_CATALOGO);
     assert.equal(destinoDeVolver({ desde: '/catalogos-falsos' }), RUTA_CATALOGO);
     assert.equal(destinoDeVolver({ desde: 'https://otra.web/catalogo' }), RUTA_CATALOGO);
+  });
+});
+
+describe('textoDistancia (bloque «Ofrecido por»)', () => {
+  test('con un decimal y coma: «12,4 km»', () => {
+    assert.equal(textoDistancia(12.4), '12,4 km');
+    assert.equal(textoDistancia(3), '3,0 km');
+  });
+
+  test('sin distancia (null) no se pinta', () => {
+    assert.equal(textoDistancia(null), null);
+    assert.equal(textoDistancia(undefined), null);
+  });
+});
+
+describe('vista de /anuncios/:id (CA2, CA5, CA11, CA13, CA14)', () => {
+  test('catálogo 200 con `es_propio` → ficha de propietario; sin él → vista de otro centro', () => {
+    assert.equal(vistaSegunCatalogo({ anuncio: { es_propio: true } }), VISTAS.propietario);
+    assert.equal(vistaSegunCatalogo({ anuncio: { es_propio: false } }), VISTAS.otroCentro);
+  });
+
+  test('catálogo 404 → se comprueba si es un anuncio propio que los demás no ven', () => {
+    assert.equal(vistaSegunCatalogo({ fallo: { status: 404 } }), VISTAS.comprobarPropietario);
+  });
+
+  test('catálogo con red caída, 500 o 503 → error con «Reintentar»', () => {
+    for (const fallo of [{ status: 0 }, { status: 500 }, { status: 503 }, new Error('red')]) {
+      assert.equal(vistaSegunCatalogo({ fallo }), VISTAS.error);
+    }
+  });
+
+  test('propio pausado o entregado (200 en /api/anuncios/:id) → ficha de propietario', () => {
+    assert.equal(vistaSegunPropietario({ anuncio: { estado: 'pausado' } }), VISTAS.propietario);
+  });
+
+  test('404 también como propietario → «no existe o ya no está disponible»; otro fallo → error', () => {
+    assert.equal(vistaSegunPropietario({ fallo: { status: 404 } }), VISTAS.noDisponible);
+    assert.equal(vistaSegunPropietario({ fallo: { status: 503 } }), VISTAS.error);
   });
 });
