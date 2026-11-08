@@ -226,12 +226,19 @@ test('US-12 · E2E-5 · anuncio de otro centro y API directa', async ({ page, re
   const { anuncio } = await creado.json();
   expect(creado.headers().location).toBe(`/api/anuncios/${anuncio.id}`);
 
-  // Web con el centro B.
+  // Web con el centro B. Desde US-24, /anuncios/:id de otro centro muestra su vista de detalle (sin acciones de
+  // propietario); un id inexistente sigue dando «Anuncio no encontrado».
   await entrar(page, cuentas.centroB, cuentas.password);
   const tokenB = await tokenDe(request, cuentas.centroB, cuentas.password);
   await page.goto(`/anuncios/${anuncio.id}`);
+  await expect(page.getByRole('heading', { level: 1, name: VALIDO_API.titulo })).toBeVisible();
+  await expect(page.getByRole('link', { name: '← Volver al catálogo' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pedir material' })).toBeDisabled();
+  await expect(page.getByRole('link', { name: 'Editar', exact: true })).toHaveCount(0);
+  await page.goto('/anuncios/00000000-0000-4000-8000-000000000000');
   await expect(page.getByText('Anuncio no encontrado')).toBeVisible();
   await expect(page.getByText('Este anuncio no existe o ya no está disponible.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ir al catálogo' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Volver a mis anuncios' })).toBeVisible();
 
   // API con el centro B: ajeno, inexistente y no UUID dan el mismo 404.
