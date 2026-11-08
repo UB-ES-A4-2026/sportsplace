@@ -631,3 +631,31 @@ ALTER TABLE public.centros
 - Las contraseñas no se guardan en `centros`: las guarda Supabase Auth.
 - `email_confirmado_en` se rellena en `POST /api/auth/confirmar` con la fecha de `auth.users.email_confirmed_at`. La fuente de verdad del estado de confirmación es Supabase Auth.
 - El servidor accede a `centros` con su conexión privada (`DATABASE_URL`). Las políticas RLS para el cliente no hacen falta mientras el frontend solo use nuestra API.
+
+## Persistencia de pedidos (T32-1)
+
+La migración [20261108090000_crear_pedidos.sql](../supabase/migrations/20261108090000_crear_pedidos.sql)
+prepara `public.pedidos` según US-32, US-35 y US-40 de [#219](https://github.com/UB-ES-A4-2026/sportsplace/issues/219).
+
+| Datos | Regla de persistencia |
+|---|---|
+| `id` | UUID generado, clave primaria. |
+| `anuncio_id`, `comprador_centro_id`, `vendedor_centro_id` | FKs obligatorias; comprador y vendedor distintos. Las FKs conservan el comportamiento de borrado por defecto de PostgreSQL (`NO ACTION`). |
+| `titulo_anuncio`, `modalidad`, `precio_unitario_centimos` | Copia al crear el pedido. Título de 5 a 80 caracteres; modalidad `venta` o `donacion`; precio de 1 a 9999999 céntimos en venta y nulo en donación. |
+| `unidades`, `total_centimos` | Unidades enteras positivas. Total BIGINT igual a unidades por precio, o cero en donación. |
+| `mensaje` | Opcional, hasta 500 caracteres. La API normaliza el vacío a null. |
+| `estado` | `pendiente` por defecto; valores `pendiente`, `aceptado`, `rechazado`, `cancelado`, `recibido`. |
+| `creado_en`, `actualizado_en` | Timestamptz obligatorios, con `now()` por defecto. La API actualiza `actualizado_en` cuando modifica el pedido. |
+| `metodo_pago` | `transferencia` o `efectivo_recogida` en venta; nulo en donación. |
+| `metodo_entrega`, `direccion_envio` | Método obligatorio `recogida` o `envio`. Dirección JSONB presente exactamente cuando el método es `envio`. |
+
+El índice único parcial `pedidos_anuncio_comprador_pendiente_unico` impide dos
+pendientes del mismo comprador en el mismo anuncio. T32-2 debe traducir esa
+violación a `409 PEDIDO_YA_PENDIENTE`, obtener el vendedor y las copias del anuncio
+desde la base de datos y validar las unidades disponibles al crear el pedido.
+La inserción conserva el stock del anuncio hasta la aceptación de US-34.
+
+La tabla tiene RLS y los permisos de `PUBLIC`, `anon` y `authenticated` revocados.
+La aplicación de esta migración al Supabase compartido requiere la revisión y
+coordinación del esquema. La evidencia de este primer commit corresponde a las
+pruebas SQL de la migración; las rutas se incorporan en T32-2 y T32-3.
