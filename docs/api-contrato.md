@@ -121,6 +121,7 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-13, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
+| `GET /api/catalogo` | US-96 (US-21) | Sí (email confirmado) | Marta |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 | `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
@@ -493,6 +494,46 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del ce
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `foto_principal_url` es la URL pública de la foto con `es_principal` (US-13) o `null` si el anuncio no tiene fotos.
 - `modalidad` y `precio_unitario_centimos` son los del anuncio (US-14, CA7): `"donacion"` con `null`, o `"venta"` con el precio en céntimos.
+
+### `GET /api/catalogo` (US-96, historia US-21 · T21-1)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **otros** centros (E04 «Base común» y US-96), 20 por página: `GET /api/catalogo?pagina=2`.
+
+- `pagina`: entero de 1 a 10000, por defecto 1. Un parámetro vacío (`pagina=`) equivale a no enviarlo y los parámetros desconocidos se ignoran. La búsqueda (`q`, T21-2) y los filtros (`categoria`, `deporte`, `estado_material`, `precio_min`, `precio_max`, `modalidad`, T21-3) se añaden en sus tareas.
+- `200`:
+
+```json
+{
+  "anuncios": [
+    {
+      "id": "uuid",
+      "titulo": "Balones de fútbol talla 5",
+      "modalidad": "venta",
+      "precio_unitario_centimos": 1250,
+      "estado": "activo",
+      "estado_material": "buen_estado",
+      "unidades_disponibles": 12,
+      "foto_principal_url": "https://… o null",
+      "publicado_en": "2026-10-20T09:15:00.000Z",
+      "centro": { "id": "uuid", "nombre": "CE Montjuïc", "localidad": "Barcelona" },
+      "distancia_km": null,
+      "es_favorito": false
+    }
+  ],
+  "pagina": 1,
+  "por_pagina": 20,
+  "total": 41,
+  "total_paginas": 3
+}
+```
+
+- Solo anuncios `activo` o `reservado` con `unidades_disponibles` > 0 y de centros distintos al de la sesión (CA4, CA24). Los `reservado` van en su sitio del orden; la web les pone «No disponible» (CA6).
+- Orden: `publicado_en` descendente y, a igual fecha, `id` ascendente, estable entre páginas (CA5). Lo sirve el índice `anuncios_catalogo_estado_publicado` sobre `anuncios(estado, publicado_en DESC, id)` (CA22).
+- `total` cuenta todos los anuncios que cumplen la consulta y `total_paginas` = ⌈`total` / 20⌉ (CA11). Con 0 anuncios, `total: 0` y `total_paginas: 0` (CA19). Una `pagina` mayor que `total_paginas` responde `200` con `anuncios: []` y el `total` real (CA18); la web corrige la URL a la última página (CA10).
+- `foto_principal_url` es la URL pública de la foto con `es_principal` o `null` si no hay fotos (CA20). `distancia_km` lo rellenará US-23 y `es_favorito`, US-25: hasta entonces van a `null` y `false`.
+- Nunca incluye la descripción completa ni el email, el teléfono o la dirección del centro (CA21).
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «La página debe ser un número entero entre 1 y 10000.» (`0`, `10001`, `abc`, `2.5`, `-1` o el parámetro repetido) (CA17).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO` (CA23), `503 BASE_DATOS_NO_DISPONIBLE`. Con otro método, `405` con `Allow: GET`.
 
 ### Cambios de estado de un anuncio (E03)
 
