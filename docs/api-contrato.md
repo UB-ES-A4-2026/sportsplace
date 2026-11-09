@@ -542,6 +542,18 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica 
 - `/api/anuncios/:id` admite `GET`, `PATCH` y `DELETE`; con otro método, `405` con `Allow: GET, PATCH, DELETE`.
 - US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
 
+### `POST /api/pedidos/:id/aceptar`: reserva de unidades (US-33, US-34)
+
+La ruta, su validación y `rechazar` son de T33-2. Aceptar se hace en una sola transacción (`backend/src/repositories/aceptar-pedido.js`, T33-3), que bloquea primero el anuncio (`SELECT ... FOR UPDATE`) y después el pedido, y vuelve a leer el pedido con los dos bloqueados:
+
+- Resta `pedido.unidades` de `anuncios.unidades_disponibles` (US-34 CA1). Si quedan 0 y el anuncio estaba `activo`, pasa a `reservado`; si estaba `pausado`, sigue `pausado` (CA3).
+- El pedido pasa a `aceptado` con `respondido_en = now()` (US-33 CA6).
+- Los demás pedidos `pendiente` del anuncio que piden más unidades de las que quedan pasan a `rechazado` con `motivo_codigo = 'anuncio_sin_stock'`, `cerrado_por = 'sistema'` y `respondido_en = now()`; los que caben siguen pendientes (US-34 CA4).
+- `409 UNIDADES_INSUFICIENTES` «Solo quedan N unidades disponibles.», `details: { "unidades_disponibles": N }`, si el pedido pide más de las que quedan; no cambia nada (US-34 CA2).
+- `409 ANUNCIO_NO_DISPONIBLE` «Este anuncio ya no está disponible.» si el anuncio está `retirado` o `entregado`; `pausado` se puede aceptar (US-33 CA8).
+- `403 SIN_PERMISO` y `409 TRANSICION_NO_PERMITIDA` salen de `comprobarTransicion` (tabla de acciones del pedido, US-108 CA13); `404 NO_ENCONTRADO` si el id no es UUID, el pedido no existe o el centro no es parte.
+- Dos aceptaciones a la vez sobre el mismo anuncio se esperan una a otra: una responde `200` y la otra `409` (`UNIDADES_INSUFICIENTES`, o `TRANSICION_NO_PERMITIDA` si la primera ya la rechazó por falta de unidades). `unidades_disponibles` nunca baja de 0: lo impide además el check `anuncios_unidades_rango` (0-9999) de la tabla (US-34 CA7).
+
 ## Configuración del correo de recuperación (T04-1 / US-04)
 
 Responsable: Carlos. Referencias: [tarea #90](https://github.com/UB-ES-A4-2026/sportsplace/issues/90), [historia #89](https://github.com/UB-ES-A4-2026/sportsplace/issues/89) y [US-04, CA10 y CA11](especificacion/E01-E02-registro-y-perfil.md). No necesita cambios en la tabla `centros` ni variables nuevas en la web.
