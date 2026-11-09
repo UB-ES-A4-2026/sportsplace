@@ -3,6 +3,7 @@ import express from 'express';
 import { errorHandler, notFoundHandler } from './errors.js';
 import { anunciosRouter } from './routes/anuncios.js';
 import { authRouter } from './routes/auth.js';
+import { catalogoRouter } from './routes/catalogo.js';
 import { centrosRouter } from './routes/centros.js';
 import { healthRouter } from './routes/health.js';
 import { pedidosRouter } from './routes/pedidos.js';
@@ -33,6 +34,7 @@ export function createApp({
   app.use(healthRouter({ commit: renderGitCommit }));
   app.use('/api/auth', authRouter());
   app.use('/api/anuncios', anunciosRouter());
+  app.use('/api/catalogo', catalogoRouter());
   app.use('/api/centros', centrosRouter());
   app.use('/api/pedidos', pedidosRouter());
 

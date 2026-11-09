@@ -556,6 +556,56 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Detalle de un pedido del que 
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `/api/pedidos/:id` admite `GET`; con otro método, `405` con `Allow: GET`.
 
+## Detalle del catálogo (US-24 / T24-1)
+
+### `GET /api/catalogo/:id`
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Devuelve el detalle de un
+anuncio visible en el marketplace, incluso si es del propio centro. La ficha de
+propietario conserva `GET /api/anuncios/:id` y su respuesta `{ "anuncio": … }`.
+
+`200`, sin envoltorio:
+
+```json
+{
+  "id": "uuid",
+  "titulo": "Balones de fútbol talla 5",
+  "descripcion": "Doce balones usados una temporada.\nSin pinchazos.",
+  "categoria": "balones",
+  "deporte": "futbol",
+  "estado_material": "buen_estado",
+  "unidades_disponibles": 12,
+  "modalidad": "venta",
+  "precio_unitario_centimos": 1250,
+  "estado": "activo",
+  "publicado_en": "2026-11-08T10:00:00.000Z",
+  "fotos": [{ "url": "https://storage.example/foto.jpg", "orden": 2, "es_principal": true }],
+  "centro": { "id": "uuid", "nombre": "CE Montjuïc", "localidad": "Barcelona" },
+  "distancia_km": 12.4,
+  "es_favorito": false,
+  "es_propio": false
+}
+```
+
+- Visibles: `activo` y `reservado`, siempre con `unidades_disponibles > 0`.
+  El reservado conserva su estado para que la web indique que no está disponible
+  para pedir. Los anuncios propios visibles responden con `es_propio: true`.
+- `fotos` contiene solo `url`, `orden` y `es_principal`: principal primero,
+  después las restantes por `orden` ascendente; sin fotos, `[]`. Las URLs se
+  construyen con el mismo servicio de Storage que los anuncios propios.
+- `centro` contiene exclusivamente `id`, `nombre` y `localidad`. No se devuelven
+  email, teléfono, dirección ni coordenadas, tampoco IDs o rutas internas de fotos.
+- `distancia_km` es un número en kilómetros, calculado en PostgreSQL con Haversine
+  (radio de 6371 km) y redondeado a un decimal. Es `null` si cualquiera de los dos
+  centros carece de latitud o longitud. Las coordenadas nunca se envían a la web.
+- `es_favorito` es `false` hasta incorporar US-25. `descripcion` conserva el texto
+  y los saltos de línea; la web debe mostrarla como texto plano, sin interpretar HTML.
+- `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», idéntico para UUID
+  inválido, inexistente, `borrador`, `pausado`, `entregado`, `retirado` o sin stock.
+  Un UUID inválido se rechaza antes de consultar la base de datos.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+- `405 METODO_NO_PERMITIDO`, cabecera `Allow: GET`, para otros métodos.
+
 ## Configuración del correo de recuperación (T04-1 / US-04)
 
 Responsable: Carlos. Referencias: [tarea #90](https://github.com/UB-ES-A4-2026/sportsplace/issues/90), [historia #89](https://github.com/UB-ES-A4-2026/sportsplace/issues/89) y [US-04, CA10 y CA11](especificacion/E01-E02-registro-y-perfil.md). No necesita cambios en la tabla `centros` ni variables nuevas en la web.
