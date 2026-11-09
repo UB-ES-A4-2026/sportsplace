@@ -132,7 +132,8 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/anuncios/:id/reservar` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/quitar-reserva` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/entregar` | US-17 | Sí (email confirmado) | Anass |
-| `GET /api/pedidos/:id` | US-108 (US-32) | Sí (email confirmado) | Alex |
+| `POST /api/pedidos` | US-32, US-35 y US-40 | Sí (email confirmado) | Carlos |
+| `GET /api/pedidos/:id` | US-108 y US-40 (US-32) | Sí (email confirmado) | Alex y Carlos |
 
 ### `GET /api/health`
 
@@ -543,12 +544,38 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica 
 - `/api/anuncios/:id` admite `GET`, `PATCH` y `DELETE`; con otro método, `405` con `Allow: GET, PATCH, DELETE`.
 - US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
 
+## Pedidos (US-32)
+
+### `POST /api/pedidos` (T32-2)
+
+Privada con sesión y email confirmado. Ejemplo de venta con recogida:
+
+```json
+{
+  "anuncio_id": "uuid",
+  "unidades": 4,
+  "mensaje": "Lo necesitamos para el torneo",
+  "metodo_pago": "transferencia",
+  "metodo_entrega": "recogida"
+}
+```
+
+- `201 { "pedido": pedido }` con estado `pendiente` y `Location: /api/pedidos/:id`. Usa el mismo objeto que el detalle. El comprador sale de la sesión. Título, modalidad y precio se copian del anuncio bajo bloqueo y el total se calcula en el servidor como número de céntimos. Crear un pedido deja intactos el stock y el estado del anuncio.
+- `unidades` es un entero JSON positivo. `mensaje` es opcional, se recorta y se guarda como `null` si queda vacío. Se ignoran los campos de comprador, estado, precio y total enviados por el cliente.
+- En venta, `metodo_pago` es obligatorio y acepta `transferencia` o `efectivo_recogida`. En donación se omite. El pago en efectivo es compatible con recogida y envío.
+- `metodo_entrega` acepta `recogida` o `envio`. Para recogida se ignora `direccion_envio`. Para envío se exige un objeto con `destinatario`, `calle_numero`, `codigo_postal`, `localidad`, `provincia` y `telefono_contacto`, además de `piso_puerta` e `indicaciones` opcionales. El validador compartido verifica longitud, teléfono y coherencia del código postal con la provincia. La dirección queda guardada como copia en el pedido.
+- `400 DATOS_INVALIDOS` devuelve errores por campo en `details`, con claves como `metodo_pago`, `metodo_entrega` o `direccion_envio.codigo_postal`.
+- `404 NO_ENCONTRADO` para anuncio inexistente o retirado. `403 PEDIDO_PROPIO` para anuncio propio. `409 ANUNCIO_NO_DISPONIBLE` para pausado, reservado o entregado.
+- `409 UNIDADES_INSUFICIENTES` incluye `details.unidades_disponibles`. `409 PEDIDO_YA_PENDIENTE` incluye `details.pedido_id` si ese comprador ya tiene un pedido pendiente del mismo anuncio. El índice parcial garantiza esta regla ante solicitudes simultáneas. Otro comprador puede solicitar el mismo material.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO` y `503 BASE_DATOS_NO_DISPONIBLE` mantienen el formato común. `/api/pedidos` responde `405` con `Allow: POST` para otros métodos.
+
 ### `GET /api/pedidos/:id` (US-108, dentro de US-32)
 
 Privada: `requireAuth` + `requireEmailConfirmado`. Detalle de un pedido del que el centro de la sesión es comprador o vendedor.
 
 - `200 { "pedido": pedido }` con el objeto `pedido` de la base común de E06 (`docs/especificacion/E06-pedidos-y-pago.md`). Además: `anuncio.unidades_disponibles` (US-34 CA9) y `metodo_entrega` (US-40). `anuncio.titulo` es la copia guardada al pedir (`titulo_anuncio`) y `anuncio.foto_principal_url` la foto principal actual (o `null`).
 - `mi_papel`: `comprador` o `vendedor` según el centro de la sesión.
+- `entrega` contiene `{ metodo, direccion_envio, direccion_recogida }`. La copia de envío está disponible para los participantes. Para recogida, la dirección actual del vendedor se devuelve solo al comprador en `aceptado` o `recibido` y si está informada; en los demás casos es `null`.
 - `comprador.email`/`telefono` y `vendedor.email`/`telefono` solo vienen en `aceptado` y `recibido`; en otro estado esas claves no aparecen (CA7, CA12). El email es el `email_contacto` del centro y, si no tiene, el de la cuenta.
 - Las columnas que aún no existen en `pedidos` (las añaden US-33, US-79, US-80 y US-39 con su migración) salen `null`: `respondido_en`, `motivo_codigo`, `motivo_texto`, `cerrado_por`, `pagado_en`, `cancelado_en`.
 - `acciones` se calcula en el servidor con la tabla de `backend/src/services/transiciones-pedido.js`, la misma que valida las transiciones (`comprobarTransicion`, CA13). Ahora: `aceptar` y `rechazar` para el vendedor en `pendiente`; `aceptar` no aparece si `unidades` > `anuncio.unidades_disponibles`. `marcar_pagado` (US-80) y `cancelar` (US-39) se añaden a la tabla con sus endpoints.
@@ -583,7 +610,8 @@ propietario conserva `GET /api/anuncios/:id` y su respuesta `{ "anuncio": … }`
   "centro": { "id": "uuid", "nombre": "CE Montjuïc", "localidad": "Barcelona" },
   "distancia_km": 12.4,
   "es_favorito": false,
-  "es_propio": false
+  "es_propio": false,
+  "mi_pedido_pendiente_id": null
 }
 ```
 
@@ -600,6 +628,7 @@ propietario conserva `GET /api/anuncios/:id` y su respuesta `{ "anuncio": … }`
   centros carece de latitud o longitud. Las coordenadas nunca se envían a la web.
 - `es_favorito` es `false` hasta incorporar US-25. `descripcion` conserva el texto
   y los saltos de línea; la web debe mostrarla como texto plano, sin interpretar HTML.
+- `mi_pedido_pendiente_id` es el UUID del pedido pendiente de ese anuncio para el centro de la sesión, o `null`. La ficha propia de `GET /api/anuncios/:id` incluye el mismo campo dentro de `anuncio` con valor `null`.
 - `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», idéntico para UUID
   inválido, inexistente, `borrador`, `pausado`, `entregado`, `retirado` o sin stock.
   Un UUID inválido se rechaza antes de consultar la base de datos.

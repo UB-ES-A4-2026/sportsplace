@@ -3,6 +3,7 @@ WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
+COPY shared/ /build/shared/
 RUN npm run build
 
 FROM node:24-bookworm-slim AS api-dependencies
@@ -19,6 +20,7 @@ WORKDIR /app/backend
 COPY --from=api-dependencies --chown=node:node /app/backend/ ./
 COPY --chown=node:node backend/src/ ./src/
 COPY --chown=node:node backend/scripts/ ./scripts/
+COPY --chown=node:node shared/ /app/shared/
 COPY --from=web-build --chown=node:node /build/frontend/dist/ /app/web/
 USER node
 EXPOSE 3000

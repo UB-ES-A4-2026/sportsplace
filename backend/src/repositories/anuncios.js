@@ -113,6 +113,9 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
                 a.precio_unitario_centimos, a.estado, a.publicado_en,
                 c.id AS centro_id, c.nombre AS centro_nombre, c.localidad AS centro_localidad,
                 c.id = yo.id AS es_propio,
+                (SELECT p.id FROM public.pedidos p
+                 WHERE p.anuncio_id = a.id AND p.comprador_centro_id = yo.id
+                   AND p.estado = 'pendiente') AS mi_pedido_pendiente_id,
                 CASE
                   WHEN c.latitud IS NULL OR c.longitud IS NULL
                     OR yo.latitud IS NULL OR yo.longitud IS NULL THEN NULL
@@ -151,6 +154,7 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
         distancia_km: fila.distancia_km,
         es_favorito: false, // US-25 incorporará los favoritos del centro.
         es_propio: fila.es_propio,
+        mi_pedido_pendiente_id: fila.mi_pedido_pendiente_id ?? null,
       };
     },
 

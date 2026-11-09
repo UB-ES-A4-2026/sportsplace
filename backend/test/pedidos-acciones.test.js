@@ -59,6 +59,7 @@ test('CA10: el objeto pedido tiene la forma de la base común de E06', () => {
     total_centimos: 3400,
     metodo_pago: 'transferencia',
     metodo_entrega: null,
+    entrega: { metodo: null, direccion_envio: null, direccion_recogida: null },
     mensaje: 'Los necesitamos para el torneo de junio.',
     estado: 'pendiente',
     motivo_codigo: null,
