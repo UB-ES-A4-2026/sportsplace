@@ -16,6 +16,23 @@ function aCentro(centro, conContacto) {
   return resultado;
 }
 
+// US-40 CA14-CA16: el envío conserva su copia. Para la recogida el comprador
+// puede ver la dirección actual del vendedor una vez aceptado el pedido.
+function aEntrega(fila, vendedor, papel) {
+  const metodo = valor(fila.metodo_entrega);
+  const mostrarRecogida = metodo === 'recogida' && papel === 'comprador'
+    && CON_CONTACTO.has(fila.estado) && Boolean(vendedor.direccion);
+  return {
+    metodo,
+    direccion_envio: metodo === 'envio' && papel ? valor(fila.direccion_envio) : null,
+    direccion_recogida: mostrarRecogida ? {
+      direccion: vendedor.direccion,
+      codigo_postal: valor(vendedor.codigo_postal),
+      localidad: vendedor.localidad,
+    } : null,
+  };
+}
+
 // Fila de `pedidos` con su anuncio y sus dos centros → objeto `pedido` de la API
 // («Objeto `pedido` en la API», E06). Las columnas que traen historias posteriores
 // (respondido_en, motivo, pagado_en, cancelado_en…) salen null mientras no existan.
@@ -52,6 +69,7 @@ export function aPedido({ fila, anuncio, comprador, vendedor }, centroId) {
     acciones: [],
   };
   pedido.mi_papel = papelEn(pedido, centroId);
+  pedido.entrega = aEntrega(fila, vendedor, pedido.mi_papel);
   pedido.acciones = accionesPermitidas(pedido, centroId);
   return pedido;
 }
