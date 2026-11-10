@@ -7,6 +7,7 @@ import {
   esMiCentro,
   etiquetaDeAnuncio,
   paginaDeLaUrl,
+  parametrosDePagina,
   paginacion,
   rutaDelCentro,
   textoAntiguedad,
@@ -104,5 +105,12 @@ describe('propio centro y enlaces (CA1, CA4)', () => {
 
   test('ruta del perfil con el id codificado', () => {
     assert.equal(rutaDelCentro('c 1'), '/centros/c%201');
+  });
+});
+
+describe('parametrosDePagina (CA3)', () => {
+  test('`?pagina=n` desde la 2; la 1 no se escribe', () => {
+    assert.deepEqual(parametrosDePagina(2), { pagina: '2' });
+    assert.deepEqual(parametrosDePagina(1), {});
   });
 });

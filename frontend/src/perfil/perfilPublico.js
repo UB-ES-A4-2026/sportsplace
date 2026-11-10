@@ -89,3 +89,8 @@ export function esMiCentro(centro) {
 export function rutaDelCentro(id) {
   return `/centros/${encodeURIComponent(id)}`;
 }
+
+// CA3: `?pagina=n` en la URL; la página 1 no se escribe.
+export function parametrosDePagina(pagina) {
+  return pagina > 1 ? { pagina: String(pagina) } : {};
+}

@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router';
 import Layout from './components/Layout.jsx';
 import AnuncioPage from './pages/AnuncioPage.jsx';
 import RutaPrivada from './components/RutaPrivada.jsx';
+import CentroPage from './pages/CentroPage.jsx';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage.jsx';
 import EditarAnuncioPage from './pages/EditarAnuncioPage.jsx';
 import EditarPerfilPage from './pages/EditarPerfilPage.jsx';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
           <Route path="anuncios/:id" element={<AnuncioPage />} />
           <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
+          <Route path="centros/:id" element={<CentroPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>
