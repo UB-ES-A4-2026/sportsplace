@@ -4,6 +4,7 @@ import { formatearFecha } from '../anuncios/ficha.js';
 import { useCentro } from '../centro/useCentro.js';
 import Aviso from '../components/Aviso.jsx';
 import { TEXTOS_PERFIL } from '../perfil/perfil.js';
+import { rutaDelCentro, TEXTOS as TEXTOS_PERFIL_PUBLICO } from '../perfil/perfilPublico.js';
 import { faltaCodigoPostal, textoDireccion, textoZona, TEXTOS_UBICACION } from '../perfil/ubicacion.js';
 
 // US-07: /perfil · «Mi perfil», vista previa propia de los datos del centro (GET /api/centros/mio).
@@ -90,7 +91,13 @@ function DatosDelCentro({ centro }) {
       )}
 
       <p className="perfil-desde">En Sportsplace desde {formatearFecha(centro.creado_en)}</p>
-      <Link to="/perfil/editar" className="boton-enlace">Editar perfil</Link>
+      <div className="perfil-acciones">
+        <Link to="/perfil/editar" className="boton-enlace">Editar perfil</Link>
+        {/* US-10 CA4: la vista que tienen los demás centros de este perfil. */}
+        <Link to={rutaDelCentro(centro.id)} className="boton-enlace boton-enlace-secundario">
+          {TEXTOS_PERFIL_PUBLICO.verComoMeVen}
+        </Link>
+      </div>
     </>
   );
 }
