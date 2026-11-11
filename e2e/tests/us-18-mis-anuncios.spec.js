@@ -278,8 +278,8 @@ test('US-18 · E2E-6 · aislamiento', async ({ request, cuentas }) => {
 
   // CA12: el resumen trae exactamente los campos especificados.
   expect(Object.keys(cuerpo.anuncios[0]).sort()).toEqual([
-    'actualizado_en', 'categoria', 'deporte', 'estado', 'foto_principal_url', 'id', 'modalidad',
-    'precio_unitario_centimos', 'publicado_en', 'titulo', 'unidades_disponibles',
+    'actualizado_en', 'categoria', 'conversaciones_sin_leer', 'deporte', 'estado', 'foto_principal_url', 'id',
+    'modalidad', 'num_conversaciones', 'precio_unitario_centimos', 'publicado_en', 'titulo', 'unidades_disponibles',
   ]);
 
   // Con el token de A: 22 visibles (21 de la semilla y el extra), 20 por defecto, ninguno de B ni retirado.
