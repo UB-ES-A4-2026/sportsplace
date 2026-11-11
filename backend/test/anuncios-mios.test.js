@@ -85,6 +85,8 @@ test('US-18 CA11/CA12: sin parámetros responde la página 1 de 20 con el resume
       precio_unitario_centimos: null,
       estado: 'activo',
       foto_principal_url: null,
+      num_conversaciones: 0,
+      conversaciones_sin_leer: 0,
       publicado_en: '2026-11-03T10:01:00.000Z',
       actualizado_en: '2026-11-03T10:01:00.000Z',
     }],
@@ -101,6 +103,18 @@ test('US-14 CA7: el resumen de una venta trae su modalidad y su precio en cénti
 
   assert.equal(resumen.modalidad, 'venta');
   assert.equal(resumen.precio_unitario_centimos, 850);
+});
+
+test('US-77 CA10: los contadores y la paginación se conservan en el alias /api/mis-anuncios', async () => {
+  filas.push({ ...crearFila('centro-a', 1), num_conversaciones: 3, conversaciones_sin_leer: 2 });
+  const original = await (await mios()).json();
+  const alias = await fetch(`${api.baseUrl}/api/mis-anuncios`, {
+    headers: { Authorization: 'Bearer token-a' },
+  });
+  assert.equal(alias.status, 200);
+  assert.deepEqual(await alias.json(), original);
+  assert.equal(original.anuncios[0].num_conversaciones, 3);
+  assert.equal(original.anuncios[0].conversaciones_sin_leer, 2);
 });
 
 test('US-14 CA7: listarMios lee la modalidad y el precio de la tabla', async () => {

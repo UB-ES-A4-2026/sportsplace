@@ -61,6 +61,8 @@ export function aResumen(fila) {
     precio_unitario_centimos: fila.precio_unitario_centimos,
     estado: fila.estado,
     foto_principal_url: fila.foto_principal_url ?? null,
+    num_conversaciones: fila.num_conversaciones ?? 0,
+    conversaciones_sin_leer: fila.conversaciones_sin_leer ?? 0,
     publicado_en: fecha(fila.publicado_en),
     actualizado_en: fecha(fila.actualizado_en),
   };
@@ -335,7 +337,15 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
 
       const { rows } = await consultar(
         `SELECT a.id, a.titulo, a.categoria, a.deporte, a.unidades_disponibles,
-                a.modalidad, a.precio_unitario_centimos, a.estado, a.publicado_en, a.actualizado_en
+                a.modalidad, a.precio_unitario_centimos, a.estado, a.publicado_en, a.actualizado_en,
+                (SELECT count(*)::integer FROM public.conversaciones cv
+                 WHERE cv.anuncio_id = a.id AND cv.centro_vendedor_id = a.centro_id) AS num_conversaciones,
+                (SELECT count(*)::integer FROM public.conversaciones cv
+                 WHERE cv.anuncio_id = a.id AND cv.centro_vendedor_id = a.centro_id
+                   AND EXISTS (SELECT 1 FROM public.mensajes m
+                     WHERE m.conversacion_id = cv.id AND m.centro_autor_id = cv.centro_comprador_id
+                       AND (cv.leida_hasta_vendedor IS NULL OR m.creado_en > cv.leida_hasta_vendedor))
+                ) AS conversaciones_sin_leer
          FROM public.anuncios a
          WHERE a.centro_id = (${centro}) AND a.estado <> 'retirado'
          ORDER BY a.actualizado_en DESC, a.id DESC

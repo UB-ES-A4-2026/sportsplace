@@ -9,6 +9,11 @@ import { ACCIONES } from '../services/transiciones-anuncio.js';
 import { validarPaginacion } from '../validation/anuncios.js';
 import { validarEdicion, validarPublicacion } from '../validation/fotos.js';
 
+export async function listarMisAnuncios(request, response) {
+  const paginacion = validarPaginacion(request.query);
+  response.json(await getAnuncios(request).listarMios(request.usuario.id, paginacion));
+}
+
 // E03: todas las rutas de anuncios son privadas y exigen el email confirmado.
 export function anunciosRouter() {
   const router = Router();
@@ -31,10 +36,7 @@ export function anunciosRouter() {
 
   // US-18: «Mis anuncios», paginada (CA11-CA14). Va antes que /:id para que
   // «mios» no se tome como el id de un anuncio (CA13).
-  router.get('/mios', async (request, response) => {
-    const paginacion = validarPaginacion(request.query);
-    response.json(await getAnuncios(request).listarMios(request.usuario.id, paginacion));
-  });
+  router.get('/mios', listarMisAnuncios);
 
   // US-12: ficha propia del anuncio (CA20, CA24).
   router.get('/:id', async (request, response) => {

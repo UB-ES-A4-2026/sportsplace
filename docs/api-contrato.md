@@ -107,6 +107,37 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 
 ## Endpoints
 
+### Persistencia de conversaciones y mensajes (T28-1)
+
+La migración `20261111090000_crear_conversaciones_mensajes.sql` incorpora la base
+de US-28 y las marcas de lectura de US-77. La API de conversaciones corresponde
+a T28-2 y usa la especificación de E05 propuesta en la PR #265.
+
+- `conversaciones` guarda el anuncio, el centro comprador, el centro vendedor,
+  `creada_en`, `ultimo_mensaje_en`, `leida_hasta_comprador` y
+  `leida_hasta_vendedor`. Las marcas de lectura empiezan en `null`.
+- El par `(anuncio_id, centro_comprador_id)` es único. Los dos centros de una
+  conversación deben ser distintos. T28-2 copia el vendedor desde el anuncio
+  y comprueba que quien crea la conversación es el centro interesado.
+- `mensajes` conserva la conversación, el centro autor y el usuario de Auth que
+  envió el mensaje. El usuario sirve de trazabilidad. La pertenencia del centro
+  autor a la conversación se comprueba en la API.
+- Un mensaje de tipo `texto` exige contenido entre 1 y 2000 caracteres y
+  `oferta_id = null`. La API recorta los extremos antes de guardar el texto.
+  Un mensaje de tipo `oferta` exige `texto = null`
+  y un UUID en `oferta_id`. US-30 añadirá la FK cuando cree la tabla de ofertas.
+- Cada inserción de mensaje actualiza `ultimo_mensaje_en` en la base de datos.
+  Insertar después un mensaje de fecha anterior conserva la fecha más reciente.
+- Los índices permiten ordenar los mensajes por conversación, fecha e ID,
+  consultar la actividad por centro y listar las conversaciones de un anuncio.
+- Las FKs conservan sus referencias y usan `NO ACTION`. Las tablas tienen RLS
+  activado y se revocan los permisos de `PUBLIC`, `anon` y `authenticated`.
+  El acceso de la aplicación se realiza a través del servidor.
+
+La prueba `supabase/tests/conversaciones.sql` se ejecuta en una base aislada
+después de aplicar las migraciones. La aplicación al Supabase compartido requiere
+la revisión del esquema y la coordinación establecidas en el README.
+
 | Método y ruta | Historia | Privada | Responsable backend |
 |---|---|---|---|
 | `GET /api/health` | TR-02 | No | Carlos |
@@ -121,6 +152,9 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-13, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
+| `GET /api/mis-anuncios` | US-18, US-77 | Sí (email confirmado) | Carlos |
+| `GET /api/anuncios/:id/conversaciones` | US-77 | Sí (email confirmado) | Carlos |
+| `POST /api/conversaciones/:id/leida` | US-77 | Sí (email confirmado) | Carlos |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 | `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
@@ -132,6 +166,32 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/anuncios/:id/reservar` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/quitar-reserva` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/entregar` | US-17 | Sí (email confirmado) | Anass |
+
+### Lectura y listado de conversaciones (T77-1)
+
+Las tres rutas usan la sesión y el email confirmado del centro.
+
+- `GET /api/anuncios/:id/conversaciones` devuelve `{ "conversaciones": [...] }`
+  para el propietario del anuncio. Incluye anuncios pausados, entregados y
+  retirados. Un ID inválido, inexistente o ajeno responde `404 NO_ENCONTRADO`.
+- Cada conversación incluye `id`, `otro_centro` (`id`, `nombre`, `eliminado`),
+  `ultimo_mensaje` (`texto_resumen`, `es_mio`, `creado_en`) y `sin_leer`.
+  Se sirven hasta 200 conversaciones por fecha del último mensaje descendente,
+  con el ID como desempate. El resumen usa 80 caracteres Unicode y añade `…`
+  cuando se supera ese límite.
+- `sin_leer` depende de los mensajes del otro centro posteriores a la última
+  lectura. Un mensaje propio posterior no oculta los mensajes ajenos sin leer.
+- `POST /api/conversaciones/:id/leida` responde `204` y actualiza únicamente la
+  marca del centro que consulta. La marca es monotónica. Un centro ajeno recibe
+  `404 NO_ENCONTRADO`.
+- `GET /api/mis-anuncios` es un alias del listado existente
+  `GET /api/anuncios/mios`. Ambos conservan paginación y añaden
+  `num_conversaciones` y `conversaciones_sin_leer` a cada anuncio.
+- Los errores de sesión, método y conexión usan el formato común.
+
+US-11 aportará el estado de eliminación del centro. US-30 aportará la tabla de
+ofertas y el importe para su resumen. La base actual devuelve centros activos
+y el resumen genérico `Oferta` cuando el mensaje todavía carece de esos datos.
 
 ### `GET /api/health`
 
