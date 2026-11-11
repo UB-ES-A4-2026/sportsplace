@@ -121,7 +121,7 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-13, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
-| `GET /api/catalogo` | US-96 (US-21) | Sí (email confirmado) | Marta |
+| `GET /api/catalogo` | US-96 y US-21 | Sí (email confirmado) | Marta y Carlos |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 | `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
@@ -495,11 +495,14 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del ce
 - `foto_principal_url` es la URL pública de la foto con `es_principal` (US-13) o `null` si el anuncio no tiene fotos.
 - `modalidad` y `precio_unitario_centimos` son los del anuncio (US-14, CA7): `"donacion"` con `null`, o `"venta"` con el precio en céntimos.
 
-### `GET /api/catalogo` (US-96, historia US-21 · T21-1)
+### `GET /api/catalogo` (US-96 y US-21)
 
 Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **otros** centros (E04 «Base común» y US-96), 20 por página: `GET /api/catalogo?pagina=2`.
 
-- `pagina`: entero de 1 a 10000, por defecto 1. Un parámetro vacío (`pagina=`) equivale a no enviarlo y los parámetros desconocidos se ignoran. La búsqueda (`q`, T21-2) y los filtros (`categoria`, `deporte`, `estado_material`, `precio_min`, `precio_max`, `modalidad`, T21-3) se añaden en sus tareas.
+- `pagina`: entero de 1 a 10000, por defecto 1. Un parámetro vacío (`pagina=`) equivale a no enviarlo y los parámetros desconocidos se ignoran.
+- `q` es opcional. Se recortan y compactan los espacios. Si queda vacío se usa el catálogo sin búsqueda. Admite de 2 a 100 caracteres Unicode y hasta 5 palabras. Los valores inválidos devuelven `400 DATOS_INVALIDOS` con `details.q`.
+- Cada palabra debe aparecer como fragmento en el título o la descripción. Se ignoran mayúsculas y acentos, y se tratan literalmente `%`, `_` y `\`. Por ejemplo, `?q=balon+futbol` encuentra «Balón talla 5» si la descripción contiene «fútbol». El total y las páginas se calculan sobre las mismas coincidencias y se mantiene el orden por publicación.
+- La migración de T21-2 mantiene una columna derivada de título y descripción, normalizada con `unaccent`, y la indexa con GIN y `pg_trgm`. Los filtros de categoría, deporte y demás campos se incorporan en sus propias tareas.
 - `200`:
 
 ```json
