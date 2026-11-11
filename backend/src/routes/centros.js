@@ -1,11 +1,26 @@
 import { Router } from 'express';
 import { ApiError, methodNotAllowed } from '../errors.js';
-import { getCentros, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
+import { getAnuncios, getCentros, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
+import { esUuid } from '../repositories/anuncios.js';
+import { validarPaginacion } from '../validation/anuncios.js';
 import { validarPerfil } from '../validation/perfil.js';
 import { validarUbicacion } from '../validation/ubicacion.js';
 
 function centroNoEncontrado() {
   return new ApiError(404, 'NO_ENCONTRADO', 'No hay ningún centro asociado a tu cuenta.');
+}
+
+// US-10 (CA13): un centro que no existe, un id que no es un UUID o un centro
+// eliminado (US-11) responden igual.
+function perfilNoEncontrado() {
+  return new ApiError(404, 'NO_ENCONTRADO', 'Centro no encontrado.');
+}
+
+async function perfilPublico(request) {
+  if (!esUuid(request.params.id)) throw perfilNoEncontrado();
+  const centro = await getCentros(request).perfilPublico(request.params.id, request.usuario.id);
+  if (!centro) throw perfilNoEncontrado();
+  return centro;
 }
 
 export function centrosRouter() {
@@ -39,6 +54,24 @@ export function centrosRouter() {
   });
 
   router.all('/mio/ubicacion', methodNotAllowed(['PUT']));
+
+  // US-10 (CA11, CA14): perfil de otro centro (o del propio, con es_mio).
+  // Va después de /mio para que «mio» no se tome como un id.
+  router.get('/:id', requireAuth, requireEmailConfirmado, async (request, response) => {
+    response.json({ centro: await perfilPublico(request) });
+  });
+
+  // US-10 (CA6, CA12, CA15): sus anuncios activos y reservados, 20 por página.
+  // Solo se lee `pagina`; el tamaño de página es fijo.
+  router.get('/:id/anuncios', requireAuth, requireEmailConfirmado, async (request, response) => {
+    const { pagina, porPagina } = validarPaginacion({ pagina: request.query.pagina });
+    const centro = await perfilPublico(request);
+    response.json(await getAnuncios(request).listarDeCentro(centro.id, { pagina, porPagina }));
+  });
+
+  // US-07 (CA22): no hay ruta para editar otro centro por id, así que otros
+  // métodos sobre /:id siguen respondiendo 404 y no 405.
+  router.all('/:id/anuncios', methodNotAllowed(['GET']));
 
   return router;
 }

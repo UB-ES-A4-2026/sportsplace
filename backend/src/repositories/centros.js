@@ -8,6 +8,11 @@ const PERFIL = `id, nombre, email, localidad, direccion, codigo_postal, telefono
   descripcion, email_contacto, web, creado_en,
   provincia, latitud::float8 AS latitud, longitud::float8 AS longitud`;
 const EDITABLES = ['nombre', 'descripcion', 'telefono', 'email_contacto', 'web'];
+// US-10 (CA11, CA14): proyección cerrada del perfil que ven los demás centros.
+// Nunca el email de acceso, usuario_id, la dirección, el código postal, las
+// coordenadas ni los datos de privacidad o confirmación.
+const PUBLICO = `c.id, c.nombre, c.localidad, c.provincia, c.descripcion, c.telefono,
+  c.email_contacto, c.web, c.creado_en`;
 
 export function emailAlreadyRegistered() {
   return new ApiError(409, 'EMAIL_YA_REGISTRADO', 'Ya existe una cuenta con este email.');
@@ -96,6 +101,23 @@ export function createCentrosRepository(database) {
         return rows[0] ?? null;
       } catch (error) {
         console.error(`No se pudo leer el centro: ${error?.code ?? 'error desconocido'}`);
+        throw databaseUnavailable();
+      }
+    },
+
+    // US-10 (CA11, CA13): perfil público del centro `id` con `es_mio` (si es el
+    // de la sesión), o null si no existe. El id ya llega validado como UUID.
+    async perfilPublico(id, usuarioId) {
+      try {
+        const { rows } = await database.query(
+          `SELECT ${PUBLICO}, (c.usuario_id IS NOT DISTINCT FROM $2::uuid) AS es_mio
+           FROM public.centros c
+           WHERE c.id = $1`,
+          [id, usuarioId],
+        );
+        return rows[0] ?? null;
+      } catch (error) {
+        console.error(`No se pudo leer el perfil del centro: ${error?.code ?? 'error desconocido'}`);
         throw databaseUnavailable();
       }
     },
