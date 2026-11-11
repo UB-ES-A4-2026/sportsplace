@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
+import { createAnunciosRepository } from '../src/repositories/anuncios.js';
 import { validarConsultaCatalogo } from '../src/validation/catalogo.js';
 import { startApi } from './helpers.js';
 
@@ -79,4 +80,28 @@ test('GET /api/catalogo devuelve details.q y omite la consulta cuando q es invá
     });
   }
   assert.equal(llamadas.length, llamadasPrevias);
+});
+
+test('US-21 CA19: el listado y el total usan los mismos términos ligados sin alterar la página', async () => {
+  const consultas = [];
+  const respuestas = [[{ total: 22 }], []];
+  const database = {
+    async query(sql, valores) {
+      consultas.push({ sql, valores });
+      return { rows: respuestas.shift() };
+    },
+  };
+  const repo = createAnunciosRepository(database);
+  const resultado = await repo.listarCatalogo('usuario-a', { pagina: 3, q: "BALÓN %_\\!'" });
+  const [total, listado] = consultas;
+  assert.deepEqual(resultado, { anuncios: [], pagina: 3, por_pagina: 20, total: 22, total_paginas: 2 });
+  assert.deepEqual(total.valores, ['usuario-a', 'BALÓN', "%_\\!'"]);
+  assert.deepEqual(listado.valores, [...total.valores, 20, 40]);
+  const filtroTotal = total.sql.slice(total.sql.indexOf('WHERE '));
+  const filtroListado = listado.sql.slice(listado.sql.indexOf('WHERE '), listado.sql.indexOf('ORDER BY'));
+  assert.equal(filtroListado.trim(), filtroTotal.trim());
+  assert.match(filtroTotal, /normalizar_busqueda_catalogo\(\$2\)/);
+  assert.match(filtroTotal, /normalizar_busqueda_catalogo\(\$3\)/);
+  assert.doesNotMatch(total.sql, /BALÓN/);
+  assert.match(listado.sql, /LIMIT \$4 OFFSET \$5/);
 });

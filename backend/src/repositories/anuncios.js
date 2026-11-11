@@ -379,14 +379,26 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
     // Orden: publicado_en descendente y, a igual fecha, id ascendente, para que
     // las páginas no se solapen (CA5); lo sirve el índice de T21-1 (CA22).
     // Una página mayor que la última responde vacía con el total real (CA18).
-    async listarCatalogo(usuarioId, { pagina }) {
-      const visibles = `a.estado IN ('activo', 'reservado') AND a.unidades_disponibles > 0
-           AND a.centro_id IS DISTINCT FROM (SELECT c.id FROM public.centros c WHERE c.usuario_id = $1)`;
+    async listarCatalogo(usuarioId, { pagina, q }) {
+      const filtros = [
+        "a.estado IN ('activo', 'reservado') AND a.unidades_disponibles > 0",
+        'a.centro_id IS DISTINCT FROM (SELECT c.id FROM public.centros c WHERE c.usuario_id = $1)',
+      ];
+      const valores = [usuarioId];
+      for (const palabra of q ? q.split(' ') : []) {
+        valores.push(palabra);
+        const termino = `NULLIF(public.normalizar_busqueda_catalogo($${valores.length}), '')`;
+        // Escapar después de transliterar. Con ! como escape, la barra inversa
+        // se busca literalmente igual que %, _ y el propio signo !.
+        const literal = `replace(replace(replace(${termino}, '!', '!!'), '%', '!%'), '_', '!_')`;
+        filtros.push(`a.busqueda_catalogo LIKE ('%' || ${literal} || '%') ESCAPE '!'`);
+      }
+      const visibles = filtros.join('\n           AND ');
       const { rows: [{ total }] } = await consultar(
         `SELECT count(*)::integer AS total
          FROM public.anuncios a
          WHERE ${visibles}`,
-        [usuarioId],
+        valores,
       );
 
       const { rows } = await consultar(
@@ -397,8 +409,8 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
          JOIN public.centros cv ON cv.id = a.centro_id
          WHERE ${visibles}
          ORDER BY a.publicado_en DESC, a.id ASC
-         LIMIT $2 OFFSET $3`,
-        [usuarioId, POR_PAGINA_CATALOGO, (pagina - 1) * POR_PAGINA_CATALOGO],
+         LIMIT $${valores.length + 1} OFFSET $${valores.length + 2}`,
+        [...valores, POR_PAGINA_CATALOGO, (pagina - 1) * POR_PAGINA_CATALOGO],
       );
       const fotos = await fotosDe(rows.map((fila) => fila.id));
       const principal = (id) => fotos.get(id).find((foto) => foto.es_principal)?.url ?? null;
