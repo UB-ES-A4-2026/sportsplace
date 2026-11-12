@@ -48,14 +48,16 @@ cerrada; el cambio a `staging` necesita su propia evidencia de despliegue y smok
 
 ## Equipo y responsabilidades
 
+Roles desde el Sprint 2 (en el Sprint 0 y el Sprint 1: Carlos DevOps, Asier QA, Anass y Alex backend, Lucía y Marta frontend).
+
 | Persona | Rol | Responsabilidades principales | Permiso del repositorio |
 |---|---|---|---|
-| Carlos | DevOps | Repositorio, accesos, protección de ramas, entorno con Docker, configuración compartida y documentación de arranque. | Admin |
-| Asier | QA | Casos de prueba, validación de criterios de aceptación, workflow de instalación, lint y tests, y seguimiento de resultados. | Write |
-| Anass | Backend | API, datos, validaciones del servidor y autenticación, coordinado con Alex. | Write |
-| Alex | Backend | API, datos, validaciones del servidor y autenticación, coordinado con Anass. | Write |
-| Lucía | Frontend | Interfaz, formularios, navegación e integración con la API, coordinada con Marta. | Write |
-| Marta | Frontend | Interfaz, formularios, navegación e integración con la API, coordinada con Lucía. | Write |
+| Asier | DevOps y scrum master | CI/CD, `staging`, despliegue en Render, smoke test, protección de ramas, PR única `dev` → `main` de cada demo y seguimiento del sprint. | Write |
+| Carlos | Backend | API, datos, migraciones y validaciones del servidor, coordinado con Marta. | Admin |
+| Marta | Backend | API, datos, migraciones y validaciones del servidor, coordinada con Carlos. | Write |
+| Anass | Frontend | Interfaz, formularios, navegación e integración con la API. | Write |
+| Lucía | QA | Pruebas E2E de los criterios de aceptación, validación de cada historia antes de entrar en `dev` y cambio de diseño. | Write |
+| Alex | QA | Pruebas E2E de los criterios de aceptación, validación de cada historia antes de entrar en `dev`, y criterios de aceptación de Trello. | Write |
 
 Las responsabilidades se concretan mediante tareas asignadas a cada persona.
 
