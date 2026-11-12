@@ -8,11 +8,13 @@ los logs del servidor. El flujo funcional de Auth se valida en las historias y e
 
 El acuerdo del 4/11/2026 añade una rama desplegada para QA: **`story/...` → `dev` →
 `staging` → `main`**. Se conserva un único Web Service para web y API, el arranque
-en frío y **After CI Checks Pass**. Esta actualización prepara el CI y el smoke para
-`staging`; no acredita por sí sola que Render o la protección ya hayan cambiado.
-La [transición](#transición-de-dev-a-staging) debe completarse después de la entrega
-del Sprint 1 en [#212](https://github.com/UB-ES-A4-2026/sportsplace/pull/212) y de
-integrar la PR de esta configuración.
+en frío y **After CI Checks Pass**. La entrega del Sprint 1 en
+[#212](https://github.com/UB-ES-A4-2026/sportsplace/pull/212) y la configuración de
+[#213](https://github.com/UB-ES-A4-2026/sportsplace/pull/213) están integradas.
+`staging` ya existe, está protegida y es la rama guardada en Render. La configuración
+está activada; sigue pendiente acreditar la primera promoción real `dev` → `staging`
+con Auto-Deploy, smoke del mismo SHA y QA funcional. La
+[evidencia del 4/11](evidencias/staging-2026-11-04/README.md) separa esos resultados.
 
 ## Transición de dev a staging
 
@@ -22,24 +24,48 @@ La rama de integración y por defecto sigue siendo `dev`.
 
 Carlos coordina los siguientes pasos, conservando la evidencia de cada uno:
 
-- [ ] Fusionar la entrega #212 (`dev` → `main`) mediante merge commit, según el acuerdo del equipo.
-- [ ] Revisar e integrar en `dev` la PR que añade `staging` a los pushes del CI y cambia el disparador del smoke exclusivamente a `staging`.
-- [ ] Crear `staging` desde el `dev` actualizado, sin modificar ni borrar las ramas `test/...`.
-- [ ] Copiar a `staging` la protección completa de `dev`: PR, una aprobación ajena, conversaciones resueltas, checks, opciones de revisión y aplicación a administradores. Comparar ambas reglas después de guardar.
-- [ ] En Render, cambiar **Branch** a `staging` y conservar **Auto-Deploy: After CI Checks Pass**. Verificar el valor guardado al recargar Settings.
-- [ ] Registrar un push real a `staging` con el workflow integrado, sus cinco jobs del CI correctos, el Auto-Deploy de Render y el smoke remoto del mismo SHA completo en verde.
+- [x] Fusionar la entrega #212 (`dev` → `main`) mediante merge commit, según el acuerdo del equipo.
+- [x] Integrar #213 en `dev`: CI en pushes a `staging` y disparador del smoke exclusivamente en `staging`.
+- [x] Crear `staging` desde `dev`, en `c8bb2e1ec3ab88056c829e633b3ddd92f7ea5314`, conservando las ramas `test/...`.
+- [x] Copiar la protección de `dev` en la interfaz de GitHub: Carlos confirmó las opciones de revisión y los cuatro checks obligatorios se contrastaron mediante la API pública.
+- [x] Guardar en Render **Branch: staging** y **Auto-Deploy: After CI Checks Pass**, y verificar ambos valores tras recargar Settings.
+- [x] Comprobar el despliegue iniciado por el cambio de rama y verificar el SHA esperado con `deploy:wait` y `deploy:check` remoto correcto.
+- [ ] Promover un cambio real mediante PR `dev` → `staging` y registrar sus cinco jobs del CI correctos, el **Auto-Deploy causado por ese push** y el smoke remoto del mismo SHA completo en verde.
 - [ ] Registrar QA funcional de esa versión publicada antes de promoverla a `main`.
 
-Los checks obligatorios de `dev` que debe copiar `staging` son **Backend (lint y
+Los checks obligatorios de `dev` y `staging` son **Backend (lint y
 tests)**, **Frontend (lint y build)**, **Herramientas de migración (lint y tests)** y
 **E2E (Playwright)**. El CI también ejecuta **Imagen de despliegue (T12-6)**; no
 confundir los cinco jobs ejecutados con los cuatro checks de la regla actual.
-Copiar la protección incluye las demás opciones de `dev`, no solo esos nombres.
+Los cuatro figuran asociados a la app `15368`. Carlos confirmó en la interfaz PR
+obligatoria, una aprobación, descarte de revisiones antiguas, status checks, rama
+actualizada, resolución de conversaciones y prohibición de bypass; el resto de las
+opciones desactivado. La API pública acredita protección y checks, no expone toda
+la configuración de revisión.
 
-Hasta completar y comprobar esta lista, no declarar activo el nuevo entorno. La
-evidencia de `dev` que figura más abajo se conserva como historial y no demuestra
-el despliegue automático de `staging`. El cambio de rama no aplica migraciones ni
-crea otra base de datos: siguen vigentes los procedimientos de Supabase.
+La configuración de `staging` está activa. La lista conserva pendiente la primera
+promoción real con Auto-Deploy y QA, que no debe confundirse con el despliegue
+iniciado al cambiar la rama del servicio. El cambio de rama no aplica migraciones
+ni crea otra base de datos: siguen vigentes los procedimientos de Supabase.
+
+### Evidencia de activación del 4/11/2026
+
+El primer push que creó `staging` lanzó el [CI 41893440308](https://github.com/UB-ES-A4-2026/sportsplace/actions/runs/41893440308)
+(cinco jobs correctos en el intento 2), el
+[dispatcher 41893440077](https://github.com/UB-ES-A4-2026/sportsplace/actions/runs/41893440077)
+y el [smoke 41893463763](https://github.com/UB-ES-A4-2026/sportsplace/actions/runs/41893463763),
+con resultado correcto. Ese smoke terminó a las **20:05:35 Europe/Madrid**,
+antes de cambiar la rama en Render: comprobó `c8bb2e1`, que el servicio ya servía
+desde `dev`. Acredita el disparador automático, pero no un Auto-Deploy desde `staging`.
+
+Guardar **Branch: staging** inició un despliegue **Branch updated** el 4/11 a las
+**20:30:32 Europe/Madrid**:
+[dep-dblofm56e07s739hg11g](https://dashboard.render.com/web/srv-dbh7tt3bc2fs73fr1i20/deploys/dep-dblofm56e07s739hg11g).
+Quedó `Live`; después `deploy:wait` identificó el SHA completo
+`c8bb2e1ec3ab88056c829e633b3ddd92f7ea5314` y `deploy:check` contra la URL real
+terminó con salida `0`. Este resultado acredita la activación del servicio sobre
+`staging`; no sustituye la evidencia pendiente de un Auto-Deploy por una nueva
+promoción. Capturas y detalle: [evidencia de staging](evidencias/staging-2026-11-04/README.md).
 
 ## Servicio publicado y evidencia histórica de dev
 
@@ -49,7 +75,7 @@ crea otra base de datos: siguen vigentes los procedimientos de Supabase.
 | Servicio | `sportsplace-pruebas` |
 | Alojamiento | Render Free, Frankfurt (EU Central). |
 | Workspace / proyecto | `My Workspace` / `My project`. |
-| Rama de la evidencia histórica | `dev` (objetivo tras la transición: `staging`) |
+| Rama de la evidencia histórica | `dev` (el servicio actual está configurado en `staging`) |
 | Auto-Deploy guardado | `After CI Checks Pass` |
 | Commit del primer despliegue | [`e1adad1`](https://github.com/UB-ES-A4-2026/sportsplace/commit/e1adad1238d3a051e52ccd247fca5e816de0abcb) |
 | CI del commit | [Los cinco jobs correctos](https://github.com/UB-ES-A4-2026/sportsplace/actions/runs/40760662549). |
@@ -135,7 +161,7 @@ Sin variables privadas la API informa que esos servicios siguen sin configurar.
 
 | Campo | Valor |
 |---|---|
-| Branch | `staging`, después de completar la transición anterior. |
+| Branch | `staging` |
 | Language / Runtime | `Docker` |
 | Root Directory | Vacío: se necesita la raíz con `frontend/` y `backend/`. |
 | Dockerfile Path | `./Dockerfile` |
@@ -190,7 +216,7 @@ afecta también a sus correos. No se ha cambiado esa configuración en esta tare
 ## Despliegue automático y comprobación remota
 
 En **Render → servicio → Settings → Auto-Deploy**, guardar **After CI Checks Pass**
-para `staging`, una vez integrada y activada la transición. Render espera a que
+para `staging`, configuración guardada y verificada el 4/11/2026. Render espera a que
 terminen las comprobaciones del nuevo commit y no
 despliega si alguna falla o si no detecta ninguna. Para GitHub, considera aprobadas
 las conclusiones `success`, `neutral` y `skipped`; revisar también que los jobs
