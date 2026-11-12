@@ -291,91 +291,34 @@ test('US-12 · E2E-6 · cancelar con y sin datos', async ({ page, cuentas }) => 
 
 // ---------------------------------------------------------------- casos límite
 
-test.describe('US-12 · CA26 · longitud del título', () => {
-  for (const [nombre, titulo, publica] of [
-    ['5 caracteres', 'Balón', true],
-    ['80 caracteres', 'B'.repeat(80), true],
-    ['4 caracteres', 'Balo', false],
-    ['81 caracteres', 'B'.repeat(81), false],
-  ]) {
-    test(nombre, async ({ page, cuentas }) => {
-      await entrar(page, cuentas.centroA, cuentas.password);
-      await page.goto('/anuncios/nuevo');
-      await rellenar(page, { ...VALIDO, titulo });
-      await campos(page).publicar.click();
-      if (publica) {
-        await expect(page).toHaveURL(/\/anuncios\/[0-9a-f-]{36}$/);
-      } else {
-        await expect(page.getByText('El título debe tener entre 5 y 80 caracteres.')).toBeVisible();
-        await expect(page).toHaveURL('/anuncios/nuevo');
-      }
-    });
-  }
+// CA26-CA29: cada límite y cada mensaje de error (título 4/5/80/81, salto de línea, unidades 0/1/9999/10000 y no
+// enteras, descripción solo con espacios) los cubren frontend/src/validacion/anuncio.test.js y
+// backend/test/anuncios-validacion.test.js; E2E-3 comprueba en la web el rechazo y la revalidación. Aquí queda lo
+// que solo se ve de punta a punta: que la BD acepta el máximo recortado y el fallo de Chromium de la #134.
 
-  test('espacios alrededor se recortan', async ({ page, cuentas }) => {
-    await entrar(page, cuentas.centroA, cuentas.password);
-    await page.goto('/anuncios/nuevo');
-    await rellenar(page, { ...VALIDO, titulo: '   Balón   ' });
-    await campos(page).publicar.click();
-    await expect(page.getByRole('heading', { level: 1, name: 'Balón', exact: true })).toBeVisible();
-  });
-});
-
-test('US-12 · CA27 · título con salto de línea (API)', async ({ request, cuentas }) => {
-  const token = await tokenDe(request, cuentas.centroA, cuentas.password);
-  const res = await publicarPorApi(request, token, { ...VALIDO_API, titulo: 'Balones\nde fútbol' });
-  expect(res.status()).toBe(400);
-  const { error } = await res.json();
-  expect(error.code).toBe('DATOS_INVALIDOS');
-  expect(error.details.titulo).toBe('El título no puede tener saltos de línea.');
-});
-
-test.describe('US-12 · CA28 · unidades', () => {
-  for (const [unidades, publica] of [['1', true], ['9999', true], ['0', false], ['10000', false]]) {
-    test(`web: ${unidades}`, async ({ page, cuentas }) => {
-      await entrar(page, cuentas.centroA, cuentas.password);
-      await page.goto('/anuncios/nuevo');
-      await rellenar(page, { ...VALIDO, unidades });
-      await campos(page).publicar.click();
-      if (publica) {
-        await expect(page).toHaveURL(/\/anuncios\/[0-9a-f-]{36}$/);
-      } else {
-        await expect(page.getByText('Las unidades deben ser un número entero entre 1 y 9999.')).toBeVisible();
-      }
-    });
-  }
-
-  // «2,5» y «2.5» se escriben con el teclado.
-  // «Unidades disponibles» es un campo de texto (#134): Chromium descartaba la coma en un input type="number".
-  for (const escrito of ['2,5', '2.5']) {
-    test(`web: ${escrito} (escrito con el teclado)`, async ({ page, cuentas }) => {
-      await entrar(page, cuentas.centroA, cuentas.password);
-      await page.goto('/anuncios/nuevo');
-      await rellenar(page, { ...VALIDO, unidades: '' });
-      const publicaciones = contarPublicaciones(page);
-      await campos(page).unidades.click();
-      await page.keyboard.type(escrito);
-      await campos(page).publicar.click();
-      await expect(page.getByText('Las unidades deben ser un número entero entre 1 y 9999.')).toBeVisible();
-      await expect(page).toHaveURL('/anuncios/nuevo');
-      expect(publicaciones.n).toBe(0);
-    });
-  }
-
-  test('API: valores no enteros o fuera de rango', async ({ request, cuentas }) => {
-    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
-    for (const valor of [2.5, '2,5', '3', 0, 10000]) {
-      const res = await publicarPorApi(request, token, { ...VALIDO_API, unidades_disponibles: valor });
-      expect(res.status(), `unidades_disponibles = ${JSON.stringify(valor)}`).toBe(400);
-      expect((await res.json()).error.details).toHaveProperty('unidades_disponibles');
-    }
-  });
-});
-
-test('US-12 · CA29 · descripción solo con espacios', async ({ page, cuentas }) => {
+test('US-12 · CA26 · título de 80 caracteres con espacios alrededor: se publica recortado', async ({ page, cuentas }) => {
+  const titulo = 'B'.repeat(80);
   await entrar(page, cuentas.centroA, cuentas.password);
   await page.goto('/anuncios/nuevo');
-  await rellenar(page, { ...VALIDO, descripcion: '                         ' });
+  await rellenar(page, { ...VALIDO, titulo: `   ${titulo}   ` });
   await campos(page).publicar.click();
-  await expect(page.getByText('La descripción es obligatoria.')).toBeVisible();
+  await expect(page).toHaveURL(/\/anuncios\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole('heading', { level: 1, name: titulo, exact: true })).toBeVisible();
+});
+
+// #134: «Unidades disponibles» es un campo de texto porque Chromium descartaba la coma en un input type="number".
+test('US-12 · CA28 · «2,5» y «2.5» escritos con el teclado no se publican', async ({ page, cuentas }) => {
+  await entrar(page, cuentas.centroA, cuentas.password);
+  await page.goto('/anuncios/nuevo');
+  await rellenar(page, { ...VALIDO, unidades: '' });
+  const publicaciones = contarPublicaciones(page);
+  for (const escrito of ['2,5', '2.5']) {
+    await campos(page).unidades.fill('');
+    await campos(page).unidades.click();
+    await page.keyboard.type(escrito);
+    await campos(page).publicar.click();
+    await expect(page.getByText('Las unidades deben ser un número entero entre 1 y 9999.')).toBeVisible();
+    await expect(page).toHaveURL('/anuncios/nuevo');
+  }
+  expect(publicaciones.n).toBe(0);
 });
