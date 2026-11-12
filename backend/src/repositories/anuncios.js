@@ -379,12 +379,28 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
     // Orden: publicado_en descendente y, a igual fecha, id ascendente, para que
     // las páginas no se solapen (CA5); lo sirve el índice de T21-1 (CA22).
     // Una página mayor que la última responde vacía con el total real (CA18).
-    async listarCatalogo(usuarioId, { pagina, q }) {
+    // Filtros de US-22, US-73 y US-74: distintos se combinan con Y y los
+    // estados de material, con O. Las donaciones cuentan como 0 € (US-73 CA7).
+    async listarCatalogo(usuarioId, {
+      pagina, q, categoria, deporte, estado_material: estadosMaterial, precio_min: precioMin,
+      precio_max: precioMax, modalidad,
+    }) {
       const filtros = [
         "a.estado IN ('activo', 'reservado') AND a.unidades_disponibles > 0",
         'a.centro_id IS DISTINCT FROM (SELECT c.id FROM public.centros c WHERE c.usuario_id = $1)',
       ];
       const valores = [usuarioId];
+      const ligar = (valor) => {
+        valores.push(valor);
+        return `$${valores.length}`;
+      };
+      if (categoria) filtros.push(`a.categoria = ${ligar(categoria)}`);
+      if (deporte) filtros.push(`a.deporte = ${ligar(deporte)}`);
+      if (estadosMaterial) filtros.push(`a.estado_material = ANY(${ligar(estadosMaterial)}::text[])`);
+      const precio = 'COALESCE(a.precio_unitario_centimos, 0)';
+      if (precioMin !== undefined) filtros.push(`${precio} >= ${ligar(precioMin * 100)}`);
+      if (precioMax !== undefined) filtros.push(`${precio} <= ${ligar(precioMax * 100)}`);
+      if (modalidad) filtros.push(`a.modalidad = ${ligar(modalidad)}`);
       for (const palabra of q ? q.split(' ') : []) {
         valores.push(palabra);
         const termino = `NULLIF(public.normalizar_busqueda_catalogo($${valores.length}), '')`;
