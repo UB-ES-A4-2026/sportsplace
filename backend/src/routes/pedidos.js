@@ -3,6 +3,7 @@ import { methodNotAllowed } from '../errors.js';
 import { getPedidos, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
 import { validarEntregaPedido } from '../validation/entrega-pedido.js';
 import { validarListaPedidos, validarPedido } from '../validation/pedidos.js';
+import { validarRechazoPedido } from '../validation/rechazar-pedido.js';
 
 // E06: todas las rutas de pedidos son privadas y exigen el email confirmado.
 export function pedidosRouter() {
@@ -32,9 +33,22 @@ export function pedidosRouter() {
     response.json({ pedido });
   });
 
+  router.post('/:id/aceptar', async (request, response) => {
+    const pedido = await getPedidos(request).aceptar(request.usuario.id, request.params.id);
+    response.json({ pedido });
+  });
+
+  router.post('/:id/rechazar', async (request, response) => {
+    const datos = validarRechazoPedido(request.body);
+    const pedido = await getPedidos(request).rechazar(request.usuario.id, request.params.id, datos);
+    response.json({ pedido });
+  });
+
   router.all('/', methodNotAllowed(['GET', 'POST']));
   router.all('/contador', methodNotAllowed(['GET']));
   router.all('/:id', methodNotAllowed(['GET']));
+  router.all('/:id/aceptar', methodNotAllowed(['POST']));
+  router.all('/:id/rechazar', methodNotAllowed(['POST']));
 
   return router;
 }

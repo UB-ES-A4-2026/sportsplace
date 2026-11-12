@@ -1,4 +1,5 @@
 import { ApiError, errorInterno } from '../errors.js';
+import { transicionNoPermitida } from '../services/transiciones-pedido.js';
 import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,10 +35,10 @@ const ANUNCIO_NO_ACEPTABLE = new Set(['retirado', 'entregado']);
 // `comprobar(pedido)` lanza el 403/409 de la transición; la ruta (T33-2) le
 // pasa `comprobarTransicion(pedido, centroId, 'aceptar')` de
 // services/transiciones-pedido.js (US-32), la misma tabla que calcula `acciones`.
-// Devuelve el id del pedido aceptado, el anuncio tras la reserva y los pedidos
-// rechazados por el sistema; la ruta responde con el detalle del pedido.
+// Puede leer el resultado de la API dentro de la misma transacción; por defecto
+// devuelve el id aceptado, el anuncio tras la reserva y los rechazos del sistema.
 export function createAceptarPedido(database) {
-  return async function aceptarPedido({ pedidoId, centroId, comprobar }) {
+  return async function aceptarPedido({ pedidoId, centroId, comprobar, obtenerResultado }) {
     if (typeof pedidoId !== 'string' || !UUID.test(pedidoId)) throw pedidoNoEncontrado();
     try {
       return await database.transaction(async (client) => {
@@ -65,6 +66,7 @@ export function createAceptarPedido(database) {
           [pedidoId],
         );
         const fila = pedidos[0];
+        if (!anuncio || !fila) throw pedidoNoEncontrado();
         comprobar({
           id: fila.id,
           estado: fila.estado,
@@ -93,12 +95,13 @@ export function createAceptarPedido(database) {
 
         // US-33 CA6. El pedido ya está bloqueado y pendiente; el WHERE con el
         // estado de origen es, además, la protección común de E06.
-        await client.query(
+        const { rowCount } = await client.query(
           `UPDATE public.pedidos
            SET estado = 'aceptado', respondido_en = now(), actualizado_en = now()
            WHERE id = $1 AND estado = 'pendiente'`,
           [pedidoId],
         );
+        if (rowCount === 0) throw transicionNoPermitida(fila.estado);
 
         // US-34 CA4: los pendientes que ya no caben se rechazan por el sistema.
         const { rows: rechazados } = await client.query(
@@ -110,6 +113,7 @@ export function createAceptarPedido(database) {
           [anuncioId, reservados[0].unidades_disponibles],
         );
 
+        if (obtenerResultado) return obtenerResultado(client);
         return {
           pedidoId,
           anuncio: reservados[0],

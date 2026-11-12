@@ -134,6 +134,8 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/anuncios/:id/entregar` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/pedidos` | US-32, US-35 y US-40 | Sí (email confirmado) | Carlos |
 | `GET /api/pedidos/:id` | US-108 y US-40 (US-32) | Sí (email confirmado) | Alex y Carlos |
+| `POST /api/pedidos/:id/aceptar` | US-33, US-34 | Sí (email confirmado) | Carlos |
+| `POST /api/pedidos/:id/rechazar` | US-79 | Sí (email confirmado) | Carlos |
 
 ### `GET /api/health`
 
@@ -614,7 +616,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Detalle de un pedido del que 
 
 ### `POST /api/pedidos/:id/aceptar`: reserva de unidades (US-33, US-34)
 
-La ruta, su validación y `rechazar` son de T33-2. Aceptar se hace en una sola transacción (`backend/src/repositories/aceptar-pedido.js`, T33-3), que bloquea primero el anuncio (`SELECT ... FOR UPDATE`) y después el pedido, y vuelve a leer el pedido con los dos bloqueados:
+Privada con sesión y email confirmado. Sin cuerpo. El vendedor recibe `200 { "pedido": pedido }` con `estado: "aceptado"` y `respondido_en`. La ruta usa `aceptarPedido` (`backend/src/repositories/aceptar-pedido.js`, T33-3). La transacción bloquea primero el anuncio (`SELECT ... FOR UPDATE`) y después el pedido, y vuelve a leer el pedido con los dos bloqueados:
 
 - Resta `pedido.unidades` de `anuncios.unidades_disponibles` (US-34 CA1). Si quedan 0 y el anuncio estaba `activo`, pasa a `reservado`; si estaba `pausado`, sigue `pausado` (CA3).
 - El pedido pasa a `aceptado` con `respondido_en = now()` (US-33 CA6).
@@ -623,6 +625,15 @@ La ruta, su validación y `rechazar` son de T33-2. Aceptar se hace en una sola t
 - `409 ANUNCIO_NO_DISPONIBLE` «Este anuncio ya no está disponible.» si el anuncio está `retirado` o `entregado`; `pausado` se puede aceptar (US-33 CA8).
 - `403 SIN_PERMISO` y `409 TRANSICION_NO_PERMITIDA` salen de `comprobarTransicion` (tabla de acciones del pedido, US-108 CA13); `404 NO_ENCONTRADO` si el id no es UUID, el pedido no existe o el centro no es parte.
 - Dos aceptaciones a la vez sobre el mismo anuncio se esperan una a otra: una responde `200` y la otra `409` (`UNIDADES_INSUFICIENTES`, o `TRANSICION_NO_PERMITIDA` si la primera ya la rechazó por falta de unidades). `unidades_disponibles` nunca baja de 0: lo impide además el check `anuncios_unidades_rango` (0-9999) de la tabla (US-34 CA7).
+
+### `POST /api/pedidos/:id/rechazar` (US-79)
+
+Privada con sesión y email confirmado. Recibe `{ "motivo_codigo": "entrega_inviable", "motivo_texto": "Solo entregamos en Barcelona." }`.
+
+- `200 { "pedido": pedido }` con `estado: "rechazado"`, `cerrado_por: "vendedor"` y `respondido_en`. Solo el vendedor puede rechazar un pedido pendiente. El stock y el estado del anuncio se conservan.
+- `motivo_codigo` admite `sin_unidades`, `comprometido_otro_centro`, `entrega_inviable`, `condiciones_pago` u `otro`. El sistema reserva `anuncio_sin_stock` para el rechazo automático de US-34.
+- `motivo_texto` se recorta y admite hasta 300 caracteres. Con `otro` exige al menos 10. Los demás motivos aceptan un texto vacío y lo guardan como `null`.
+- `400 DATOS_INVALIDOS` incluye `details.motivo_codigo` o `details.motivo_texto` según el campo. Los errores de sesión, acceso, estado y disponibilidad de BD mantienen el formato común.
 
 ## Detalle del catálogo (US-24 / T24-1)
 
