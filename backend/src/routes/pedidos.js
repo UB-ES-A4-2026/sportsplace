@@ -2,12 +2,23 @@ import { Router } from 'express';
 import { methodNotAllowed } from '../errors.js';
 import { getPedidos, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
 import { validarEntregaPedido } from '../validation/entrega-pedido.js';
-import { validarPedido } from '../validation/pedidos.js';
+import { validarListaPedidos, validarPedido } from '../validation/pedidos.js';
 
 // E06: todas las rutas de pedidos son privadas y exigen el email confirmado.
 export function pedidosRouter() {
   const router = Router();
   router.use(requireAuth, requireEmailConfirmado);
+
+  // US-109 (CA10-CA13): bandeja de pedidos recibidos o realizados por el centro.
+  router.get('/', async (request, response) => {
+    const consulta = validarListaPedidos(request.query);
+    response.json(await getPedidos(request).listar(request.usuario.id, consulta));
+  });
+
+  // US-109 CA12: pedidos recibidos pendientes. Va antes que /:id.
+  router.get('/contador', async (request, response) => {
+    response.json(await getPedidos(request).contador(request.usuario.id));
+  });
 
   router.post('/', async (request, response) => {
     const datos = { ...validarPedido(request.body), ...validarEntregaPedido(request.body) };
@@ -21,7 +32,8 @@ export function pedidosRouter() {
     response.json({ pedido });
   });
 
-  router.all('/', methodNotAllowed(['POST']));
+  router.all('/', methodNotAllowed(['GET', 'POST']));
+  router.all('/contador', methodNotAllowed(['GET']));
   router.all('/:id', methodNotAllowed(['GET']));
 
   return router;

@@ -567,7 +567,36 @@ Privada con sesión y email confirmado. Ejemplo de venta con recogida:
 - `400 DATOS_INVALIDOS` devuelve errores por campo en `details`, con claves como `metodo_pago`, `metodo_entrega` o `direccion_envio.codigo_postal`.
 - `404 NO_ENCONTRADO` para anuncio inexistente o retirado. `403 PEDIDO_PROPIO` para anuncio propio. `409 ANUNCIO_NO_DISPONIBLE` para pausado, reservado o entregado.
 - `409 UNIDADES_INSUFICIENTES` incluye `details.unidades_disponibles`. `409 PEDIDO_YA_PENDIENTE` incluye `details.pedido_id` si ese comprador ya tiene un pedido pendiente del mismo anuncio. El índice parcial garantiza esta regla ante solicitudes simultáneas. Otro comprador puede solicitar el mismo material.
-- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO` y `503 BASE_DATOS_NO_DISPONIBLE` mantienen el formato común. `/api/pedidos` responde `405` con `Allow: POST` para otros métodos.
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO` y `503 BASE_DATOS_NO_DISPONIBLE` mantienen el formato común. `/api/pedidos` admite `GET` (bandeja, US-109) y `POST`; con otro método, `405` con `Allow: GET, POST`.
+
+### `GET /api/pedidos` y `GET /api/pedidos/contador` (US-109, T33-1)
+
+Privadas: `requireAuth` + `requireEmailConfirmado`. Bandeja de pedidos del centro de la sesión (`docs/especificacion/E06-pedidos-y-pago.md`, US-109).
+
+`GET /api/pedidos?rol=recibidos|realizados&pagina=1` → `200`:
+
+```json
+{
+  "pedidos": [{
+    "id": "uuid",
+    "anuncio": { "id": "uuid", "titulo": "Balones de baloncesto talla 7", "foto_principal_url": "https://..." },
+    "otro_centro": { "id": "uuid", "nombre": "Escola de Bàsquet Gràcia" },
+    "unidades": 4, "modalidad": "venta", "total_centimos": 3400,
+    "estado": "pendiente", "pagado_en": null, "creado_en": "2026-10-21T08:30:00.000Z"
+  }],
+  "pagina": 1, "total": 1, "por_pagina": 20
+}
+```
+
+- `recibidos`: pedidos con `vendedor_centro_id` = mi centro y `otro_centro` el comprador; `realizados`: `comprador_centro_id` = mi centro y `otro_centro` el vendedor (CA3). Nunca salen pedidos de terceros (CA13).
+- Orden: primero los `pendiente` y después el resto; dentro de cada grupo, `creado_en` descendente (CA4). Siempre 20 por página; `total` cuenta todos los del papel.
+- `anuncio.titulo` es la copia guardada al pedir; `foto_principal_url` la foto principal actual o `null`. `pagado_en` es `null` hasta que US-80 añada la columna.
+- `rol` ausente, vacío, repetido o distinto de `recibidos`/`realizados` → `400 DATOS_INVALIDOS`, `details.rol` «Indica recibidos o realizados.». `pagina` menor que 1 o no entera → `400 DATOS_INVALIDOS` con `details.pagina`. Una página mayor que la última → `200` con `pedidos: []` (CA11).
+
+`GET /api/pedidos/contador` → `200 { "recibidos_pendientes": n }`: pedidos recibidos en `pendiente` (CA9, CA12). `/api/pedidos/contador` admite `GET`; con otro método, `405` con `Allow: GET`.
+
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE` (CA14).
+- Índices de la migración `20261112100000_pedidos_indices_bandeja.sql`: `(vendedor_centro_id, estado, creado_en DESC)` y `(comprador_centro_id, estado, creado_en DESC)`.
 
 ### `GET /api/pedidos/:id` (US-108, dentro de US-32)
 
