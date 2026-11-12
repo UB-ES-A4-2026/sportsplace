@@ -103,6 +103,61 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
   return {
     fotosDe,
 
+    // US-24: detalle para el marketplace, sin los datos privados del centro.
+    // La ficha del propietario sigue usando obtener y su contrato de E03.
+    async obtenerCatalogo(usuarioId, id) {
+      if (!esIdDeAnuncio(id)) throw anuncioNoEncontrado();
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.descripcion, a.categoria, a.deporte,
+                a.estado_material, a.unidades_disponibles, a.modalidad,
+                a.precio_unitario_centimos, a.estado, a.publicado_en,
+                c.id AS centro_id, c.nombre AS centro_nombre, c.localidad AS centro_localidad,
+                c.id = yo.id AS es_propio,
+                (SELECT p.id FROM public.pedidos p
+                 WHERE p.anuncio_id = a.id AND p.comprador_centro_id = yo.id
+                   AND p.estado = 'pendiente') AS mi_pedido_pendiente_id,
+                CASE
+                  WHEN c.latitud IS NULL OR c.longitud IS NULL
+                    OR yo.latitud IS NULL OR yo.longitud IS NULL THEN NULL
+                  ELSE ROUND((6371 * 2 * asin(sqrt(LEAST(1.0, GREATEST(0.0,
+                    power(sin(radians(c.latitud::double precision - yo.latitud::double precision) / 2), 2)
+                    + cos(radians(yo.latitud::double precision)) * cos(radians(c.latitud::double precision))
+                    * power(sin(radians(c.longitud::double precision - yo.longitud::double precision) / 2), 2)
+                  )))))::numeric, 1)::double precision
+                END AS distancia_km
+         FROM public.anuncios a
+         JOIN public.centros c ON c.id = a.centro_id
+         JOIN public.centros yo ON yo.usuario_id = $1
+         WHERE a.id = $2 AND a.estado IN ('activo', 'reservado') AND a.unidades_disponibles > 0`,
+        [usuarioId, id],
+      );
+      if (rows.length === 0) throw anuncioNoEncontrado();
+      const fila = rows[0];
+      const porAnuncio = await fotosDe([fila.id]);
+      const fotos = porAnuncio.get(fila.id)
+        .sort((a, b) => Number(b.es_principal) - Number(a.es_principal) || a.orden - b.orden)
+        .map(({ url, orden, es_principal }) => ({ url, orden, es_principal }));
+      return {
+        id: fila.id,
+        titulo: fila.titulo,
+        descripcion: fila.descripcion,
+        categoria: fila.categoria,
+        deporte: fila.deporte,
+        estado_material: fila.estado_material,
+        unidades_disponibles: fila.unidades_disponibles,
+        modalidad: fila.modalidad,
+        precio_unitario_centimos: fila.precio_unitario_centimos,
+        estado: fila.estado,
+        publicado_en: fecha(fila.publicado_en),
+        fotos,
+        centro: { id: fila.centro_id, nombre: fila.centro_nombre, localidad: fila.centro_localidad },
+        distancia_km: fila.distancia_km,
+        es_favorito: false, // US-25 incorporará los favoritos del centro.
+        es_propio: fila.es_propio,
+        mi_pedido_pendiente_id: fila.mi_pedido_pendiente_id ?? null,
+      };
+    },
+
     // US-13: centro de la sesión, necesario para la ruta de las fotos en Storage
     // antes de crear el anuncio. Una cuenta sin centro no debería existir
     // (US-01 crea los dos juntos).

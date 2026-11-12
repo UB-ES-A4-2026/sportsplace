@@ -195,7 +195,7 @@ test('US-12 CA20: el centro ve la ficha de su anuncio', async () => {
 
   const response = await ver(anuncio.id);
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { anuncio });
+  assert.deepEqual(await response.json(), { anuncio: { ...anuncio, mi_pedido_pendiente_id: null } });
 });
 
 test('US-12 CA24/E2E-5: el anuncio de otro centro da el mismo 404 que uno inexistente', async () => {
