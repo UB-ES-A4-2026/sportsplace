@@ -63,7 +63,7 @@ export async function retirarAnuncios(db, ids) {
     await db.query('DELETE FROM public.pedidos WHERE anuncio_id = ANY($1::uuid[])', [ids]);
   }
   await db.query(
-    "UPDATE public.anuncios SET estado = 'retirado', retirado_en = now() WHERE id = ANY($1::uuid[])",
+    "UPDATE public.anuncios SET estado = 'retirado', retirado_en = coalesce(retirado_en, now()), entregado_en = NULL WHERE id = ANY($1::uuid[])",
     [ids],
   );
 }
