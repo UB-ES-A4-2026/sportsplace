@@ -18,12 +18,10 @@ export function validarRechazoPedido(cuerpo) {
   const detalles = {};
 
   if (!MOTIVOS_VENDEDOR.has(motivoCodigo)) detalles.motivo_codigo = 'Elige un motivo.';
-  if (motivoCodigo === 'otro') {
-    if (longitud < 10 || longitud > 300) {
-      detalles.motivo_texto = 'Explica el motivo (entre 10 y 300 caracteres).';
-    }
-  } else if (longitud < 0 || longitud > 300) {
+  if (longitud < 0 || longitud > 300) {
     detalles.motivo_texto = 'El texto no puede superar 300 caracteres.';
+  } else if (motivoCodigo === 'otro' && longitud < 10) {
+    detalles.motivo_texto = 'Explica el motivo (entre 10 y 300 caracteres).';
   }
 
   if (Object.keys(detalles).length > 0) {

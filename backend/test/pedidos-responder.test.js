@@ -137,11 +137,14 @@ test('US-79 CA8: un motivo ausente, desconocido o reservado al sistema se rechaz
 });
 
 test('US-79 CA3 y CA8: aplica los límites de la explicación tras recortar espacios', async () => {
-  for (const motivo_texto of [undefined, ' 123456789 ', 'a'.repeat(301)]) {
+  for (const motivo_texto of [undefined, ' 123456789 ']) {
     const respuesta = await responder('rechazar', { cuerpo: { motivo_codigo: 'otro', motivo_texto } });
     const error = await comprobarError(respuesta, 400, 'DATOS_INVALIDOS');
     assert.equal(error.details.motivo_texto, 'Explica el motivo (entre 10 y 300 caracteres).');
   }
+  const otroLargo = await responder('rechazar', { cuerpo: { motivo_codigo: 'otro', motivo_texto: 'a'.repeat(301) } });
+  const errorOtro = await comprobarError(otroLargo, 400, 'DATOS_INVALIDOS');
+  assert.equal(errorOtro.details.motivo_texto, 'El texto no puede superar 300 caracteres.');
   for (const motivo_texto of ['a'.repeat(301), 42, 'Incluye\0un carácter no válido.']) {
     const respuesta = await responder('rechazar', { cuerpo: { ...motivoValido, motivo_texto } });
     const error = await comprobarError(respuesta, 400, 'DATOS_INVALIDOS');

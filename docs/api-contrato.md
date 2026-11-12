@@ -633,7 +633,7 @@ Privada con sesión y email confirmado. Recibe `{ "motivo_codigo": "entrega_invi
 - `200 { "pedido": pedido }` con `estado: "rechazado"`, `cerrado_por: "vendedor"` y `respondido_en`. Solo el vendedor puede rechazar un pedido pendiente. El stock y el estado del anuncio se conservan.
 - `motivo_codigo` admite `sin_unidades`, `comprometido_otro_centro`, `entrega_inviable`, `condiciones_pago` u `otro`. El sistema reserva `anuncio_sin_stock` para el rechazo automático de US-34.
 - `motivo_texto` se recorta y admite hasta 300 caracteres. Con `otro` exige al menos 10. Los demás motivos aceptan un texto vacío y lo guardan como `null`.
-- `400 DATOS_INVALIDOS` incluye `details.motivo_codigo` o `details.motivo_texto` según el campo. Los errores de sesión, acceso, estado y disponibilidad de BD mantienen el formato común.
+- `400 DATOS_INVALIDOS` incluye `details.motivo_codigo` o `details.motivo_texto` según el campo. Para `otro` con menos de 10 caracteres: «Explica el motivo (entre 10 y 300 caracteres).». Si supera 300: «El texto no puede superar 300 caracteres.». Los errores de sesión, acceso, estado y disponibilidad de BD mantienen el formato común.
 
 ## Detalle del catálogo (US-24 / T24-1)
 
