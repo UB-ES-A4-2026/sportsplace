@@ -2,6 +2,7 @@ import { createAppServer } from './app.js';
 import { createDatabase } from './database.js';
 import { createAnunciosRepository } from './repositories/anuncios.js';
 import { createCentrosRepository } from './repositories/centros.js';
+import { createPedidosRepository } from './repositories/pedidos.js';
 import { createFotosStorage, urlPublicaFoto } from './services/storage-fotos.js';
 import { createSupabaseAuth } from './services/supabase-auth.js';
 
@@ -45,10 +46,12 @@ if (process.env.DATABASE_URL?.trim()) {
 
 const centros = database ? createCentrosRepository(database) : null;
 const anuncios = database ? createAnunciosRepository(database, { urlFoto }) : null;
+const pedidos = database ? createPedidosRepository(database, { urlFoto }) : null;
 const server = createAppServer({
   auth,
   centros,
   anuncios,
+  pedidos,
   fotos,
   renderGitCommit: process.env.RENDER_GIT_COMMIT,
   webRoot: process.env.STATIC_WEB_DIR?.trim() || null,

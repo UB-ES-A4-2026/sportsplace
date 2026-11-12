@@ -27,6 +27,12 @@ export function getAnuncios(request) {
   return anuncios;
 }
 
+export function getPedidos(request) {
+  const pedidos = request.app.get('pedidos');
+  if (!pedidos) throw databaseUnavailable();
+  return pedidos;
+}
+
 export function getFotosStorage(request) {
   const fotos = request.app.get('fotos');
   if (!fotos) throw storageUnavailable();
