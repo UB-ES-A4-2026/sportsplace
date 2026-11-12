@@ -9,9 +9,10 @@ RUN if [ "$LOCAL_GID" != "1000" ]; then groupmod --non-unique --gid "$LOCAL_GID"
     && chown -R node:node /app /home/node
 
 USER node
-COPY --chown=node:node package.json package-lock.json ./
+COPY --chown=node:node frontend/package.json frontend/package-lock.json ./
 RUN npm ci
-COPY --chown=node:node . .
+COPY --chown=node:node frontend/ ./
+COPY --chown=node:node shared/ /shared/
 
 EXPOSE 5173
 CMD ["npm", "run", "dev"]

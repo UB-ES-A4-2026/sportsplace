@@ -532,10 +532,10 @@ El workflow ([.github/workflows/ci.yml](.github/workflows/ci.yml)) se ejecuta en
 Para reproducir el lint, los tests unitarios de backend/tools y el build del frontend en local antes de abrir una pull request, ejecutar desde la raíz:
 
 ```bash
-docker run --rm -v "${PWD}:/repo:ro" -w /tmp/sportsplace-ci node:24-bookworm-slim sh -c "cp -R /repo/backend /repo/tools /repo/frontend . && cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
+docker run --rm -v "${PWD}:/repo:ro" -w /tmp/sportsplace-ci node:24-bookworm-slim sh -c "cp -R /repo/backend /repo/tools /repo/frontend /repo/shared . && cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
 ```
 
-El contenedor lee el repositorio y copia las tres carpetas a su espacio temporal. Las dependencias y la compilación se generan dentro de ese espacio, que se elimina al terminar; así no crea archivos con propietario root en la carpeta de trabajo de Linux. Este comando no reproduce los otros dos jobs: la imagen se valida con la [guía de despliegue](docs/despliegue-pruebas.md) y los E2E con la [guía de Playwright](docs/pruebas-e2e.md).
+El contenedor lee el repositorio y copia las carpetas de los tres paquetes y `shared/` a su espacio temporal. Las dependencias y la compilación se generan dentro de ese espacio, que se elimina al terminar; así no crea archivos con propietario root en la carpeta de trabajo de Linux. Este comando no reproduce los otros dos jobs: la imagen se valida con la [guía de despliegue](docs/despliegue-pruebas.md) y los E2E con la [guía de Playwright](docs/pruebas-e2e.md).
 
 ### Problemas habituales
 
