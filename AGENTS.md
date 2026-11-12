@@ -15,7 +15,7 @@ Propuesta para revisar por el equipo antes de incorporarla al repositorio. Compl
 - `frontend/`: React con Vite. La web utiliza `/api/...`; el backend centraliza el acceso a Supabase y las reglas de negocio.
 - `backend/`: Node.js 24. Las PR de backend incorporan Express 5 y Supabase Auth; estas decisiones requieren el acuerdo pendiente de Anass y Alex.
 - `tools/`: herramientas y pruebas de migración. `supabase/migrations/`: cambios SQL versionados.
-- Carlos mantiene el entorno y la configuración; Asier coordina QA; Anass y Alex revisan API y datos; Lucía y Marta revisan interfaz e integración.
+- Roles desde el Sprint 2 (los del Sprint 0 y el Sprint 1 ya no valen): Asier, DevOps y scrum master (CI/CD, `staging`, Render, smoke y la PR única `dev` → `main` de cada demo); Carlos y Marta, backend (API, datos y migraciones); Anass, frontend; Lucía y Alex, QA (E2E de los criterios de aceptación y validación de cada historia antes de `story/` → `dev`), con el cambio de diseño a cargo de Lucía. Cada tarea la hace quien tiene asignada su issue, aunque no sea de su rol; las revisiones las piden las propias tareas.
 - Actualizar el contrato en la misma PR si cambian rutas, campos, respuestas o códigos de error. Coordinar el cambio con el área que lo consume.
 
 ## Configuración y datos
