@@ -356,7 +356,7 @@ test('US-24 · API · CA12 y CA15 · formato del detalle sin datos privados', as
   expect(res.status()).toBe(200);
   const cuerpo = await res.json();
   expect(Object.keys(cuerpo).sort()).toEqual([
-    'categoria', 'centro', 'descripcion', 'deporte', 'distancia_km', 'es_favorito', 'es_propio', 'estado',
+    'categoria', 'centro', 'deporte', 'descripcion', 'distancia_km', 'es_favorito', 'es_propio', 'estado',
     'estado_material', 'fotos', 'id', 'modalidad', 'precio_unitario_centimos', 'publicado_en', 'titulo',
     'unidades_disponibles',
   ]);
