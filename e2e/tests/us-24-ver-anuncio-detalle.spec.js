@@ -194,6 +194,7 @@ test('US-24 · E2E-1 · camino feliz: datos, galería en bucle y volver al catá
   await page.keyboard.press('ArrowRight');
   await expect(fotoGrande(page, 3, 3)).toBeVisible();
   await page.keyboard.press('ArrowLeft');
+  await expect(fotoGrande(page, 2, 3)).toBeVisible();
   await page.keyboard.press('ArrowLeft');
   await expect(fotoGrande(page, 1, 3)).toBeVisible();
 
@@ -324,12 +325,13 @@ test('US-24 · CA11 · «Cargando…», error 503 y «Reintentar»', async ({ pa
 
   let liberar;
   const retenida = new Promise((resolve) => { liberar = resolve; });
+  // En desarrollo, StrictMode lanza la carga dos veces y cancela la primera: responder a la cancelada no debe romper el caso.
   await page.route(`**/api/catalogo/${id}`, async (route) => {
     await retenida;
     await route.fulfill({
       status: 503, contentType: 'application/json',
       body: JSON.stringify({ error: { code: 'BASE_DATOS_NO_DISPONIBLE', message: 'No disponible.' } }),
-    });
+    }).catch(() => {});
   });
   await page.goto(`/anuncios/${id}`);
   const main = page.getByRole('main');
