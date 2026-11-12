@@ -1,5 +1,6 @@
 import { ApiError, errorInterno } from '../errors.js';
 import { aPedido } from '../services/serializar-pedido.js';
+import { comprobarTransicion, transicionNoPermitida } from '../services/transiciones-pedido.js';
 import { validarMetodoPago } from '../validation/pedidos.js';
 import { anuncioNoEncontrado } from './anuncios.js';
 import { databaseUnavailable } from './centros.js';
@@ -34,6 +35,19 @@ JOIN public.centros cc ON cc.id = p.comprador_centro_id
 JOIN public.centros cv ON cv.id = p.vendedor_centro_id
 JOIN public.centros yo ON yo.usuario_id = $1 AND yo.id IN (cc.id, cv.id)
 WHERE p.id = $2`;
+
+// Transiciones de E06 y E07 que solo tocan el pedido. El SET se aplica con el
+// estado de origen en el WHERE («Reglas comunes de la API para toda transición»).
+const TRANSICIONES = Object.freeze({
+  // US-80 CA4: la marca se pone una vez y no se quita.
+  marcar_pagado: `UPDATE public.pedidos SET pagado_en = now(), actualizado_en = now()
+    WHERE id = $1 AND modalidad = 'venta' AND estado IN ('aceptado', 'recibido') AND pagado_en IS NULL
+    RETURNING id`,
+  // US-42 CA4 y CA7: no toca el stock del anuncio, ya restado al aceptar (US-34).
+  recibir: `UPDATE public.pedidos SET estado = 'recibido', recibido_en = now(), actualizado_en = now()
+    WHERE id = $1 AND estado = 'aceptado'
+    RETURNING id`,
+});
 
 function pedidoPendiente(id) {
   return new ApiError(409, 'PEDIDO_YA_PENDIENTE', 'Ya tienes un pedido pendiente en este anuncio.', { pedido_id: id });
@@ -101,6 +115,30 @@ export function createPedidosRepository(database, { urlFoto = () => null } = {})
     return aPedido({ fila, anuncio: { ...anuncio, foto_principal_url: fotoPrincipal }, comprador, vendedor }, centroId);
   }
 
+  // Bloquea el pedido, comprueba papel, estado y bloqueo de la acción con la
+  // misma tabla que calcula `acciones` y aplica la transición. Con el bloqueo,
+  // la segunda de dos peticiones simultáneas ya ve el estado nuevo (US-42 CA14).
+  async function transicion(usuarioId, id, accion) {
+    if (!esIdDePedido(id)) throw pedidoNoEncontrado();
+    try {
+      return await database.transaction(async (client) => {
+        const { rows } = await client.query(`${SELECT_DETALLE} FOR UPDATE OF p`, [usuarioId, id]);
+        const pedido = aDetalle(rows);
+        const incidenciaAbierta = rows[0].fila.incidencia_abierta === true;
+        comprobarTransicion({ ...pedido, incidencia_abierta: incidenciaAbierta }, rows[0].centro_id, accion);
+        const { rows: actualizados } = await client.query(TRANSICIONES[accion], [id]);
+        if (actualizados.length === 0) throw transicionNoPermitida(pedido.estado);
+        const { rows: despues } = await client.query(SELECT_DETALLE, [usuarioId, id]);
+        return aDetalle(despues);
+      });
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      console.error(`No se pudo aplicar ${accion} al pedido: ${error?.code ?? 'error desconocido'}`);
+      if (typeof error?.code === 'string' && error.code.startsWith('23')) throw errorInterno();
+      throw databaseUnavailable();
+    }
+  }
+
   return {
     async crear(usuarioId, datos) {
       try {
@@ -135,6 +173,16 @@ export function createPedidosRepository(database, { urlFoto = () => null } = {})
       if (!esIdDePedido(id)) throw pedidoNoEncontrado();
       const { rows } = await consultar(SELECT_DETALLE, [usuarioId, id]);
       return aDetalle(rows);
+    },
+
+    // US-80 CA4 y CA5: el vendedor marca como cobrada una venta aceptada o recibida.
+    marcarPagado(usuarioId, id) {
+      return transicion(usuarioId, id, 'marcar_pagado');
+    },
+
+    // US-42 CA4, CA11 y CA12: el comprador confirma que ha recibido el material.
+    recibir(usuarioId, id) {
+      return transicion(usuarioId, id, 'recibir');
     },
   };
 }

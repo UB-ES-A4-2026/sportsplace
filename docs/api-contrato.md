@@ -134,6 +134,8 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/anuncios/:id/entregar` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/pedidos` | US-32, US-35 y US-40 | Sí (email confirmado) | Carlos |
 | `GET /api/pedidos/:id` | US-108 y US-40 (US-32) | Sí (email confirmado) | Alex y Carlos |
+| `POST /api/pedidos/:id/marcar-pagado` | US-80 (US-42) | Sí (email confirmado) | Alex |
+| `POST /api/pedidos/:id/recibir` | US-42 | Sí (email confirmado) | Alex |
 
 ### `GET /api/health`
 
@@ -577,11 +579,30 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Detalle de un pedido del que 
 - `mi_papel`: `comprador` o `vendedor` según el centro de la sesión.
 - `entrega` contiene `{ metodo, direccion_envio, direccion_recogida }`. La copia de envío está disponible para los participantes. Para recogida, la dirección actual del vendedor se devuelve solo al comprador en `aceptado` o `recibido` y si está informada; en los demás casos es `null`.
 - `comprador.email`/`telefono` y `vendedor.email`/`telefono` solo vienen en `aceptado` y `recibido`; en otro estado esas claves no aparecen (CA7, CA12). El email es el `email_contacto` del centro y, si no tiene, el de la cuenta.
-- Las columnas que aún no existen en `pedidos` (las añaden US-33, US-79, US-80 y US-39 con su migración) salen `null`: `respondido_en`, `motivo_codigo`, `motivo_texto`, `cerrado_por`, `pagado_en`, `cancelado_en`.
-- `acciones` se calcula en el servidor con la tabla de `backend/src/services/transiciones-pedido.js`, la misma que valida las transiciones (`comprobarTransicion`, CA13). Ahora: `aceptar` y `rechazar` para el vendedor en `pendiente`; `aceptar` no aparece si `unidades` > `anuncio.unidades_disponibles`. `marcar_pagado` (US-80) y `cancelar` (US-39) se añaden a la tabla con sus endpoints.
+- `pagado_en` (US-80) y `recibido_en` (US-42) son fechas ISO o `null`. Las columnas que aún no existen en `pedidos` (las añaden US-33, US-79 y US-39 con su migración) salen `null`: `respondido_en`, `motivo_codigo`, `motivo_texto`, `cerrado_por`, `cancelado_en`.
+- `acciones` se calcula en el servidor con la tabla de `backend/src/services/transiciones-pedido.js`, la misma que valida las transiciones (`comprobarTransicion`, CA13). Ahora: `aceptar` y `rechazar` para el vendedor en `pendiente` (`aceptar` no aparece si `unidades` > `anuncio.unidades_disponibles`); `marcar_pagado` para el vendedor de una venta `aceptado` o `recibido` con `pagado_en` nulo (US-80 CA1); `recibir` para el comprador en `aceptado` sin incidencia abierta (US-42 CA1). `cancelar` (US-39) se añade a la tabla con su endpoint.
 - `404 NO_ENCONTRADO` «Pedido no encontrado.» si el id no es UUID, el pedido no existe o el centro no es parte (CA11, CA14).
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `/api/pedidos/:id` admite `GET`; con otro método, `405` con `Allow: GET`.
+
+### `POST /api/pedidos/:id/marcar-pagado` (US-80, dentro de US-42 · T42-1)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. El vendedor marca como cobrada una venta `aceptado` o `recibido`. La marca es irreversible: no hay endpoint para quitarla (CA6).
+
+- `200 { "pedido": pedido }` con `pagado_en` (CA4) y sin `marcar_pagado` en `acciones`.
+- Errores, en este orden: `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (id no UUID, inexistente o ajeno), `403 SIN_PERMISO` (lo llama el comprador), `409 TRANSICION_NO_PERMITIDA` con `details.estado_actual` (`pendiente`, `rechazado` o `cancelado`), `409 PEDIDO_DONACION` «Las donaciones no se cobran.» y `409 YA_PAGADO` «Este pedido ya consta como cobrado.» (CA5), `503 BASE_DATOS_NO_DISPONIBLE`.
+- Otro método: `405` con `Allow: POST`.
+
+### `POST /api/pedidos/:id/recibir` (US-42 · T42-1)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. El comprador confirma que ha recibido el material de un pedido `aceptado`, esté o no cobrado (CA3).
+
+- `200 { "pedido": pedido }` con `estado: 'recibido'` y `recibido_en` (CA4, CA11). No cambia `anuncio.unidades_disponibles` (CA7) y en `recibido` no hay ninguna acción para volver a `aceptado` (CA6).
+- Errores, en este orden: `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO`, `403 SIN_PERMISO` (lo llama el vendedor), `409 TRANSICION_NO_PERMITIDA` con `details.estado_actual` (cualquier estado distinto de `aceptado`, incluido ya `recibido`), `409 INCIDENCIA_ABIERTA` «Cierra la incidencia antes de confirmar la recepción.» (CA12), `503 BASE_DATOS_NO_DISPONIBLE`.
+- `INCIDENCIA_ABIERTA` se aplica cuando exista `pedidos.incidencia_abierta` (US-43); hasta entonces ningún pedido tiene incidencia. La anulación de la cita pendiente (CA5) y el aviso `pedido_recibido` (CA8) llegan con US-41 y US-83.
+- Otro método: `405` con `Allow: POST`.
+
+Las dos transiciones bloquean el pedido (`SELECT … FOR UPDATE OF p`), comprueban papel, estado y bloqueo con la tabla de `transiciones-pedido.js` y hacen `UPDATE … WHERE id = $1 AND estado …`. De dos confirmaciones simultáneas, la primera da `200` y la segunda `409 TRANSICION_NO_PERMITIDA` sin cambiar `recibido_en` (CA14); con dos marcas de cobro, la segunda da `409 YA_PAGADO`.
 
 ## Detalle del catálogo (US-24 / T24-1)
 
@@ -738,3 +759,9 @@ La tabla tiene RLS y los permisos de `PUBLIC`, `anon` y `authenticated` revocado
 La aplicación de esta migración al Supabase compartido requiere la revisión y
 coordinación del esquema. La evidencia de este primer commit corresponde a las
 pruebas SQL de la migración; las rutas se incorporan en T32-2 y T32-3.
+
+La migración [20261112130000_pedidos_pagado_recibido.sql](../supabase/migrations/20261112130000_pedidos_pagado_recibido.sql)
+(T42-1) añade `pagado_en` y `recibido_en` (timestamptz nulos) con dos checks:
+`pedidos_pagado_solo_venta` (`pagado_en` solo en ventas, US-80 CA8) y
+`pedidos_recibido_con_fecha` (`estado <> 'recibido' OR recibido_en IS NOT NULL`,
+US-42 CA13). Pruebas: [supabase/tests/pedidos_pagado_recibido.sql](../supabase/tests/pedidos_pagado_recibido.sql).
