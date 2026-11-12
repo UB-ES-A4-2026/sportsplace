@@ -5,7 +5,8 @@ import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export const esIdDeAnuncio = (id) => typeof id === 'string' && UUID.test(id);
+export const esUuid = (id) => typeof id === 'string' && UUID.test(id);
+export const esIdDeAnuncio = esUuid;
 
 // «Propiedad»: un anuncio que no existe, es de otro centro o está retirado
 // responde exactamente igual (404), para no revelar si existe.
@@ -349,6 +350,35 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
         total,
         pagina: paginaServida,
         por_pagina: porPagina,
+      };
+    },
+
+    // US-10 (CA6, CA12, CA15, CA17): anuncios visibles en el perfil de un
+    // centro, solo `activo` y `reservado`, del último publicado al más antiguo
+    // (a igualdad, id descendente). Una página sin resultados devuelve la
+    // lista vacía con la página pedida. Nunca pausados, entregados ni
+    // retirados, tampoco al consultar el propio centro.
+    async listarDeCentro(centroId, { pagina, porPagina }) {
+      const visibles = `a.centro_id = $1 AND a.estado IN ('activo', 'reservado')`;
+      const { rows: [{ total }] } = await consultar(
+        `SELECT count(*)::integer AS total FROM public.anuncios a WHERE ${visibles}`,
+        [centroId],
+      );
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.categoria, a.deporte, a.unidades_disponibles,
+                a.modalidad, a.precio_unitario_centimos, a.estado, a.publicado_en, a.actualizado_en
+         FROM public.anuncios a
+         WHERE ${visibles}
+         ORDER BY a.publicado_en DESC NULLS LAST, a.id DESC
+         LIMIT $2 OFFSET $3`,
+        [centroId, porPagina, (pagina - 1) * porPagina],
+      );
+      const fotos = await fotosDe(rows.map((fila) => fila.id));
+      const principal = (id) => fotos.get(id).find((foto) => foto.es_principal)?.url ?? null;
+      return {
+        anuncios: rows.map((fila) => aResumen({ ...fila, foto_principal_url: principal(fila.id) })),
+        pagina,
+        total,
       };
     },
   };

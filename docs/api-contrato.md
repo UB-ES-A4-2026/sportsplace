@@ -126,6 +126,8 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
 | `PATCH /api/centros/mio` | US-07 | Sí, con email confirmado | Alex |
 | `PUT /api/centros/mio/ubicacion` | US-68 | Sí, con email confirmado | Alex |
+| `GET /api/centros/:id` | US-10 | Sí (email confirmado) | Alex |
+| `GET /api/centros/:id/anuncios` | US-10 | Sí (email confirmado) | Alex |
 | `POST /api/anuncios/:id/pausar` | US-16 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/reactivar` | US-16 | Sí (email confirmado) | Anass |
 | `DELETE /api/anuncios/:id` | US-70 | Sí (email confirmado) | Anass |
@@ -455,6 +457,40 @@ Se recortan los espacios antes de validar. Las claves que no son estas tres (p. 
 - `400 DATOS_INVALIDOS` con `details` por campo.
 - `400 CODIGO_POSTAL_DESCONOCIDO`, `message` y `details.codigo_postal` «No conocemos este código postal. Revísalo.», si el formato es válido pero el código no está en la tabla. No se cambia nada.
 - `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `405` con otros métodos, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `GET /api/centros/:id` (US-10)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Perfil que ven los demás centros (también el propio, para «Ver cómo ven mi perfil»).
+
+- `200 { "centro": centro }`, con una proyección cerrada:
+
+```json
+{
+  "centro": {
+    "id": "uuid", "nombre": "Club Natació Exemple", "localidad": "Barcelona", "provincia": "Barcelona",
+    "descripcion": "Club de natación…", "telefono": "+34 931 234 567",
+    "email_contacto": "material@clubnatacio.cat", "web": "https://clubnatacio.cat",
+    "creado_en": "2026-10-09T10:00:00.000Z", "es_mio": false
+  }
+}
+```
+
+- `es_mio` es `true` si el centro es el de la sesión.
+- Nunca incluye `email` (de acceso), `usuario_id`, `direccion`, `codigo_postal`, `latitud`, `longitud`, `politica_privacidad_aceptada`, `email_confirmado_en` ni los miembros (CA14).
+- `404 NO_ENCONTRADO` («Centro no encontrado.») si no existe, si el id no es un UUID o si el centro está eliminado (US-11). Los demás métodos sobre esta ruta también responden 404: no hay ruta para editar otro centro (US-07, CA22).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `GET /api/centros/:id/anuncios` (US-10)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Anuncios del perfil del centro: `GET /api/centros/:id/anuncios?pagina=1`.
+
+- `pagina`: entero mayor que 0, por defecto 1. El tamaño de página es fijo, 20; `por_pagina` se ignora.
+- `200 { "anuncios": [resumen], "pagina": 1, "total": 21 }`. Cada elemento tiene el mismo formato que en `GET /api/anuncios/mios` (con `foto_principal_url`).
+- Solo los anuncios `activo` y `reservado` (la web muestra estos como «No disponible»); nunca `pausado`, `entregado`, `retirado` ni `borrador`, aunque sea el propio centro (CA6, CA15). `total` cuenta los mismos.
+- Orden: `publicado_en` descendente y, a igualdad, `id` descendente.
+- Una página sin resultados devuelve `anuncios: []` con la `pagina` pedida (no se ajusta a la última).
+- `400 DATOS_INVALIDOS` con `details.pagina` «Debe ser un número entero mayor que 0.» (`0`, `abc`, `2.5`, `-1` o el parámetro repetido).
+- `404 NO_ENCONTRADO` como en `GET /api/centros/:id`; `405` con otros métodos; `401`, `403` y `503` como arriba.
 
 ### `GET /api/anuncios/mios` (US-18)
 
