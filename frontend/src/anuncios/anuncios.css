@@ -97,3 +97,32 @@
 .pagina .boton-enlace-secundario:hover { background: #eef4ef; }
 .ficha-acciones .boton-enlace { margin-top: 0; }
 .fila-acciones .boton-enlace { margin-top: 0; padding: 8px 12px; }
+
+/* Detalle de un anuncio de otro centro (US-24 T24-2): dos columnas en escritorio y una en < 900 px */
+.detalle-columnas { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 899px) { .detalle-columnas { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+.detalle-galeria-marco { position: relative; }
+.detalle-galeria-grande { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 12px; background: #eef4ef; }
+.detalle-galeria-flecha { position: absolute; top: 50%; width: 40px; height: 40px; min-height: 0; margin: 0; padding: 0; border-radius: 999px; transform: translateY(-50%); color: #174f46; background: rgb(255 255 255 / 92%); box-shadow: 0 2px 10px rgb(25 55 47 / 18%); font-size: 26px; line-height: 1; }
+.detalle-galeria-flecha:hover { background: #fff; }
+.detalle-galeria-flecha-anterior { left: 10px; }
+.detalle-galeria-flecha-siguiente { right: 10px; }
+.detalle-galeria-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.detalle-sin-foto { display: grid; place-items: center; aspect-ratio: 4 / 3; border: 1px dashed #cdd9d0; border-radius: 12px; color: #587068; background: #f4f7f4; font-weight: 600; }
+.detalle-datos h1 { margin: 0; overflow-wrap: anywhere; }
+.detalle-reservado { margin: 0 0 12px; white-space: normal; }
+.detalle-precio { margin: 10px 0 20px; color: #174f46; font-size: 26px; font-weight: 750; }
+.detalle-subtitulo { margin: 0 0 8px; font-size: 15px; color: #587068; }
+.detalle-lista { display: grid; margin: 0; }
+.detalle-lista > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid #dfe7df; font-size: 15px; }
+.detalle-lista dt { color: #587068; font-weight: 600; }
+.detalle-lista dd { margin: 0; text-align: right; }
+.detalle-botones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.detalle-boton button { margin-top: 0; }
+.detalle-boton button:disabled { cursor: not-allowed; }
+.detalle-ayuda { margin: 6px 0 0; color: #7a8b81; font-size: 13px; }
+.detalle-centro { margin-top: 26px; padding: 16px; border-radius: 12px; background: #f4f7f4; }
+.detalle-centro-nombre { margin: 0; font-weight: 700; }
+.detalle-centro-datos { margin: 4px 0 0; color: #587068; font-size: 14px; }
+.detalle-descripcion { margin-top: 32px; }
+.detalle-no-disponible-botones { display: flex; flex-wrap: wrap; gap: 10px; }
