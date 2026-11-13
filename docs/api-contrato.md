@@ -56,8 +56,11 @@ Cualquier error de la API tiene esta forma:
 | 409 | `EMAIL_YA_REGISTRADO` | Ya existe una cuenta con ese email. |
 | 409 | `ANUNCIO_NO_EDITABLE` | El anuncio está entregado y ya no se puede modificar (US-15). |
 | 409 | `TRANSICION_NO_PERMITIDA` | El estado actual del anuncio no permite esa acción; `details.estado_actual` dice cuál es (E03, US-16). |
+| 409 | `ANUNCIO_PROPIO` | Un centro intenta abrir una conversación sobre su propio anuncio (US-28). |
+| 409 | `ANUNCIO_NO_DISPONIBLE` | El anuncio está `pausado` o `entregado` y no admite conversaciones nuevas (US-28). |
+| 409 | `CONVERSACION_YA_EXISTE` | El centro ya tiene una conversación sobre ese anuncio; `details.conversacion_id` dice cuál (US-28). |
 | 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo JSON supera 100 kB, o la petición multipart de `POST /api/anuncios` o `PATCH /api/anuncios/:id` supera 40 MB (41.943.040 bytes). |
-| 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
+| 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos, o el centro ha enviado 30 mensajes en el último minuto (US-28). |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
 | 503 | `BASE_DATOS_NO_DISPONIBLE` | PostgreSQL no responde o no está configurado. |
 | 503 | `AUTH_NO_DISPONIBLE` | Supabase Auth no responde o no está configurado. |
@@ -110,8 +113,8 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 ### Persistencia de conversaciones y mensajes (T28-1)
 
 La migración `20261111090000_crear_conversaciones_mensajes.sql` incorpora la base
-de US-28 y las marcas de lectura de US-77. La API de conversaciones corresponde
-a T28-2 y usa la especificación de E05 propuesta en la PR #265.
+de US-28 y las marcas de lectura de US-77. La API de conversaciones (T28-2) está en
+«Conversaciones y mensajes (US-28, T28-2)», más abajo.
 
 - `conversaciones` guarda el anuncio, el centro comprador, el centro vendedor,
   `creada_en`, `ultimo_mensaje_en`, `leida_hasta_comprador` y
@@ -163,6 +166,10 @@ la revisión del esquema y la coordinación establecidas en el README.
 | `POST /api/anuncios/:id/reservar` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/quitar-reserva` | US-17 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/entregar` | US-17 | Sí (email confirmado) | Anass |
+| `GET /api/anuncios/:id/conversacion` | US-28 | Sí (email confirmado) | Alex |
+| `POST /api/conversaciones` | US-28 | Sí (email confirmado) | Alex |
+| `GET /api/conversaciones/:id` | US-28 | Sí (email confirmado) | Alex |
+| `POST /api/conversaciones/:id/mensajes` | US-28, US-77 | Sí (email confirmado) | Alex |
 
 ### `GET /api/health`
 
@@ -572,6 +579,68 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica 
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `/api/anuncios/:id` admite `GET`, `PATCH` y `DELETE`; con otro método, `405` con `Allow: GET, PATCH, DELETE`.
 - US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
+
+### Conversaciones y mensajes (US-28, T28-2)
+
+Privadas: `requireAuth` + `requireEmailConfirmado` (`401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, que se comprueban antes de leer el cuerpo). Actúa el centro de la sesión, no la persona. Los mensajes no se editan ni se borran: no hay `PATCH` ni `DELETE` (CA30; `405 METODO_NO_PERMITIDO`). Fallos de PostgreSQL: `503 BASE_DATOS_NO_DISPONIBLE`.
+
+Objeto `conversacion` (CA23):
+
+```json
+{
+  "id": "uuid",
+  "anuncio": {
+    "id": "uuid", "titulo": "Balones de baloncesto Molten talla 7",
+    "foto_principal_url": "https://... o null", "modalidad": "venta",
+    "precio_unitario_centimos": 1200, "estado": "activo"
+  },
+  "otro_centro": { "id": "uuid", "nombre": "Club Natació Sabadell", "eliminado": false },
+  "soy": "comprador",
+  "puede_escribir": true,
+  "creada_en": "2026-11-13T11:00:00.000Z"
+}
+```
+
+- `anuncio` se devuelve en cualquier estado, también `retirado` (CA34); la web decide la banda con `anuncio.estado`.
+- `otro_centro.eliminado` y `puede_escribir = false` llegan con US-11 (CA35); hasta entonces son `false` y `true`.
+
+Objeto `mensaje` (CA24): `{ "id": "uuid", "texto": "...", "es_mio": true, "tipo": "texto", "creado_en": "ISO 8601" }`. `es_mio` es `true` si lo escribió el centro de la sesión. El texto se guarda recortado y tal cual (sin interpretar HTML, CA15).
+
+Texto de un mensaje (CA7-CA9): obligatorio, de 1 a 2000 caracteres tras quitar los espacios de los extremos; se aceptan saltos de línea. Errores en `400 DATOS_INVALIDOS`: `details.texto` «Escribe un mensaje.» o «El mensaje no puede superar los 2000 caracteres.».
+
+Límite (CA26): como mucho 30 mensajes por minuto por centro, sumando todas sus conversaciones (crear y responder cuentan igual). El 31.º responde `429 DEMASIADOS_INTENTOS` «Has enviado demasiados mensajes seguidos. Espera un minuto.».
+
+#### `GET /api/anuncios/:id/conversacion` (CA19)
+
+- `200 { "conversacion": { "id": "uuid" } }` si el centro de la sesión ya habló de ese anuncio como interesado; si no, `200 { "conversacion": null }` (también en un anuncio propio).
+- `404 NO_ENCONTRADO` «Anuncio no encontrado.» si no existe, está `retirado` o `:id` no es un UUID.
+
+#### `POST /api/conversaciones` (CA20, CA21, CA32, CA33, CA36)
+
+Cuerpo: `{ "anuncio_id": "uuid", "texto": "..." }`.
+
+- `201 { "conversacion": conversacion, "mensaje": mensaje }` con `Location: /api/conversaciones/<id>`. La conversación (con el vendedor copiado del anuncio) y su primer mensaje se crean en una única transacción.
+- `400 DATOS_INVALIDOS`: `details.texto` y/o `details.anuncio_id` «El anuncio no es válido.».
+- `404 NO_ENCONTRADO`: anuncio inexistente o `retirado`.
+- `409 ANUNCIO_PROPIO` «No puedes escribirte sobre tu propio anuncio.» (el vendedor no inicia conversaciones, CA32).
+- `409 ANUNCIO_NO_DISPONIBLE` «Este anuncio ya no está disponible.» si está `pausado` o `entregado`. `reservado` se admite.
+- `409 CONVERSACION_YA_EXISTE` con `details.conversacion_id`. Dos envíos simultáneos del mismo centro crean una sola conversación y el segundo recibe este error (CA36).
+- `429 DEMASIADOS_INTENTOS` (límite de CA26).
+
+#### `GET /api/conversaciones/:id` (CA22, CA31)
+
+- `200 { "conversacion": conversacion, "mensajes": [mensaje], "hay_anteriores": bool }`, mensajes en orden ascendente (`creado_en`, `id`).
+- Sin parámetros: los 50 más recientes. `?antes=<mensaje_id>`: los 50 anteriores a ese mensaje. `?despues=<mensaje_id>`: todos los posteriores (sondeo de CA14; `hay_anteriores` es `true`).
+- `400 DATOS_INVALIDOS` si `antes` o `despues` no es un UUID, si llegan los dos o si el mensaje no es de esta conversación (`details.antes` / `details.despues`).
+- `404 NO_ENCONTRADO` «Conversación no encontrada.» si no existe, el centro no participa en ella o `:id` no es un UUID.
+
+#### `POST /api/conversaciones/:id/mensajes` (CA25, CA31, CA33, CA34)
+
+Cuerpo: `{ "texto": "..." }`. Lo usan el comprador (US-28) y el vendedor (US-77).
+
+- `201 { "mensaje": mensaje }`. Se puede escribir con el anuncio en cualquier estado, también `pausado`, `entregado` o `retirado`.
+- `400 DATOS_INVALIDOS` (`details.texto`), `404 NO_ENCONTRADO` (como en el `GET`), `429 DEMASIADOS_INTENTOS`.
+- `409 CENTRO_ELIMINADO` si el otro centro está eliminado [Depende de US-11].
 
 ## Configuración del correo de recuperación (T04-1 / US-04)
 
