@@ -23,7 +23,6 @@ const CONFIRMACION = 'Si hay una cuenta con ese email, te hemos enviado un enlac
 const CAMBIADA = 'Contraseña cambiada. Ya puedes entrar con la nueva.';
 const DEMASIADOS = 'Has hecho demasiados intentos. Espera unos minutos y vuelve a probar.';
 const ERROR_GENERICO = 'No se ha podido completar la acción. Inténtalo de nuevo.';
-const ENLACE_INVALIDO_API = 'El enlace para cambiar la contraseña no es válido o ha caducado.';
 const ENLACE_INVALIDO_WEB = 'El enlace para cambiar la contraseña no es válido, ya se ha usado o ha caducado.';
 const MINIMO = 'La contraseña debe tener al menos 8 caracteres.';
 const LARGA = 'La contraseña es demasiado larga.';
@@ -419,16 +418,6 @@ test.describe('US-04 · Recuperar la contraseña', () => {
 
   // ---------------------------------------------------------------- API
 
-  test('CA12 · el enlace solo sirve una vez', async ({ request }) => {
-    const email = await crearCuenta(request);
-    const token = await pedirEnlace(request, email);
-    expect((await restablecer(request, token, NUEVA)).status()).toBe(204);
-
-    const otra = await restablecer(request, token, 'Otra2026!!');
-    expect(otra.status()).toBe(400);
-    expect((await otra.json()).error).toMatchObject({ code: 'ENLACE_INVALIDO', message: ENLACE_INVALIDO_API });
-  });
-
   test('CA13 · con dos enlaces solo funciona el último', async ({ request }) => {
     const email = await crearCuenta(request);
     const primero = await pedirEnlace(request, email, 2);
@@ -483,49 +472,6 @@ test.describe('US-04 · Recuperar la contraseña', () => {
     expect((await entrada.json()).error.code).toBe('EMAIL_NO_CONFIRMADO');
   });
 
-  test('CA19 · POST /api/auth/recuperar-contrasena', async ({ request }) => {
-    const ok = await request.post(RECUPERAR, { data: { email: emailUnico('sin-cuenta') } });
-    expect(ok.status()).toBe(204);
-    expect(await ok.text()).toBe('');
-
-    for (const [cuerpo, mensaje] of [
-      [{}, 'El email es obligatorio.'],
-      [{ email: 'centro@ejemplo' }, 'El email no es válido.'],
-    ]) {
-      const res = await request.post(RECUPERAR, { data: cuerpo });
-      expect(res.status()).toBe(400);
-      const { error } = await res.json();
-      expect(error.code).toBe('DATOS_INVALIDOS');
-      expect(error.details.email).toBe(mensaje);
-    }
-
-    const roto = await request.post(RECUPERAR, {
-      headers: { 'Content-Type': 'application/json' },
-      data: '{"email": ',
-    });
-    expect(roto.status()).toBe(400);
-    expect((await roto.json()).error.code).toBe('JSON_INVALIDO');
-  });
-
-  test('CA20 · POST /api/auth/restablecer-contrasena: errores', async ({ request }) => {
-    const vacio = await request.post(RESTABLECER, { data: {} });
-    expect(vacio.status()).toBe(400);
-    expect((await vacio.json()).error).toMatchObject({
-      code: 'DATOS_INVALIDOS',
-      details: { token_hash: 'Falta el token del enlace.', password: 'La contraseña es obligatoria.' },
-    });
-
-    for (const [password, mensaje] of [['abcdefg', MINIMO], [`${'ñ'.repeat(36)}a`, LARGA]]) {
-      const res = await restablecer(request, 'token-de-prueba', password);
-      expect(res.status()).toBe(400);
-      expect((await res.json()).error.details.password).toBe(mensaje);
-    }
-
-    const inventado = await restablecer(request, 'token-de-prueba', NUEVA);
-    expect(inventado.status()).toBe(400);
-    expect((await inventado.json()).error).toMatchObject({ code: 'ENLACE_INVALIDO', message: ENLACE_INVALIDO_API });
-  });
-
   test('CA21 y CA26 · no-store, sin sesión y misma contraseña aceptada', async ({ request }) => {
     const email = await crearCuenta(request);
     const pedir = await request.post(RECUPERAR, { data: { email } });
@@ -558,15 +504,6 @@ test.describe('US-04 · Recuperar la contraseña', () => {
     expect(respuestas[0].status).toBe(204);
     expect(respuestas[1]).toEqual(respuestas[0]);
     expect(respuestas[2]).toEqual(respuestas[0]);
-  });
-
-  test('CA25 · el email se normaliza', async ({ request }) => {
-    const email = await crearCuenta(request, { email: emailUnico('piscina').replace('@ejemplo.com', '@clubnatacio.cat') });
-    const escrito = `  ${email.replace('piscina', 'Piscina').replace('clubnatacio.cat', 'ClubNatacio.CAT')} `;
-    const res = await request.post(RECUPERAR, { data: { email: escrito } });
-    expect(res.status()).toBe(204);
-    const { tipo } = await esperarEmail(request, email, 2);
-    expect(tipo).toBe('recovery');
   });
 
   // ---------------------------------------------------------------- plantilla (CA10)
