@@ -72,6 +72,16 @@ async function rechaza(promesa, status, code) {
   });
 }
 
+test('US-33: si el UPDATE condicional no cambia el pedido, se revierte la reserva', async () => {
+  const respuestas = aceptacion().slice(0, 5);
+  respuestas[4] = { rows: [], rowCount: 0 };
+  const database = fakeDatabase(respuestas);
+  await rechaza(createAceptarPedido(database)({ pedidoId, centroId: lesCorts, comprobar: sinComprobar }),
+    409, 'TRANSICION_NO_PERMITIDA');
+  assert.deepEqual(database.estado, { commit: false, rollback: true });
+  assert.equal(database.log.length, 5);
+});
+
 test('US-34 CA1: aceptar resta las unidades del anuncio en la misma transacción que el cambio a aceptado', async () => {
   const database = fakeDatabase(aceptacion());
   const resultado = await createAceptarPedido(database)({ pedidoId, centroId: lesCorts, comprobar: sinComprobar });

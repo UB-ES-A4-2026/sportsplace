@@ -278,7 +278,17 @@ BEGIN
 
     pedido_renovado := pedido;
     FOREACH estado_final IN ARRAY ARRAY['rechazado', 'cancelado'] LOOP
-        UPDATE public.pedidos SET estado = estado_final WHERE id = pedido_renovado;
+        IF to_regtype('public.pedido_motivo_codigo') IS NULL THEN
+            UPDATE public.pedidos SET estado = estado_final WHERE id = pedido_renovado;
+        ELSE
+            UPDATE public.pedidos SET estado = estado_final,
+                motivo_codigo = CASE WHEN estado_final = 'rechazado'
+                    THEN 'sin_unidades'::public.pedido_motivo_codigo
+                    ELSE 'ya_no_necesario'::public.pedido_motivo_codigo END,
+                cerrado_por = CASE WHEN estado_final = 'rechazado' THEN 'vendedor' ELSE 'comprador' END,
+                respondido_en = CASE WHEN estado_final = 'rechazado' THEN now() ELSE NULL END
+            WHERE id = pedido_renovado;
+        END IF;
         INSERT INTO public.pedidos (
             anuncio_id, comprador_centro_id, vendedor_centro_id, titulo_anuncio,
             unidades, modalidad, precio_unitario_centimos, total_centimos,
