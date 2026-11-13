@@ -32,12 +32,15 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: 'npm --prefix frontend run dev -- --host 127.0.0.1 --port 4173',
-      cwd: repositoryRoot,
+      // Se prueba el build de producción (lo que despliega Render) con `vite preview`, que reutiliza el proxy
+      // `/api` de `server.proxy`. Con `vite dev` cada navegación cargaba cientos de módulos sin empaquetar y
+      // StrictMode repetía cada carga: era la mayor parte del tiempo del E2E.
+      command: 'npx vite build && npx vite preview --host 127.0.0.1 --port 4173 --strictPort',
+      cwd: `${repositoryRoot}frontend`,
       url: 'http://127.0.0.1:4173',
       env: { API_PROXY_TARGET: 'http://127.0.0.1:4300', VITE_USE_POLLING: 'false' },
       reuseExistingServer: false,
-      timeout: 60_000,
+      timeout: 120_000,
     },
   ],
 });
