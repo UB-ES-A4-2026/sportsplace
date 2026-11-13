@@ -121,7 +121,7 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-13, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
-| `GET /api/catalogo` | US-96 y US-21 | Sí (email confirmado) | Marta y Carlos |
+| `GET /api/catalogo` | US-96, US-21, US-22, US-73 y US-74 | Sí (email confirmado) | Marta y Carlos |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 | `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
@@ -495,14 +495,19 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del ce
 - `foto_principal_url` es la URL pública de la foto con `es_principal` (US-13) o `null` si el anuncio no tiene fotos.
 - `modalidad` y `precio_unitario_centimos` son los del anuncio (US-14, CA7): `"donacion"` con `null`, o `"venta"` con el precio en céntimos.
 
-### `GET /api/catalogo` (US-96 y US-21)
+### `GET /api/catalogo` (US-96, US-21, US-22, US-73 y US-74)
 
 Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **otros** centros (E04 «Base común» y US-96), 20 por página: `GET /api/catalogo?pagina=2`.
 
 - `pagina`: entero de 1 a 10000, por defecto 1. Un parámetro vacío (`pagina=`) equivale a no enviarlo y los parámetros desconocidos se ignoran.
 - `q` es opcional. Se recortan y compactan los espacios. Si queda vacío se usa el catálogo sin búsqueda. Admite de 2 a 100 caracteres Unicode y hasta 5 palabras. Los valores inválidos devuelven `400 DATOS_INVALIDOS` con `details.q`.
 - Cada palabra debe aparecer como fragmento en el título o la descripción. Se ignoran mayúsculas y acentos, y se tratan literalmente `%`, `_` y `\`. Por ejemplo, `?q=balon+futbol` encuentra «Balón talla 5» si la descripción contiene «fútbol». El total y las páginas se calculan sobre las mismas coincidencias y se mantiene el orden por publicación.
-- La migración de T21-2 mantiene una columna derivada de título y descripción, normalizada con `unaccent`, y la indexa con GIN y `pg_trgm`. Los filtros de categoría, deporte y demás campos se incorporan en sus propias tareas.
+- La migración de T21-2 mantiene una columna derivada de título y descripción, normalizada con `unaccent`, y la indexa con GIN y `pg_trgm`.
+- Filtros (T21-3), con los slugs de E03 (E04 «Base común»). Todos son opcionales; vacíos equivalen a no enviarlos. Filtros distintos se combinan con Y entre sí y con `q`:
+  - `categoria` y `deporte`: un slug exacto (distingue mayúsculas; «Varios» y «Otros» son valores normales) (US-22 CA4 y CA11).
+  - `estado_material`: uno o varios slugs separados por comas, sin repetir, combinados con O. Los 5 a la vez equivalen a no filtrar (US-73 CA1, CA2 y CA11).
+  - `precio_min` y `precio_max`: euros enteros de 0 a 99999 por unidad, extremos incluidos (`precio_max=20` incluye 20,00 € y excluye 20,01 €). Las donaciones cuentan como 0 €: aparecen sin `precio_min` o con `precio_min=0` (US-73 CA3, CA6 y CA7).
+  - `modalidad`: `venta` o `donacion` (US-74 CA2). `modalidad=donacion&precio_min=1` responde `200` sin anuncios (CA3).
 - `200`:
 
 ```json
@@ -536,6 +541,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **ot
 - `foto_principal_url` es la URL pública de la foto con `es_principal` o `null` si no hay fotos (CA20). `distancia_km` lo rellenará US-23 y `es_favorito`, US-25: hasta entonces van a `null` y `false`.
 - Nunca incluye la descripción completa ni el email, el teléfono o la dirección del centro (CA21).
 - `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «La página debe ser un número entero entre 1 y 10000.» (`0`, `10001`, `abc`, `2.5`, `-1` o el parámetro repetido) (CA17).
+- Con los filtros, el mismo `400` con un campo por parámetro inválido (el parámetro repetido también lo es): `details.categoria` «Categoría no válida.», `details.deporte` «Deporte no válido.» (US-22 CA12 y CA13), `details.estado_material` «Estado del material no válido.», `details.precio_min` o `details.precio_max` «Indica un precio entero entre 0 y 99.999 €.», `details.precio_min` «El precio mínimo no puede ser mayor que el máximo.» (US-73 CA11 y CA12) y `details.modalidad` «Modalidad no válida.» (US-74 CA6).
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO` (CA23), `503 BASE_DATOS_NO_DISPONIBLE`. Con otro método, `405` con `Allow: GET`.
 
 ### Cambios de estado de un anuncio (E03)
