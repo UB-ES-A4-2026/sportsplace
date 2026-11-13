@@ -52,3 +52,9 @@ export async function editarAnuncio(id, formulario, llamarApi = api) {
   const datos = await llamarApi(`/anuncios/${encodeURIComponent(id)}`, { method: 'PATCH', body: formulario });
   return datos.anuncio;
 }
+
+// US-24 CA12-CA14: GET /api/catalogo/:id, el detalle de un anuncio visible para otros centros. Responde 200 con el
+// anuncio en la raíz (incluye `centro`, `es_favorito` y `es_propio`); 404 NO_ENCONTRADO si no existe o no es visible.
+export async function obtenerAnuncioDelCatalogo(id, { signal } = {}, llamarApi = api) {
+  return llamarApi(`/catalogo/${encodeURIComponent(id)}`, { signal });
+}
