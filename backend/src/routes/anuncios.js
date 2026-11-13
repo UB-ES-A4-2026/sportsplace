@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { methodNotAllowed } from '../errors.js';
-import { getAnuncios, getFotosStorage, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
+import { getAnuncios, getConversaciones, getFotosStorage, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
 import { leerPublicacion } from '../middleware/multipart.js';
 import { anuncioNoEncontrado, esIdDeAnuncio } from '../repositories/anuncios.js';
 import { editarAnuncio } from '../services/editar-anuncio.js';
@@ -59,6 +59,16 @@ export function anunciosRouter() {
     });
     response.json({ anuncio });
   });
+
+  // US-28 CA19: conversación del centro de la sesión sobre este anuncio, o
+  // null. La web la usa en «Escribir al centro» (CA3) y en /mensajes/nueva (CA4).
+  router.get('/:id/conversacion', async (request, response) => {
+    if (!esIdDeAnuncio(request.params.id)) throw anuncioNoEncontrado();
+    const conversacion = await getConversaciones(request).deAnuncio(request.usuario.id, request.params.id);
+    response.json({ conversacion });
+  });
+
+  router.all('/:id/conversacion', methodNotAllowed(['GET']));
 
   // E03: cambio de estado sin cuerpo; responde 200 { anuncio } o 404/409.
   const transicion = (accion) => async (request, response) => {
