@@ -3,6 +3,7 @@ import {
   TEXTOS,
   botonesDelDetalle,
   destinoDeVolver,
+  enlaceAlCentro,
   precioDelDetalle,
   textoDistancia,
   textoUnidades,
@@ -55,8 +56,12 @@ export default function DetalleOtroCentro({ anuncio }) {
 
           <section className="detalle-centro" aria-labelledby="titulo-centro">
             <h2 id="titulo-centro" className="detalle-subtitulo">{TEXTOS.ofrecidoPor}</h2>
-            {/* [Depende de US-10] el nombre enlazará a /centros/:id cuando exista esa página; ahora es texto. */}
-            <p className="detalle-centro-nombre">{anuncio.centro?.nombre}</p>
+            {/* US-10 CA1: el nombre del centro enlaza a su perfil. */}
+            <p className="detalle-centro-nombre">
+              {enlaceAlCentro(anuncio.centro)
+                ? <Link to={enlaceAlCentro(anuncio.centro)}>{anuncio.centro.nombre}</Link>
+                : anuncio.centro?.nombre}
+            </p>
             <p className="detalle-centro-datos">
               {anuncio.centro?.localidad}
               {distancia && <> · {distancia}</>}
