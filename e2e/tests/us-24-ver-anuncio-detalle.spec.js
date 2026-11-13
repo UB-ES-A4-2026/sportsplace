@@ -4,6 +4,7 @@
 // sus fotos directamente en `anuncio_fotos` (no se sube nada a Storage: la galería solo necesita `src` y `alt`).
 // Al acabar se borran las fotos creadas y se retiran los anuncios.
 // El 403 EMAIL_NO_CONFIRMADO y el 405 los cubren los tests del backend (backend/test/catalogo-api.test.js).
+// Al final, US-10 CA1: el nombre del centro en «Ofrecido por» enlaza a su perfil (T10-2).
 import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
@@ -399,4 +400,22 @@ test('US-24 · API · CA16 · sin sesión responde 401', async ({ request }) => 
   const res = await request.get(`/api/catalogo/${id}`);
   expect(res.status()).toBe(401);
   expect((await res.json()).error.code).toBe('NO_AUTENTICADO');
+});
+
+// ---------------------------------------------------------------- US-10 CA1 (enlace desde el detalle)
+// Va aquí porque se recorre desde el detalle de US-24; cuando entre el spec de US-10 (#291), se puede mover allí.
+
+test('US-10 · CA1 · el nombre del centro en «Ofrecido por» lleva a su perfil', async ({ page, cuentas }) => {
+  const id = await nuevoAnuncio();
+  await entrar(page, cuentas.centroB, cuentas.password);
+  await page.goto(`/anuncios/${id}`);
+
+  const ofrecido = page.getByRole('main').getByRole('region', { name: 'Ofrecido por' });
+  const enlace = ofrecido.getByRole('link', { name: centros.a.nombre, exact: true });
+  await expect(enlace).toHaveAttribute('href', `/centros/${centros.a.id}`);
+
+  await enlace.click();
+  await expect(page).toHaveURL(`/centros/${centros.a.id}`);
+  await expect(page.getByRole('heading', { level: 1, name: centros.a.nombre })).toBeVisible();
+  await expect(page.getByText('Perfil de centro', { exact: true })).toBeVisible();
 });
