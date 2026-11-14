@@ -27,3 +27,21 @@
 .cuadro-mensaje-contador { color: #62766d; font-size: 13px; font-variant-numeric: tabular-nums; }
 .cuadro-mensaje-contador.alerta { color: #a13e33; font-weight: 700; }
 
+.mensajes-titulo a { color: inherit; text-decoration: none; }
+.mensajes-titulo a:hover { text-decoration: underline; }
+.mensajes-banda { margin-top: 14px; }
+
+.mensajes-hilo { display: grid; gap: 14px; margin-top: 24px; padding-bottom: 12px; }
+.mensajes-anteriores { justify-self: center; margin-top: 0; }
+.mensajes-lista { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.mensaje { display: grid; gap: 6px; max-width: min(560px, 85%); padding: 12px 14px; border-radius: 16px; }
+.mensaje-mio { justify-self: end; border-bottom-right-radius: 6px; color: #fff; background: #174f46; }
+.mensaje-otro { justify-self: start; border-bottom-left-radius: 6px; color: #19372f; background: #e9ecea; }
+.mensaje-texto { margin: 0; font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mensaje-fecha { font-size: 12px; opacity: 0.8; }
+
+/* Pie fijo: el cuadro de escritura queda pegado abajo mientras se lee el hilo. */
+.mensajes-pie {
+  position: sticky; bottom: 0; z-index: 2; padding: 4px 0 16px; background: linear-gradient(rgb(245 248 244 / 0%), #f5f8f4 18%);
+}
+.mensajes-pie .cuadro-mensaje { margin-top: 8px; }
