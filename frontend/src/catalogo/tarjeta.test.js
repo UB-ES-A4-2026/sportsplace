@@ -1,8 +1,18 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
-  TEXTOS, estaNoDisponible, textoEstadoYUnidades, textoOrigen, textoPrecio, textoPublicado,
+  TEXTOS, estaNoDisponible, partesPrecio, textoEstadoYUnidades, textoOrigen, textoPrecio, textoPublicado,
 } from './tarjeta.js';
+
+describe('partesPrecio', () => {
+  test('venta: importe y «/ unidad» por separado, que juntos dan el texto de CA12', () => {
+    assert.deepEqual(partesPrecio({ modalidad: 'venta', precio_unitario_centimos: 123450 }), { importe: '1.234,50 €', sufijo: '/ unidad' });
+  });
+
+  test('donación: solo «Gratis · Donación», sin sufijo', () => {
+    assert.deepEqual(partesPrecio({ modalidad: 'donacion', precio_unitario_centimos: null }), { importe: 'Gratis · Donación', sufijo: null });
+  });
+});
 
 describe('textoPrecio (CA12)', () => {
   test('venta: precio por unidad con coma decimal', () => {

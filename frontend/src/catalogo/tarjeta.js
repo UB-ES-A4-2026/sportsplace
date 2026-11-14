@@ -15,8 +15,15 @@ const FECHA = new Intl.DateTimeFormat('es-ES', {
 });
 
 // CA12: «12,50 € / unidad» o «1.234,50 € / unidad» en venta; «Gratis · Donación» en donación.
-export function textoPrecio({ modalidad, precio_unitario_centimos: centimos }) {
-  return modalidad === 'donacion' ? TEXTOS.donacion : `${formatearEuros(centimos)} / unidad`;
+// La tarjeta pinta el importe grande y «/ unidad» pequeño (boceto S2 de #250), pero el texto es el mismo.
+export function partesPrecio({ modalidad, precio_unitario_centimos: centimos }) {
+  if (modalidad === 'donacion') return { importe: TEXTOS.donacion, sufijo: null };
+  return { importe: formatearEuros(centimos), sufijo: '/ unidad' };
+}
+
+export function textoPrecio(anuncio) {
+  const { importe, sufijo } = partesPrecio(anuncio);
+  return sufijo ? `${importe} ${sufijo}` : importe;
 }
 
 // «Buen estado · 12 unidades» o «Como nuevo · 1 unidad».

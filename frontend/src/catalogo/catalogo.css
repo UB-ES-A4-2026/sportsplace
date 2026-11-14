@@ -30,43 +30,61 @@
 .catalogo-cargando { margin: 22px 0 0; color: var(--s2-gris); font-size: 15px; }
 
 /* Rejilla: 1 columna, 2 desde 600 px, 3 desde 900 px y 4 desde 1200 px (US-96, «Pantallas para el boceto»). */
-.catalogo-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 0; padding: 0; list-style: none; }
+.catalogo-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 0; padding: 0; list-style: none; }
 .catalogo-rejilla > li { display: flex; min-width: 0; }
 @media (min-width: 600px) { .catalogo-rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 900px) { .catalogo-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1200px) { .catalogo-rejilla { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-/* Tarjeta: todo el bloque es un enlace (CA3). */
+/* Tarjeta: todo el bloque es un enlace (CA3). Al pasar el ratón sube 6 px y gana sombra teal (boceto de #250). */
 .catalogo-rejilla .tarjeta-anuncio {
   display: flex; flex: 1; flex-direction: column; min-width: 0; overflow: hidden; color: var(--s2-tinta); text-decoration: none;
   border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
   box-shadow: var(--s2-sombra-1);
-  transition: transform 180ms var(--s2-curva), box-shadow 180ms var(--s2-curva), border-color 180ms var(--s2-curva);
+  transition: transform 220ms var(--s2-curva), box-shadow 220ms var(--s2-curva), border-color 220ms var(--s2-curva);
 }
-.catalogo-rejilla .tarjeta-anuncio:hover { border-color: var(--s2-teal-100); box-shadow: var(--s2-sombra-2); transform: translateY(-2px); }
+.catalogo-rejilla .tarjeta-anuncio:hover { border-color: var(--s2-teal-100); box-shadow: var(--s2-sombra-3); transform: translateY(-6px); }
 .catalogo-rejilla .tarjeta-anuncio:focus-visible { outline: 3px solid var(--s2-teal-500); outline-offset: 3px; }
 
-.tarjeta-foto { position: relative; aspect-ratio: 4 / 3; background: var(--s2-linea-2); }
-.tarjeta-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tarjeta-foto { position: relative; overflow: hidden; aspect-ratio: 4 / 3; background: var(--s2-linea-2); }
+.tarjeta-foto img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 400ms var(--s2-curva); }
+.catalogo-rejilla .tarjeta-anuncio:hover .tarjeta-foto img { transform: scale(1.04); }
+/* «Sin foto»: recuadro gris con el texto (CA de la tarjeta). */
 .tarjeta-sin-foto {
-  display: grid; place-items: center; height: 100%; color: var(--s2-gris); font-size: 14px; font-weight: 600;
-  background: repeating-linear-gradient(135deg, var(--s2-linea-2) 0 10px, #e8eff1 10px 11px);
+  display: grid; place-items: center; align-content: center; gap: 6px; height: 100%; color: var(--s2-gris); font-size: 14px;
+  font-weight: 600; background: repeating-linear-gradient(135deg, var(--s2-linea-2) 0 10px, #e8eff1 10px 11px);
 }
 .tarjeta-no-disponible {
-  position: absolute; top: 10px; left: 10px; padding: 3px 10px; border-radius: 999px; color: #8a4108; background: #fff0de;
+  position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 999px; color: #8a4108; background: #fff0de;
   font-size: 12.5px; font-weight: 700; box-shadow: 0 2px 6px rgb(15 29 34 / 14%);
 }
 
-.tarjeta-cuerpo { display: grid; flex: 1; align-content: start; gap: 6px; padding: 14px 16px 16px; }
+.tarjeta-cuerpo { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 18px 16px; }
 .tarjeta-cuerpo p { margin: 0; }
 .tarjeta-titulo {
-  display: -webkit-box; margin: 0; overflow: hidden; font-size: 16px; font-weight: 700; line-height: 1.3;
+  display: -webkit-box; margin: 0; overflow: hidden; font-size: 16.5px; font-weight: 700; line-height: 1.3;
   letter-spacing: -0.01em; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
 }
-.tarjeta-precio { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.tarjeta-precio-donacion { color: #17784a; }
-.tarjeta-detalle { color: var(--s2-tinta-2); font-size: 14px; }
-.tarjeta-origen { overflow: hidden; color: var(--s2-gris); font-size: 13.5px; white-space: nowrap; text-overflow: ellipsis; }
+/* Precio: el importe grande en teal y «/ unidad» pequeño; la donación, en verde. */
+.tarjeta-precio { color: var(--s2-gris); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.tarjeta-precio strong { color: var(--s2-teal-800); font-size: 20px; font-weight: 760; letter-spacing: -0.02em; }
+.tarjeta-precio-donacion strong { color: #17784a; font-size: 18px; }
+.tarjeta-detalle {
+  padding: 4px 10px; border-radius: var(--s2-radio-s); color: var(--s2-tinta-2); background: var(--s2-linea-2);
+  font-size: 13px; font-weight: 550;
+}
+/* Pie: línea discontinua, el centro con su círculo y la fecha. */
+.tarjeta-pie {
+  display: grid; gap: 4px; width: 100%; margin-top: auto; padding-top: 12px; border-top: 1px dashed var(--s2-linea);
+}
+.tarjeta-origen {
+  display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; color: var(--s2-gris); font-size: 13.5px;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.tarjeta-centro-punto {
+  flex: none; width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--s2-teal-100), var(--s2-teal-500) 60%, var(--s2-teal-800));
+}
 .tarjeta-fecha { color: var(--s2-gris); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 
 /* CA8: «Anterior» · «Página X de Y» · «Siguiente». */
@@ -80,6 +98,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .catalogo-rejilla .tarjeta-anuncio { transition: none; }
-  .catalogo-rejilla .tarjeta-anuncio:hover { transform: none; }
+  .catalogo-rejilla .tarjeta-anuncio, .tarjeta-foto img { transition: none; }
+  .catalogo-rejilla .tarjeta-anuncio:hover, .catalogo-rejilla .tarjeta-anuncio:hover .tarjeta-foto img { transform: none; }
 }
