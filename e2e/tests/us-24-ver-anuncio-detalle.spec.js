@@ -172,10 +172,11 @@ test('US-24 · E2E-1 · camino feliz: datos, galería en bucle y volver al catá
   expect(posiciones.every((p) => p >= 0)).toBe(true);
   expect([...posiciones].sort((x, y) => x - y)).toEqual(posiciones);
 
-  // CA10: hasta US-32 y US-28, los dos botones deshabilitados con «Disponible próximamente».
+  // CA10: «Pedir material» sigue deshabilitado con «Disponible próximamente» hasta US-32. US-28 (T28-3) ya habilita
+  // «Escribir al centro», que deja de llevar ese texto.
   await expect(boton(page, 'Pedir material')).toBeDisabled();
-  await expect(boton(page, 'Escribir al centro')).toBeDisabled();
-  await expect(main.getByText(TEXTOS.proximamente)).toHaveCount(2);
+  await expect(boton(page, 'Escribir al centro')).toBeEnabled();
+  await expect(main.getByText(TEXTOS.proximamente)).toHaveCount(1);
 
   // CA6 y CA7: principal primero, «›» dos veces → foto 3, «›» otra vez → vuelve a la 1; «‹» desde la 1 → la 3.
   await expect(fotoGrande(page, 1, 3)).toHaveAttribute('src', new RegExp(`${rutas[2]}$`));
@@ -222,8 +223,8 @@ test('US-24 · E2E-2 · anuncio reservado', async ({ page, request, cuentas }) =
   const texto = await main.innerText();
   expect(texto.indexOf(TEXTOS.reservado)).toBeLessThan(texto.indexOf(BALONES.titulo));
   await expect(boton(page, 'Pedir material')).toBeDisabled();
-  // «Escribir al centro» seguirá habilitado con US-28; hasta entonces aplica CA10 (deshabilitado y «próximamente»).
-  await expect(boton(page, 'Escribir al centro')).toHaveAccessibleDescription(TEXTOS.proximamente);
+  // CA4 y US-28 CA1: con el anuncio reservado se sigue pudiendo escribir al centro.
+  await expect(boton(page, 'Escribir al centro')).toBeEnabled();
 
   // CA12: la API mantiene el estado `reservado` para que la web lo indique.
   const tokenB = await tokenDe(request, cuentas.centroB, cuentas.password);
