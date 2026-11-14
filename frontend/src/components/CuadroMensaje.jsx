@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { Send } from 'lucide-react';
 import { contador, esAtajoDeEnvio, MAXIMO_CARACTERES, puedeEnviar, TEXTOS } from '../mensajes/conversacion.js';
 
 // US-28 CA7-CA13: área de texto con contador «n/2000» (rojo desde 1900) y «Enviar». Ctrl/Cmd+Enter envía; mientras
@@ -31,7 +32,10 @@ export default function CuadroMensaje({ valor, onCambiar, onEnviar, enviando, fi
         <span id={idContador} className={cuenta.alerta ? 'cuadro-mensaje-contador alerta' : 'cuadro-mensaje-contador'}>
           {cuenta.texto}
         </span>
-        <button type="submit" disabled={!habilitado}>{enviando ? TEXTOS.enviando : TEXTOS.enviar}</button>
+        <button type="submit" className="s2-boton" disabled={!habilitado}>
+          <Send size={16} aria-hidden="true" />
+          {enviando ? TEXTOS.enviando : TEXTOS.enviar}
+        </button>
       </div>
     </form>
   );

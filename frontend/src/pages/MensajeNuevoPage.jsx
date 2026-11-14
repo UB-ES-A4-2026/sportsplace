@@ -83,7 +83,7 @@ export default function MensajeNuevoPage() {
         {actual?.error && (
           <div className="ficha-error">
             <p className="intro-text" role="alert">{TEXTOS.errorCarga}</p>
-            <button type="button" onClick={() => setIntento((n) => n + 1)}>{TEXTOS.reintentar}</button>
+            <button type="button" className="s2-boton" onClick={() => setIntento((n) => n + 1)}>{TEXTOS.reintentar}</button>
           </div>
         )}
 

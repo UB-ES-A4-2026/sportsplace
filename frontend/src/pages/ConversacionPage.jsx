@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { History, TriangleAlert } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { enviarMensaje, obtenerConversacion } from '../api/mensajes.js';
 import Aviso from '../components/Aviso.jsx';
@@ -147,7 +148,7 @@ export default function ConversacionPage() {
         {actual?.error && (
           <div className="ficha-error">
             <p className="intro-text" role="alert">{TEXTOS.errorCarga}</p>
-            <button type="button" onClick={() => setIntento((n) => n + 1)}>{TEXTOS.reintentar}</button>
+            <button type="button" className="s2-boton" onClick={() => setIntento((n) => n + 1)}>{TEXTOS.reintentar}</button>
           </div>
         )}
 
@@ -159,12 +160,15 @@ export default function ConversacionPage() {
             </p>
             <CabeceraAnuncioMensajes anuncio={conversacion.anuncio} vendedor={vendedor}
               conEnlace={tituloConEnlace(conversacion.anuncio.estado)} />
-            {banda && <p className="franja-pausado mensajes-banda" role="status">{banda}</p>}
+            {banda && (
+              <p className="mensajes-banda" role="status"><TriangleAlert size={16} aria-hidden="true" />{banda}</p>
+            )}
 
             <div className="mensajes-hilo">
               {actual.hayAnteriores && (
-                <button type="button" className="boton-secundario mensajes-anteriores" disabled={cargandoAnteriores}
+                <button type="button" className="s2-boton s2-boton-secundario mensajes-anteriores" disabled={cargandoAnteriores}
                   onClick={verAnteriores}>
+                  <History size={16} aria-hidden="true" />
                   {TEXTOS.verAnteriores}
                 </button>
               )}

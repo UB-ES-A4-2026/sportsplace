@@ -1,3 +1,4 @@
+import { ImageOff } from 'lucide-react';
 import { Link } from 'react-router';
 import { fotoPrincipal, precioDeCabecera, TEXTOS } from '../mensajes/conversacion.js';
 
@@ -9,7 +10,12 @@ export default function CabeceraAnuncioMensajes({ anuncio, vendedor, conEnlace =
     <div className="mensajes-anuncio">
       {foto
         ? <img className="mensajes-anuncio-foto" src={foto} alt="" width="64" height="64" />
-        : <div className="mensajes-anuncio-foto mensajes-anuncio-sin-foto">{TEXTOS.sinFoto}</div>}
+        : (
+          <div className="mensajes-anuncio-foto mensajes-anuncio-sin-foto">
+            <ImageOff size={18} aria-hidden="true" />
+            {TEXTOS.sinFoto}
+          </div>
+        )}
       <div className="mensajes-anuncio-datos">
         {conEnlace
           ? <Link className="mensajes-anuncio-titulo" to={`/anuncios/${encodeURIComponent(anuncio.id)}`}>{anuncio.titulo}</Link>
