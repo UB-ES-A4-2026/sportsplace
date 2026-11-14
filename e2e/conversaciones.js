@@ -52,11 +52,12 @@ export async function insertarAnuncio(db, cambios) {
   return rows[0].id;
 }
 
+// retirado_en y entregado_en solo tienen valor en su estado (CHECK *_coherente de anuncios).
 export async function cambiarEstado(db, id, estado) {
   await db.query(
     `UPDATE public.anuncios SET estado = $2,
-       retirado_en = CASE WHEN $2 = 'retirado' THEN now() ELSE retirado_en END,
-       entregado_en = CASE WHEN $2 = 'entregado' THEN now() ELSE entregado_en END
+       retirado_en = CASE WHEN $2 = 'retirado' THEN now() END,
+       entregado_en = CASE WHEN $2 = 'entregado' THEN now() END
      WHERE id = $1`,
     [id, estado],
   );
@@ -73,7 +74,8 @@ export async function limpiarAnuncios(db, ids) {
     await db.query('DELETE FROM public.conversaciones WHERE anuncio_id = ANY($1::uuid[])', [ids]);
   }
   await db.query(
-    "UPDATE public.anuncios SET estado = 'retirado', retirado_en = now() WHERE id = ANY($1::uuid[])",
+    `UPDATE public.anuncios SET estado = 'retirado', retirado_en = COALESCE(retirado_en, now()), entregado_en = NULL
+     WHERE id = ANY($1::uuid[])`,
     [ids],
   );
 }
