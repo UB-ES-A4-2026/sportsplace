@@ -6,6 +6,7 @@ import {
   editarAnuncio,
   listarMisAnuncios,
   obtenerAnuncio,
+  obtenerAnuncioDelCatalogo,
   pausarAnuncio,
   reactivarAnuncio,
   retirarAnuncio,
@@ -169,4 +170,20 @@ test('cambiarReservaOEntrega codifica el id en la ruta', async () => {
 test('cambiarReservaOEntrega deja pasar el error de la API', async () => {
   const fallo = new Error('409');
   await assert.rejects(cambiarReservaOEntrega('x', 'entregar', async () => { throw fallo; }), fallo);
+});
+
+describe('obtenerAnuncioDelCatalogo (US-24 CA12)', () => {
+  test('GET /catalogo/:id con el id codificado y devuelve la respuesta tal cual', async () => {
+    const llamadas = [];
+    const respuesta = { id: 'a b', titulo: 'Balones de fútbol talla 5', es_propio: false };
+    const controlador = new AbortController();
+
+    const resultado = await obtenerAnuncioDelCatalogo('a b', { signal: controlador.signal }, async (ruta, opciones) => {
+      llamadas.push({ ruta, opciones });
+      return respuesta;
+    });
+
+    assert.deepEqual(llamadas, [{ ruta: '/catalogo/a%20b', opciones: { signal: controlador.signal } }]);
+    assert.equal(resultado, respuesta);
+  });
 });

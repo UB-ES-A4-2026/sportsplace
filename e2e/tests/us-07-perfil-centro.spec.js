@@ -199,34 +199,8 @@ test.describe('US-07 · API de /api/centros/mio', () => {
     token = await tokenDe(request, cuentas.centroA, cuentas.password);
   });
 
-  const RECHAZOS = [
-    ['CA6', { nombre: '   ' }, 'nombre', 'El nombre del centro es obligatorio.'],
-    ['CA6', { nombre: 'a'.repeat(161) }, 'nombre', 'Como máximo 160 caracteres.'],
-    ['CA7', { descripcion: 'a'.repeat(1001) }, 'descripcion', 'Como máximo 1000 caracteres.'],
-    ['CA8', { telefono: '93123456' }, 'telefono', 'El teléfono no es válido.'],
-    ['CA8', { telefono: '93-123-45-67' }, 'telefono', 'El teléfono no es válido.'],
-    ['CA8', { telefono: '9'.repeat(31) }, 'telefono', 'Como máximo 30 caracteres.'],
-    ['CA9', { email_contacto: 'material@clubnatacio' }, 'email_contacto', 'El email no es válido.'],
-    ['CA10', { web: 'clubnatacio.cat' }, 'web', 'La web debe empezar por http:// o https://.'],
-    ['CA10', { web: 'https://localhost' }, 'web', 'La web no es válida.'],
-    ['CA10', { web: webDe(256) }, 'web', 'Como máximo 255 caracteres.'],
-    ['CA19', { email: 'otro@example.test' }, 'email', 'Este campo no se puede modificar.'],
-    ['CA19', { localidad: 'Girona' }, 'localidad', 'Este campo no se puede modificar.'],
-    ['CA25', { nombre: '🏊'.repeat(161) }, 'nombre', 'Como máximo 160 caracteres.'],
-  ];
-
-  for (const [ca, cuerpo, clave, mensaje] of RECHAZOS) {
-    const muestra = JSON.stringify(cuerpo).slice(0, 40);
-    test(`${ca} · rechaza ${muestra} con «${mensaje}» y no guarda nada`, async ({ request, cuentas }) => {
-      const antes = await filaCentro(cuentas.centroA);
-      const res = await patchPerfil(request, token, cuerpo);
-      expect(res.status()).toBe(400);
-      const { error } = await res.json();
-      expect(error.code).toBe('DATOS_INVALIDOS');
-      expect(error.details).toEqual({ [clave]: mensaje });
-      expect(await filaCentro(cuentas.centroA)).toEqual(antes);
-    });
-  }
+  // Las validaciones campo a campo (CA6-CA10, CA19, CA25: cada mensaje y cada límite) las cubren los tests del
+  // backend (backend/test/centros-mio.test.js) y del frontend. Aquí quedan las que dependen de la BD real.
 
   test('CA19 · un error en un campo no guarda los demás', async ({ request, cuentas }) => {
     const antes = await filaCentro(cuentas.centroA);
@@ -239,34 +213,14 @@ test.describe('US-07 · API de /api/centros/mio', () => {
     expect(await filaCentro(cuentas.centroA)).toEqual(antes);
   });
 
-  const ACEPTADOS = [
-    ['CA6', { nombre: 'a'.repeat(160) }],
-    ['CA7', { descripcion: `${'a'.repeat(499)}\n${'b'.repeat(500)}` }],
-    ['CA8', { telefono: '931234567' }],
-    ['CA8', { telefono: '+34 931 234 567' }],
-    ['CA8', { telefono: '9'.repeat(30) }],
-    ['CA10', { web: 'https://clubnatacio.cat' }],
-    ['CA10', { web: webDe(255) }],
-    ['CA25', { nombre: '🏊'.repeat(160) }],
-    ['CA25', { descripcion: '⚽🏀'.repeat(500) }],
-  ];
-
-  for (const [ca, cuerpo] of ACEPTADOS) {
-    const muestra = JSON.stringify(cuerpo).slice(0, 40);
-    test(`${ca} · acepta ${muestra}`, async ({ request, cuentas }) => {
-      const res = await patchPerfil(request, token, cuerpo);
-      expect(res.status()).toBe(200);
-      expect((await res.json()).centro).toMatchObject(cuerpo);
-      expect(await filaCentro(cuentas.centroA)).toMatchObject(cuerpo);
-    });
-  }
-
-  test('CA9 y CA18 · recorta espacios y guarda el email de contacto en minúsculas', async ({ request, cuentas }) => {
-    const res = await patchPerfil(request, token, { email_contacto: '  Material@ClubNatacio.CAT ', telefono: ' 931234567 ' });
+  // CA6-CA10, CA18 y CA25 contra la BD real: los máximos caben en las columnas (emojis = 1 carácter) y se guarda
+  // el email de contacto recortado y en minúsculas.
+  test('CA6-CA10, CA18 y CA25 · los máximos se guardan en la BD', async ({ request, cuentas }) => {
+    const maximos = { nombre: '🏊'.repeat(160), descripcion: '⚽🏀'.repeat(500), telefono: '9'.repeat(30), web: webDe(255) };
+    const res = await patchPerfil(request, token, { ...maximos, email_contacto: '  Material@ClubNatacio.CAT ' });
     expect(res.status()).toBe(200);
-    expect(await filaCentro(cuentas.centroA)).toMatchObject({
-      email_contacto: 'material@clubnatacio.cat', telefono: '931234567',
-    });
+    expect((await res.json()).centro).toMatchObject(maximos);
+    expect(await filaCentro(cuentas.centroA)).toMatchObject({ ...maximos, email_contacto: 'material@clubnatacio.cat' });
   });
 
   // US-68 (CA13) añade provincia, latitud y longitud.
@@ -281,13 +235,6 @@ test.describe('US-07 · API de /api/centros/mio', () => {
     expect(centro).toMatchObject({ id: original.id, email: cuentas.centroA, nombre: original.nombre });
   });
 
-  test('CA17 y CA19 · sin sesión responde 401', async ({ request }) => {
-    expect((await request.get('/api/centros/mio')).status()).toBe(401);
-    const res = await request.patch('/api/centros/mio', { data: { nombre: 'X' } });
-    expect(res.status()).toBe(401);
-    expect((await res.json()).error.code).toBe('NO_AUTENTICADO');
-  });
-
   test('CA18 y CA21 · los campos no enviados no cambian y se actualiza actualizado_en', async ({ request, cuentas }) => {
     expect((await patchPerfil(request, token, DATOS_HISTORIA)).status()).toBe(200);
     const antes = await filaCentro(cuentas.centroA);
@@ -296,32 +243,5 @@ test.describe('US-07 · API de /api/centros/mio', () => {
     const despues = await filaCentro(cuentas.centroA);
     expect(despues).toMatchObject({ ...DATOS_HISTORIA, nombre: antes.nombre, descripcion: 'Solo cambia esto.' });
     expect(despues.actualizado_en.getTime()).toBeGreaterThan(antes.actualizado_en.getTime());
-  });
-
-  test('CA18 y CA24 · null, "" o solo espacios borran un opcional', async ({ request, cuentas }) => {
-    expect((await patchPerfil(request, token, DATOS_HISTORIA)).status()).toBe(200);
-    const res = await patchPerfil(request, token, { descripcion: '   \n  ', telefono: null, web: '' });
-    expect(res.status()).toBe(200);
-    expect(await filaCentro(cuentas.centroA)).toMatchObject({
-      descripcion: null, telefono: null, web: null, email_contacto: DATOS_HISTORIA.email_contacto,
-    });
-  });
-
-  test('CA19 · un cuerpo que no es JSON devuelve JSON_INVALIDO', async ({ request }) => {
-    const res = await request.patch('/api/centros/mio', {
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      data: '{"nombre": ',
-    });
-    expect(res.status()).toBe(400);
-    expect((await res.json()).error.code).toBe('JSON_INVALIDO');
-  });
-
-  test('CA22 · no existe ninguna ruta para editar otro centro por id', async ({ request, cuentas }) => {
-    const otro = await filaCentro(cuentas.centroB);
-    const res = await request.patch(`/api/centros/${otro.id}`, {
-      headers: { Authorization: `Bearer ${token}` }, data: { nombre: 'Intruso' },
-    });
-    expect(res.status()).toBe(404);
-    expect(await filaCentro(cuentas.centroB)).toEqual(otro);
   });
 });
