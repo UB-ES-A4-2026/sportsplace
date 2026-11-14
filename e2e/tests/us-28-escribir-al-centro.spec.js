@@ -19,6 +19,7 @@ const BANDA_NO_DISPONIBLE = 'Este anuncio ya no está disponible en el catálogo
 const BANDA_RETIRADO = 'El vendedor ha retirado este anuncio.';
 const VACIO = 'Escribe un mensaje.';
 const DEMASIADO_LARGO = 'El mensaje no puede superar los 2000 caracteres.';
+const NO_VALIDO = 'El mensaje contiene caracteres no válidos.';
 
 let db;
 let centros;
@@ -288,6 +289,13 @@ test('US-28 · API · CA7-CA9 · texto del mensaje', async ({ request, cuentas }
   expect((await esperarError(await enviarMensaje(request, tokens.a, conversacion.id, 'y'.repeat(2001)), 400, 'DATOS_INVALIDOS')).details.texto).toBe(DEMASIADO_LARGO);
   expect(await mensajesDe(db, conversacion.id)).toHaveLength(2);
 
+  // CA21: PostgreSQL no guarda U+0000; se rechaza con 400 en las dos rutas, nunca 503.
+  const conNulo = await nuevoAnuncio();
+  expect((await esperarError(await crearConversacion(request, tokens.b, { anuncio_id: conNulo, texto: 'Ho\u0000la' }), 400, 'DATOS_INVALIDOS')).details.texto).toBe(NO_VALIDO);
+  expect(await conversacionesDe(db, conNulo)).toHaveLength(0);
+  expect((await esperarError(await enviarMensaje(request, tokens.a, conversacion.id, 'Ho\u0000la'), 400, 'DATOS_INVALIDOS')).details.texto).toBe(NO_VALIDO);
+  expect(await mensajesDe(db, conversacion.id)).toHaveLength(2);
+
   // CA15: el texto se guarda y se devuelve tal cual, sin interpretar HTML.
   const html = await enviarMensaje(request, tokens.a, conversacion.id, '<b>hola</b>');
   expect((await html.json()).mensaje.texto).toBe('<b>hola</b>');
@@ -470,4 +478,41 @@ test('US-28 · API · CA36 · dos primeros mensajes simultáneos', async ({ requ
   const conversaciones = await conversacionesDe(db, a1);
   expect(conversaciones).toHaveLength(1);
   expect(await mensajesDe(db, conversaciones[0].id)).toHaveLength(1);
+});
+
+test('US-28 · API · CA26 y CA36 · dos primeros mensajes simultáneos con 29 en el último minuto', async ({ request, cuentas }) => {
+  const tokens = await conApi(request, cuentas);
+  const c1 = await conversacionDeB(await nuevoAnuncio());
+  const a2 = await nuevoAnuncio(A2);
+  // Deja a B con 29 mensajes en el último minuto: el primer envío completa los 30.
+  const { rows: [{ recientes }] } = await db.query(
+    "SELECT count(*)::int AS recientes FROM public.mensajes WHERE centro_autor_id = $1 AND creado_en > now() - interval '1 minute'",
+    [centros.b.id],
+  );
+  const relleno = [];
+  try {
+    for (let i = recientes; i < 29; i += 1) {
+      const { rows } = await db.query(
+        `INSERT INTO public.mensajes (conversacion_id, centro_autor_id, autor_usuario_id, texto)
+         VALUES ($1, $2, $3, $4) RETURNING id`,
+        [c1, centros.b.id, centros.b.usuario_id, `Mensaje ${i + 1}`],
+      );
+      relleno.push(rows[0].id);
+    }
+    const respuestas = await Promise.all([
+      crearConversacion(request, tokens.b, { anuncio_id: a2, texto: 'Primera pestaña' }),
+      crearConversacion(request, tokens.b, { anuncio_id: a2, texto: 'Segunda pestaña' }),
+    ]);
+    // El duplicado se comprueba antes que el límite: 409 con su id, no 429.
+    expect(respuestas.map((res) => res.status()).sort()).toEqual([201, 409]);
+    const creada = await respuestas.find((res) => res.status() === 201).json();
+    const error = (await respuestas.find((res) => res.status() === 409).json()).error;
+    expect(error.code).toBe('CONVERSACION_YA_EXISTE');
+    expect(error.details.conversacion_id).toBe(creada.conversacion.id);
+    relleno.push(creada.mensaje.id);
+    expect(await mensajesDe(db, creada.conversacion.id)).toHaveLength(1);
+  } finally {
+    // Se sacan los mensajes del último minuto para no bloquear los casos siguientes.
+    await db.query("UPDATE public.mensajes SET creado_en = creado_en - interval '2 minutes' WHERE id = ANY($1::uuid[])", [relleno]);
+  }
 });
