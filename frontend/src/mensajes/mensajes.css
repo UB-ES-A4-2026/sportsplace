@@ -40,8 +40,9 @@ a.mensajes-anuncio-titulo:hover { color: var(--s2-teal-800); text-decoration: un
 .cuadro-mensaje-contador { color: var(--s2-gris); font-size: 13px; font-variant-numeric: tabular-nums; }
 .cuadro-mensaje-contador.alerta { color: var(--s2-peligro); font-weight: 700; }
 
-/* Pantalla «Conversación». */
-.pagina-conversacion { max-width: none; }
+/* Pantalla «Conversación»: ocupa todo el ancho de <main> para que los mensajes propios queden a la derecha (CA16).
+   Va con `.pagina` delante porque styles.css se carga después y su `.pagina { max-width: 780px }` ganaría. */
+.pagina.pagina-conversacion { max-width: none; }
 .mensajes-otro-centro { margin: 6px 0 0; font-size: 18px; font-weight: 680; letter-spacing: -0.01em; }
 .mensajes-otro-centro a { color: var(--s2-teal-800); text-decoration: none; }
 .mensajes-otro-centro a:hover { text-decoration: underline; text-underline-offset: 3px; }
