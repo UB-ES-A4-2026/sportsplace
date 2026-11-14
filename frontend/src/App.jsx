@@ -1,13 +1,15 @@
 import { Route, Routes } from 'react-router';
 import Layout from './components/Layout.jsx';
-import AnuncioPage from './pages/AnuncioPage.jsx';
 import RutaPrivada from './components/RutaPrivada.jsx';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage.jsx';
+import ConversacionPage from './pages/ConversacionPage.jsx';
+import DetalleAnuncioPage from './pages/DetalleAnuncioPage.jsx';
 import EditarAnuncioPage from './pages/EditarAnuncioPage.jsx';
 import EditarPerfilPage from './pages/EditarPerfilPage.jsx';
 import EntrarPage from './pages/EntrarPage.jsx';
 import MisAnunciosPage from './pages/MisAnunciosPage.jsx';
 import InicioPage from './pages/InicioPage.jsx';
+import MensajeNuevoPage from './pages/MensajeNuevoPage.jsx';
 import NoEncontradaPage from './pages/NoEncontradaPage.jsx';
 import PanelPage from './pages/PanelPage.jsx';
 import PerfilPage from './pages/PerfilPage.jsx';
@@ -34,8 +36,10 @@ export default function App() {
           <Route path="perfil/editar" element={<EditarPerfilPage />} />
           <Route path="perfil/ubicacion" element={<UbicacionPage />} />
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
-          <Route path="anuncios/:id" element={<AnuncioPage />} />
+          <Route path="anuncios/:id" element={<DetalleAnuncioPage />} />
           <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
+          <Route path="mensajes/nueva" element={<MensajeNuevoPage />} />
+          <Route path="mensajes/:id" element={<ConversacionPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>

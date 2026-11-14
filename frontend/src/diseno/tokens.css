@@ -1,0 +1,61 @@
+/* Diseño S2 (#250): acento jewel teal, letra Inter Variable e iconos Lucide (lucide-react).
+   Las piezas nuevas usan estas variables; el resto de la app las irá adoptando en el cambio de diseño. */
+@import '@fontsource-variable/inter';
+
+:root {
+  --s2-teal-900: #063e47;
+  --s2-teal-800: #08525e;
+  --s2-teal-700: #0b6b7a;
+  --s2-teal-600: #0e7f90;
+  --s2-teal-500: #1597a8;
+  --s2-teal-100: #d6eef1;
+  --s2-teal-50: #edf8f9;
+
+  --s2-tinta: #0f1d22;
+  --s2-tinta-2: #34474e;
+  --s2-gris: #5b6f76;
+  --s2-linea: #dbe6e8;
+  --s2-linea-2: #eef3f4;
+  --s2-fondo: #f5f9fa;
+  --s2-superficie: #fff;
+  --s2-peligro: #b42318;
+  --s2-peligro-50: #fef3f2;
+  --s2-aviso: #8a4b08;
+  --s2-aviso-50: #fff7e8;
+
+  --s2-radio-s: 10px;
+  --s2-radio: 12px;
+  --s2-radio-l: 20px;
+  --s2-sombra-1: 0 1px 2px rgb(15 29 34 / 6%), 0 1px 1px rgb(15 29 34 / 4%);
+  --s2-sombra-2: 0 2px 4px rgb(15 29 34 / 4%), 0 8px 24px -6px rgb(15 29 34 / 10%);
+  --s2-sombra-3: 0 4px 8px rgb(15 29 34 / 5%), 0 22px 40px -12px rgb(11 107 122 / 28%);
+  --s2-foco: 0 0 0 4px rgb(21 151 168 / 20%);
+  --s2-curva: cubic-bezier(0.16, 1, 0.3, 1);
+  --s2-letra: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  font-family: var(--s2-letra);
+  font-feature-settings: 'cv11', 'ss01';
+  caret-color: var(--s2-teal-700);
+}
+
+::selection { color: var(--s2-tinta); background: var(--s2-teal-100); }
+
+/* Botón principal y secundario del diseño S2 (sustituyen al estilo genérico de `button`). */
+.s2-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin: 0;
+  padding: 0 18px; border: 0; border-radius: var(--s2-radio); color: #fff; font: inherit; font-size: 14.5px;
+  font-weight: 650; white-space: nowrap; cursor: pointer;
+  background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 1px 2px rgb(6 62 71 / 30%), 0 8px 18px -8px rgb(11 107 122 / 60%);
+  transition: transform 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva), filter 160ms var(--s2-curva);
+}
+.s2-boton:hover { background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); filter: brightness(1.06); transform: translateY(-1px); }
+.s2-boton:active { transform: translateY(0); }
+.s2-boton:focus-visible { outline: 0; box-shadow: var(--s2-foco), 0 1px 2px rgb(6 62 71 / 30%); }
+.s2-boton:disabled { color: rgb(255 255 255 / 85%); filter: saturate(0.35) brightness(1.08); cursor: not-allowed; transform: none; box-shadow: none; opacity: 1; }
+
+.s2-boton-secundario {
+  color: var(--s2-teal-800); background: var(--s2-superficie); box-shadow: inset 0 0 0 1px var(--s2-teal-100), var(--s2-sombra-1);
+}
+.s2-boton-secundario:hover { color: var(--s2-teal-900); background: var(--s2-teal-50); filter: none; }
+.s2-boton-secundario:disabled { color: var(--s2-gris); background: var(--s2-linea-2); filter: none; }

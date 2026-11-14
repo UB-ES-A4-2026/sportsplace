@@ -1,0 +1,89 @@
+/* US-28 T28-3: /mensajes/nueva y /mensajes/:id con el diseño S2 (#250). */
+@import '../diseno/tokens.css';
+
+.pagina-mensajes { width: 100%; max-width: 780px; padding-top: 40px; color: var(--s2-tinta); }
+.pagina-mensajes .enlace-volver { color: var(--s2-teal-700); }
+.pagina-mensajes .enlace-volver:hover { color: var(--s2-teal-900); }
+.mensajes-titulo { font-size: clamp(30px, 4vw, 38px); font-weight: 780; letter-spacing: -0.035em; text-wrap: balance; }
+.pagina-mensajes button { margin-top: 0; }
+
+/* Cabecera del anuncio: miniatura 64×64, título, precio y vendedor. */
+.mensajes-anuncio {
+  display: flex; align-items: center; gap: 14px; margin-top: 20px; padding: 12px 16px 12px 12px; border: 1px solid var(--s2-linea);
+  border-radius: var(--s2-radio-l); background: var(--s2-superficie); box-shadow: var(--s2-sombra-2);
+}
+.mensajes-anuncio-foto { flex-shrink: 0; width: 64px; height: 64px; border-radius: var(--s2-radio); object-fit: cover; }
+.mensajes-anuncio-sin-foto {
+  display: grid; place-content: center; justify-items: center; gap: 2px; color: var(--s2-teal-700);
+  background: linear-gradient(135deg, var(--s2-teal-50), var(--s2-teal-100)); font-size: 10.5px; font-weight: 650;
+}
+.mensajes-anuncio-datos { display: grid; gap: 2px; min-width: 0; }
+.mensajes-anuncio-titulo {
+  overflow: hidden; color: var(--s2-tinta); font-size: 16px; font-weight: 680; letter-spacing: -0.01em; text-overflow: ellipsis;
+  white-space: nowrap; text-decoration: none;
+}
+a.mensajes-anuncio-titulo:hover { color: var(--s2-teal-800); text-decoration: underline; text-underline-offset: 3px; }
+.mensajes-anuncio-precio { color: var(--s2-teal-800); font-size: 14.5px; font-weight: 720; font-variant-numeric: tabular-nums; }
+.mensajes-anuncio-centro { color: var(--s2-gris); font-size: 13.5px; }
+
+/* Cuadro de texto con contador y «Enviar». */
+.cuadro-mensaje { display: grid; gap: 8px; margin-top: 20px; }
+.cuadro-mensaje .campo-ayuda { color: var(--s2-gris); font-size: 14px; }
+.cuadro-mensaje textarea {
+  width: 100%; padding: 12px 14px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); color: var(--s2-tinta);
+  background: var(--s2-superficie); font: inherit; font-size: 15px; line-height: 1.55; resize: vertical; box-shadow: var(--s2-sombra-1);
+  transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
+}
+.cuadro-mensaje textarea::placeholder { color: var(--s2-gris); opacity: 1; }
+.cuadro-mensaje textarea:focus-visible { outline: 0; border-color: var(--s2-teal-500); box-shadow: var(--s2-foco); }
+.cuadro-mensaje-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cuadro-mensaje-contador { color: var(--s2-gris); font-size: 13px; font-variant-numeric: tabular-nums; }
+.cuadro-mensaje-contador.alerta { color: var(--s2-peligro); font-weight: 700; }
+
+/* Pantalla «Conversación». */
+.pagina-conversacion { max-width: none; }
+.mensajes-otro-centro { margin: 6px 0 0; font-size: 18px; font-weight: 680; letter-spacing: -0.01em; }
+.mensajes-otro-centro a { color: var(--s2-teal-800); text-decoration: none; }
+.mensajes-otro-centro a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.mensajes-banda {
+  display: flex; align-items: center; gap: 10px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid #f4dfb8;
+  border-radius: var(--s2-radio); color: var(--s2-aviso); background: var(--s2-aviso-50); font-size: 14px; font-weight: 550;
+}
+
+.mensajes-hilo {
+  display: grid; gap: 14px; margin-top: 20px; padding: 20px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  background: linear-gradient(180deg, var(--s2-fondo), #eef6f7);
+}
+.mensajes-anteriores { justify-self: center; }
+.mensajes-lista { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.mensaje {
+  display: grid; gap: 6px; max-width: min(560px, 85%); padding: 12px 16px; border-radius: 18px; animation: mensaje-llega 220ms var(--s2-curva);
+}
+@keyframes mensaje-llega { from { opacity: 0; transform: translateY(6px); } }
+.mensaje-mio {
+  justify-self: end; border-bottom-right-radius: 6px; color: #fff;
+  background: linear-gradient(135deg, var(--s2-teal-600), var(--s2-teal-800)); box-shadow: 0 10px 20px -10px rgb(11 107 122 / 60%);
+}
+.mensaje-otro { justify-self: start; border-bottom-left-radius: 6px; color: var(--s2-tinta); background: var(--s2-superficie); box-shadow: var(--s2-sombra-1); }
+.mensaje-texto { margin: 0; font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mensaje-fecha { font-size: 12px; font-variant-numeric: tabular-nums; }
+.mensaje-mio .mensaje-fecha { color: rgb(255 255 255 / 82%); }
+.mensaje-otro .mensaje-fecha { color: var(--s2-gris); }
+.mensaje-mio ::selection { color: var(--s2-teal-900); background: #fff; }
+
+/* Pie fijo: el cuadro de escritura queda pegado abajo mientras se lee el hilo. */
+.mensajes-pie {
+  position: sticky; bottom: 0; z-index: 2; margin-top: 12px; padding: 4px 0 16px;
+  background: linear-gradient(rgb(245 248 244 / 0%), #f5f8f4 22%);
+}
+.mensajes-pie .cuadro-mensaje { margin-top: 8px; }
+.mensajes-pie .franja-pausado { border-radius: var(--s2-radio); }
+
+@media (max-width: 560px) {
+  .mensajes-hilo { padding: 14px; }
+  .mensaje { max-width: 88%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mensaje { animation: none; }
+}

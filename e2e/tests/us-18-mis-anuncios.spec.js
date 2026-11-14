@@ -108,7 +108,9 @@ test('US-18 · E2E-1 · lista con estados', async ({ page, cuentas }) => {
   const base = Date.UTC(2026, 9, 20, 10, 0);
   const momento = (minutos) => new Date(base + minutos * 60_000).toISOString();
   const comunes = { centro_id: centros.b, publicado_en: momento(0), creado_en: momento(0), retirado_en: null, entregado_en: null };
-  await insertarAnuncio({ ...comunes, titulo: 'Anuncio activo de B', estado: 'activo', actualizado_en: momento(1) });
+  await insertarAnuncio({
+    ...comunes, titulo: 'Anuncio activo de B', estado: 'activo', actualizado_en: momento(1), modalidad: 'venta', precio_unitario_centimos: 850,
+  });
   await insertarAnuncio({ ...comunes, titulo: 'Anuncio pausado de B', estado: 'pausado', actualizado_en: momento(2) });
   await insertarAnuncio({ ...comunes, titulo: 'Anuncio reservado de B', estado: 'reservado', actualizado_en: momento(3) });
   await insertarAnuncio({
@@ -141,46 +143,20 @@ test('US-18 · E2E-1 · lista con estados', async ({ page, cuentas }) => {
   // Con 4 anuncios no hay paginación (CA5).
   await expect(page.getByRole('button', { name: 'Siguiente' })).toHaveCount(0);
 
+  // US-14 CA6 y CA7 (T14-4, #193, #201): precio de la venta y «Donación · Gratis» en la fila (la plantilla es donación).
+  await expect(activa.getByText('8,50 € / unidad')).toBeVisible();
+  await expect(activa.getByText('Donación · Gratis')).toHaveCount(0);
+  await expect(fila(page, 'Anuncio pausado de B').getByText('Donación · Gratis')).toBeVisible();
+  // US-15 CA6: botón «Editar» en la fila según el estado (sí en activo, no en entregado).
+  const editar = (titulo) => fila(page, titulo).getByRole('button', { name: 'Editar' })
+    .or(fila(page, titulo).getByRole('link', { name: 'Editar' }));
+  await expect(editar('Anuncio activo de B')).toBeVisible();
+  await expect(editar('Anuncio entregado de B')).toHaveCount(0);
+
   // CA1: el título lleva a la ficha.
   await page.getByRole('link', { name: 'Anuncio pausado de B', exact: true }).click();
   await expect(page).toHaveURL(/\/anuncios\/[0-9a-f-]{36}$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Anuncio pausado de B' })).toBeVisible();
-});
-
-// US-14 CA7 (T14-4, #193): la fila de una donación muestra «Donación · Gratis» (las filas de la semilla son donaciones).
-test('US-18 · E2E-1 · «Donación · Gratis» en la fila (US-14 CA7)', async ({ page, cuentas }) => {
-  await entrar(page, cuentas.centroA, cuentas.password);
-  await irAMisAnuncios(page);
-  await expect(fila(page, 'Material de prueba 21').getByText('Donación · Gratis')).toBeVisible();
-});
-
-// US-14 CA6 (T14-4, #193): la fila de una venta muestra «8,50 € / unidad». Depende de #201 (`/api/anuncios/mios` con la modalidad real).
-test('US-18 · E2E-1 · precio de una venta en la fila (US-14 CA6)', async ({ page, cuentas }) => {
-  await retirarTodos(centros.b);
-  const comunes = { centro_id: centros.b, retirado_en: null, actualizado_en: new Date().toISOString(), entregado_en: null };
-  await insertarAnuncio({ ...comunes, titulo: 'Anuncio de venta de B', estado: 'activo', modalidad: 'venta', precio_unitario_centimos: 850 });
-  await insertarAnuncio({ ...comunes, titulo: 'Anuncio de donacion de B', estado: 'activo', modalidad: 'donacion', precio_unitario_centimos: null });
-
-  await entrar(page, cuentas.centroB, cuentas.password);
-  await irAMisAnuncios(page);
-  await expect(fila(page, 'Anuncio de venta de B').getByText('8,50 € / unidad')).toBeVisible();
-  await expect(fila(page, 'Anuncio de venta de B').getByText('Donación · Gratis')).toHaveCount(0);
-  await expect(fila(page, 'Anuncio de donacion de B').getByText('Donación · Gratis')).toBeVisible();
-});
-
-// Botón principal «Editar» según el estado (CA6), de US-15.
-test('US-18 · E2E-1 · botón principal de la fila (Editar)', async ({ page, cuentas }) => {
-  await retirarTodos(centros.b);
-  const comunes = { centro_id: centros.b, retirado_en: null, actualizado_en: new Date().toISOString() };
-  await insertarAnuncio({ ...comunes, titulo: 'Anuncio activo de B', estado: 'activo', entregado_en: null });
-  await insertarAnuncio({ ...comunes, titulo: 'Anuncio entregado de B', estado: 'entregado', entregado_en: new Date().toISOString() });
-
-  await entrar(page, cuentas.centroB, cuentas.password);
-  await irAMisAnuncios(page);
-  const activa = fila(page, 'Anuncio activo de B');
-  await expect(activa.getByRole('button', { name: 'Editar' }).or(activa.getByRole('link', { name: 'Editar' }))).toBeVisible();
-  const entregada = fila(page, 'Anuncio entregado de B');
-  await expect(entregada.getByRole('button', { name: 'Editar' }).or(entregada.getByRole('link', { name: 'Editar' }))).toHaveCount(0);
 });
 
 test('US-18 · E2E-2 · vacío', async ({ page, cuentas }) => {
