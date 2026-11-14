@@ -1,0 +1,65 @@
+/* T21-6: barra de filtros de /catalogo. Se apoya en los colores de styles.css. */
+.filtros { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 20px; }
+.filtros button { margin-top: 0; }
+
+.filtros-barra { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
+
+.filtro-desplegable,
+.filtro-boton,
+.filtro-precio input {
+  height: 42px; padding: 0 12px; border: 1px solid #cdd9d0; border-radius: 8px;
+  font: inherit; font-size: 14px; color: inherit; background: #fff;
+}
+.filtro-desplegable { padding-right: 32px; cursor: pointer; }
+.filtro-desplegable:focus-visible,
+.filtro-precio input:focus-visible { outline: 3px solid #b1d9c0; outline-offset: 1px; border-color: #174f46; }
+
+.filtros .filtro-boton { font-weight: 600; color: #19372f; background: #fff; }
+.filtros .filtro-boton:hover { background: #eef4ef; }
+.filtros .filtro-boton.activo { color: #174f46; border-color: #174f46; background: #eef4ef; }
+
+.filtro-estado { position: relative; }
+.filtro-panel {
+  position: absolute; z-index: 5; top: calc(100% + 6px); left: 0; display: grid; gap: 10px; min-width: 220px;
+  margin: 0; padding: 14px 16px; border: 1px solid #dfe7df; border-radius: 12px; background: #fff;
+  box-shadow: 0 12px 28px -12px rgba(25, 55, 47, 0.35);
+}
+.filtro-panel legend { float: left; margin-bottom: 4px; padding: 0; color: #587068; font-size: 13px; font-weight: 650; }
+.filtro-panel label { display: flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; }
+.filtro-panel input { width: 18px; height: 18px; margin: 0; accent-color: #174f46; }
+
+.filtro-precio fieldset { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.filtro-precio legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.filtro-precio-campos { display: flex; align-items: center; gap: 6px; }
+.filtro-precio-titulo { margin-right: 2px; color: #587068; font-size: 14px; font-weight: 650; white-space: nowrap; }
+.filtro-precio input { width: 92px; }
+.filtro-precio input[aria-invalid="true"] { border-color: #a13e33; }
+.filtro-precio fieldset:disabled input,
+.filtro-precio fieldset:disabled .filtro-boton { color: #8a9a92; background: #eef1ef; cursor: not-allowed; }
+.filtro-precio fieldset:disabled .filtro-precio-titulo { color: #8a9a92; }
+.filtro-nota { margin: 0; color: #62766d; font-size: 13px; }
+.filtro-precio .campo-error { max-width: 300px; }
+
+.filtro-modalidad { display: inline-flex; padding: 3px; border: 1px solid #cdd9d0; border-radius: 10px; background: #fff; }
+.filtros .filtro-modalidad button {
+  padding: 8px 14px; border-radius: 7px; color: #587068; background: transparent; font-size: 14px; font-weight: 600;
+}
+.filtros .filtro-modalidad button:hover { color: #174f46; background: #eef4ef; }
+.filtros .filtro-modalidad button[aria-pressed="true"] { color: #fff; background: #174f46; }
+
+.filtros .filtros-limpiar {
+  align-self: center; padding: 8px 4px; color: #174f46; background: none; font-size: 14px; font-weight: 650;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.filtros .filtros-limpiar:hover { color: #256455; background: none; }
+
+.filtros-etiquetas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.filtro-etiqueta {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 12px; border: 1px solid #cdd9d0;
+  border-radius: 999px; color: #174f46; background: #eef4ef; font-size: 13px; font-weight: 650;
+}
+.filtros .filtro-etiqueta button {
+  display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  color: #174f46; background: transparent; font-size: 16px; line-height: 1;
+}
+.filtros .filtro-etiqueta button:hover { color: #fff; background: #174f46; }
