@@ -1,0 +1,29 @@
+/* US-28 T28-3: /mensajes/nueva y /mensajes/:id. Colores de styles.css. */
+.pagina-mensajes { width: 100%; max-width: 780px; padding-top: 40px; }
+.mensajes-titulo { font-size: clamp(28px, 4vw, 38px); letter-spacing: -1px; }
+
+.mensajes-anuncio {
+  display: flex; align-items: center; gap: 14px; margin-top: 20px; padding: 12px; border: 1px solid #dfe7df;
+  border-radius: 14px; background: #fff;
+}
+.mensajes-anuncio-foto { flex-shrink: 0; width: 64px; height: 64px; border-radius: 10px; object-fit: cover; }
+.mensajes-anuncio-sin-foto {
+  display: grid; place-items: center; border: 1px dashed #cdd9d0; color: #587068; background: #f4f7f4;
+  font-size: 11px; font-weight: 600; text-align: center;
+}
+.mensajes-anuncio-datos { display: grid; gap: 2px; min-width: 0; }
+.mensajes-anuncio-titulo { overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.mensajes-anuncio-precio { color: #19372f; font-size: 14px; font-weight: 650; }
+.mensajes-anuncio-centro { color: #587068; font-size: 14px; }
+
+.cuadro-mensaje { display: grid; gap: 8px; margin-top: 20px; }
+.cuadro-mensaje textarea {
+  width: 100%; padding: 12px 14px; border: 1px solid #cdd9d0; border-radius: 10px; font: inherit; line-height: 1.5;
+  color: inherit; background: #fff; resize: vertical;
+}
+.cuadro-mensaje textarea:focus-visible { outline: 3px solid #b1d9c0; outline-offset: 1px; border-color: #174f46; }
+.cuadro-mensaje-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cuadro-mensaje-pie button { margin-top: 0; }
+.cuadro-mensaje-contador { color: #62766d; font-size: 13px; font-variant-numeric: tabular-nums; }
+.cuadro-mensaje-contador.alerta { color: #a13e33; font-weight: 700; }
+

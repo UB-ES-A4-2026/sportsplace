@@ -8,6 +8,7 @@ import EditarPerfilPage from './pages/EditarPerfilPage.jsx';
 import EntrarPage from './pages/EntrarPage.jsx';
 import MisAnunciosPage from './pages/MisAnunciosPage.jsx';
 import InicioPage from './pages/InicioPage.jsx';
+import MensajeNuevoPage from './pages/MensajeNuevoPage.jsx';
 import NoEncontradaPage from './pages/NoEncontradaPage.jsx';
 import PanelPage from './pages/PanelPage.jsx';
 import PerfilPage from './pages/PerfilPage.jsx';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
           <Route path="anuncios/:id" element={<DetalleAnuncioPage />} />
           <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
+          <Route path="mensajes/nueva" element={<MensajeNuevoPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>
