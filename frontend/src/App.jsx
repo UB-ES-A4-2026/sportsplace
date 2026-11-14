@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router';
 import Layout from './components/Layout.jsx';
 import AnuncioPage from './pages/AnuncioPage.jsx';
+import CatalogoPage from './pages/CatalogoPage.jsx';
 import RutaPrivada from './components/RutaPrivada.jsx';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage.jsx';
 import EditarAnuncioPage from './pages/EditarAnuncioPage.jsx';
@@ -29,6 +30,8 @@ export default function App() {
         <Route path="restablecer-contrasena" element={<RestablecerContrasenaPage />} />
         <Route element={<RutaPrivada />}>
           <Route path="panel" element={<PanelPage />} />
+          {/* US-96 CA2: el catálogo es privado; sin sesión lleva a /entrar. */}
+          <Route path="catalogo" element={<CatalogoPage />} />
           <Route path="mis-anuncios" element={<MisAnunciosPage />} />
           <Route path="perfil" element={<PerfilPage />} />
           <Route path="perfil/editar" element={<EditarPerfilPage />} />

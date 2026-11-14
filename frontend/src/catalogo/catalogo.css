@@ -6,6 +6,8 @@
 .pagina.pagina-catalogo { width: 100%; max-width: none; padding-top: 40px; color: var(--s2-tinta); }
 .pagina-catalogo h1 { margin: 0 0 18px; }
 .pagina-catalogo button { margin-top: 0; }
+.pagina-catalogo a.s2-boton { color: #fff; text-decoration: none; }
+.pagina-catalogo a.s2-boton-secundario { color: var(--s2-teal-800); }
 
 /* Línea de resultados: total a la izquierda y «Ordenar por» a la derecha. */
 .catalogo-resultados {
