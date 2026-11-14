@@ -106,6 +106,11 @@ test('CA8, CA9 y CA21: los datos no válidos responden 400 sin llegar a la base 
   assert.deepEqual(error.details, { anuncio_id: 'El anuncio no es válido.' });
   error = await esperarError(await post(`/api/conversaciones/${CONVERSACION}/mensajes`, { texto: 'x'.repeat(2001) }), 400, 'DATOS_INVALIDOS');
   assert.deepEqual(error.details, { texto: 'El mensaje no puede superar los 2000 caracteres.' });
+  // U+0000 no llega a PostgreSQL (sería un 503): 400 en las dos rutas.
+  for (const [ruta, cuerpo] of [['/api/conversaciones', { anuncio_id: ANUNCIO, texto: 'Ho\u0000la' }], [`/api/conversaciones/${CONVERSACION}/mensajes`, { texto: 'Ho\u0000la' }]]) {
+    error = await esperarError(await post(ruta, cuerpo), 400, 'DATOS_INVALIDOS');
+    assert.deepEqual(error.details, { texto: 'El mensaje contiene caracteres no válidos.' });
+  }
   assert.deepEqual(llamadas, []);
 });
 

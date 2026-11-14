@@ -193,6 +193,32 @@ test('CA26: con 30 mensajes en el último minuto, el 31.º responde 429 al crear
   assert.equal((await createConversacionesRepository(db).enviar('usuario-b', CONVERSACION, { texto: 'Hola' })).id, 'mensaje-1');
 });
 
+test('CA26 y CA36: con 29 mensajes previos, el doble envío del primer mensaje responde 409 y no 429', async () => {
+  // El primer envío ya ha creado la conversación y completado los 30; el
+  // segundo entra tras el bloqueo del centro y ve los dos hechos.
+  const db = fakeDatabase(base({
+    existente: [[{ id: CONVERSACION }]],
+    recientes: [{ recientes: LIMITE_MENSAJES_POR_MINUTO }],
+  }));
+  await assert.rejects(
+    createConversacionesRepository(db).crear('usuario-b', { anuncioId: ANUNCIO, texto: 'Hola' }),
+    (error) => error.code === 'CONVERSACION_YA_EXISTE' && error.details.conversacion_id === CONVERSACION,
+  );
+  const log = sqls(db);
+  const bloqueo = log.findIndex((sql) => sql.includes('pg_advisory_xact_lock'));
+  const duplicado = log.findIndex((sql) => sql.startsWith('SELECT id FROM public.conversaciones'));
+  assert.ok(bloqueo !== -1 && bloqueo < duplicado);
+  assert.ok(!log.some((sql) => sql.includes('AS recientes')));
+
+  // Sin conversación previa, la cuota se comprueba después del duplicado y antes de crear.
+  const libre = fakeDatabase(base({ recientes: [{ recientes: LIMITE_MENSAJES_POR_MINUTO - 1 }] }));
+  await createConversacionesRepository(libre).crear('usuario-b', { anuncioId: ANUNCIO, texto: 'Hola' });
+  const orden = sqls(libre);
+  const cuota = orden.findIndex((sql) => sql.includes('AS recientes'));
+  assert.ok(orden.findIndex((sql) => sql.startsWith('SELECT id FROM public.conversaciones')) < cuota);
+  assert.ok(cuota < orden.findIndex((sql) => sql.startsWith('INSERT INTO public.conversaciones')));
+});
+
 test('CA25, CA31 y CA34: escriben los dos centros; una conversación ajena responde 404', async () => {
   let db = fakeDatabase(base({ conversacion: [{ ...filaConversacion, estado: 'retirado' }] }));
   const mensaje = await createConversacionesRepository(db).enviar('usuario-b', CONVERSACION, { texto: '¿Ya no lo tenéis?' });

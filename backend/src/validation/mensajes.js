@@ -14,11 +14,14 @@ function datosInvalidos(details) {
 }
 
 // CA7-CA9: obligatorio, de 1 a 2000 caracteres Unicode tras quitar los espacios
-// de los extremos. Los saltos de línea del medio se conservan. Devuelve
-// { valor } o { error } con el texto de `details.texto`.
+// de los extremos. Los saltos de línea del medio se conservan. PostgreSQL no
+// guarda el carácter U+0000 en un texto, así que se rechaza aquí (400) en vez
+// de fallar al insertar (503). Devuelve { valor } o { error } con el texto de
+// `details.texto`.
 function revisarTexto(valor) {
   if (typeof valor !== 'string' || valor.trim() === '') return { error: 'Escribe un mensaje.' };
   const texto = valor.trim();
+  if (texto.includes('\u0000')) return { error: 'El mensaje contiene caracteres no válidos.' };
   if ([...texto].length > MAX_TEXTO_MENSAJE) {
     return { error: 'El mensaje no puede superar los 2000 caracteres.' };
   }

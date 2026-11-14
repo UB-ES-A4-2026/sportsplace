@@ -118,11 +118,16 @@ export function createConversacionesRepository(database, { urlFoto = () => null 
     return rows[0] ?? null;
   }
 
-  // CA26: como mucho 30 mensajes por minuto por centro, sumando todas sus
-  // conversaciones. El bloqueo por centro serializa sus envíos simultáneos
-  // hasta el final de la transacción, para que no se cuelen por encima del límite.
-  async function comprobarLimite(cliente, centroId) {
+  // El bloqueo por centro serializa sus envíos simultáneos hasta el final de
+  // la transacción, para que no se cuelen por encima del límite (CA26) ni
+  // abran dos veces la misma conversación (CA36).
+  async function bloquearCentro(cliente, centroId) {
     await cliente.query("SELECT pg_advisory_xact_lock(hashtextextended('mensajes:' || $1::text, 0))", [centroId]);
+  }
+
+  // CA26: como mucho 30 mensajes por minuto por centro, sumando todas sus
+  // conversaciones. Se llama con el bloqueo del centro ya tomado.
+  async function comprobarLimite(cliente, centroId) {
     const { rows: [{ recientes }] } = await cliente.query(
       `SELECT count(*)::integer AS recientes FROM public.mensajes
        WHERE centro_autor_id = $1 AND creado_en > clock_timestamp() - interval '1 minute'`,
@@ -161,8 +166,10 @@ export function createConversacionesRepository(database, { urlFoto = () => null 
 
     // CA20, CA21, CA32, CA33 y CA36: crea la conversación y su primer mensaje
     // en una transacción. El vendedor se copia del anuncio. Con dos envíos a la
-    // vez del mismo centro, el segundo espera al bloqueo del límite y ya ve la
-    // conversación creada (409); ON CONFLICT cubre además cualquier otra carrera.
+    // vez del mismo centro, el segundo espera al bloqueo del centro y ya ve la
+    // conversación creada (409), aunque el primero haya completado el límite:
+    // el duplicado se comprueba antes que la cuota. ON CONFLICT cubre además
+    // cualquier otra carrera.
     async crear(usuarioId, { anuncioId, texto }) {
       return ejecutar('crear la conversación', () => database.transaction(async (cliente) => {
         const centroId = await centroDe(cliente, usuarioId);
@@ -176,10 +183,11 @@ export function createConversacionesRepository(database, { urlFoto = () => null 
         if (anuncio.centro_id === centroId) throw anuncioPropio();
         if (!ESTADOS_PARA_ABRIR.has(anuncio.estado)) throw anuncioNoDisponible();
 
-        await comprobarLimite(cliente, centroId);
+        await bloquearCentro(cliente, centroId);
         const existente = 'SELECT id FROM public.conversaciones WHERE anuncio_id = $1 AND centro_comprador_id = $2';
         const { rows: [previa] } = await cliente.query(existente, [anuncioId, centroId]);
         if (previa) throw conversacionYaExiste(previa.id);
+        await comprobarLimite(cliente, centroId);
 
         const { rows: [nueva] } = await cliente.query(
           `INSERT INTO public.conversaciones (anuncio_id, centro_comprador_id, centro_vendedor_id)
@@ -256,6 +264,7 @@ export function createConversacionesRepository(database, { urlFoto = () => null 
         const centroId = await centroDe(cliente, usuarioId);
         const fila = await conversacionDe(cliente, id, centroId);
         if (!fila) throw conversacionNoEncontrada();
+        await bloquearCentro(cliente, centroId);
         await comprobarLimite(cliente, centroId);
         return insertarMensaje(cliente, { conversacionId: id, centroId, usuarioId, texto });
       }));

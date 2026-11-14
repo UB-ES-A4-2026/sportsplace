@@ -606,7 +606,7 @@ Objeto `conversacion` (CA23):
 
 Objeto `mensaje` (CA24): `{ "id": "uuid", "texto": "...", "es_mio": true, "tipo": "texto", "creado_en": "ISO 8601" }`. `es_mio` es `true` si lo escribió el centro de la sesión. El texto se guarda recortado y tal cual (sin interpretar HTML, CA15).
 
-Texto de un mensaje (CA7-CA9): obligatorio, de 1 a 2000 caracteres tras quitar los espacios de los extremos; se aceptan saltos de línea. Errores en `400 DATOS_INVALIDOS`: `details.texto` «Escribe un mensaje.» o «El mensaje no puede superar los 2000 caracteres.».
+Texto de un mensaje (CA7-CA9): obligatorio, de 1 a 2000 caracteres tras quitar los espacios de los extremos; se aceptan saltos de línea. Errores en `400 DATOS_INVALIDOS`: `details.texto` «Escribe un mensaje.», «El mensaje no puede superar los 2000 caracteres.» o «El mensaje contiene caracteres no válidos.» (el carácter U+0000, que PostgreSQL no guarda).
 
 Límite (CA26): como mucho 30 mensajes por minuto por centro, sumando todas sus conversaciones (crear y responder cuentan igual). El 31.º responde `429 DEMASIADOS_INTENTOS` «Has enviado demasiados mensajes seguidos. Espera un minuto.».
 
@@ -624,7 +624,7 @@ Cuerpo: `{ "anuncio_id": "uuid", "texto": "..." }`.
 - `404 NO_ENCONTRADO`: anuncio inexistente o `retirado`.
 - `409 ANUNCIO_PROPIO` «No puedes escribirte sobre tu propio anuncio.» (el vendedor no inicia conversaciones, CA32).
 - `409 ANUNCIO_NO_DISPONIBLE` «Este anuncio ya no está disponible.» si está `pausado` o `entregado`. `reservado` se admite.
-- `409 CONVERSACION_YA_EXISTE` con `details.conversacion_id`. Dos envíos simultáneos del mismo centro crean una sola conversación y el segundo recibe este error (CA36).
+- `409 CONVERSACION_YA_EXISTE` con `details.conversacion_id`. Dos envíos simultáneos del mismo centro crean una sola conversación y el segundo recibe este error (CA36), también si el primero completa el límite de CA26: el duplicado se comprueba antes que el límite.
 - `429 DEMASIADOS_INTENTOS` (límite de CA26).
 
 #### `GET /api/conversaciones/:id` (CA22, CA31)

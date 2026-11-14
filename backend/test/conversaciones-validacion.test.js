@@ -39,6 +39,14 @@ test('CA9: 2001 caracteres → «El mensaje no puede superar los 2000 caracteres
   assert.deepEqual(detallesDe(() => validarMensaje({ texto: 'x'.repeat(2001) })), { texto: LARGO });
 });
 
+test('CA21: el carácter U+0000, que PostgreSQL no guarda, se rechaza en las dos rutas', () => {
+  const NO_VALIDO = 'El mensaje contiene caracteres no válidos.';
+  assert.deepEqual(detallesDe(() => validarMensaje({ texto: 'Ho\u0000la' })), { texto: NO_VALIDO });
+  assert.deepEqual(detallesDe(() => validarNuevaConversacion({ anuncio_id: ANUNCIO, texto: '\u0000' })), { texto: NO_VALIDO });
+  // Los demás caracteres de control (tabulador, salto de línea) se aceptan.
+  assert.deepEqual(validarMensaje({ texto: 'a\tb\nc' }), { texto: 'a\tb\nc' });
+});
+
 test('CA20 y CA21: la nueva conversación exige un anuncio_id UUID y el texto', () => {
   assert.deepEqual(validarNuevaConversacion({ anuncio_id: ANUNCIO.toUpperCase(), texto: ' Hola ' }), {
     anuncioId: ANUNCIO,
