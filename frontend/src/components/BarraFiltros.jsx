@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDown, CircleAlert, FilterX, Info, SlidersHorizontal, X } from 'lucide-react';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL } from '../anuncios/valores.js';
 import {
   conEstados,
@@ -32,8 +33,9 @@ export default function BarraFiltros({ parametros, filtros, onCambiar }) {
 
   return (
     <section className="filtros" aria-label="Filtros">
-      <button type="button" className="filtros-movil" aria-expanded={abierta} aria-controls={idBarra}
-        onClick={() => setAbierta((valor) => !valor)}>
+      <button type="button" className="filtros-movil s2-boton s2-boton-secundario" aria-expanded={abierta}
+        aria-controls={idBarra} onClick={() => setAbierta((valor) => !valor)}>
+        <SlidersHorizontal size={17} aria-hidden="true" />
         {textoBotonFiltros(filtros)}
       </button>
 
@@ -51,6 +53,7 @@ export default function BarraFiltros({ parametros, filtros, onCambiar }) {
         {/* US-22 CA7: solo se ve con algún filtro activo. */}
         {etiquetas.length > 0 && (
           <button type="button" className="filtros-limpiar" onClick={() => onCambiar(sinFiltros(parametros))}>
+            <FilterX size={16} aria-hidden="true" />
             {TEXTOS.limpiar}
           </button>
         )}
@@ -62,7 +65,9 @@ export default function BarraFiltros({ parametros, filtros, onCambiar }) {
             <li key={clave} className="filtro-etiqueta">
               <span>{texto}</span>
               <button type="button" aria-label={`Quitar ${texto}`}
-                onClick={() => onCambiar(sinEtiqueta(parametros, clave))}>×</button>
+                onClick={() => onCambiar(sinEtiqueta(parametros, clave))}>
+                <X size={14} strokeWidth={2.4} aria-hidden="true" />
+              </button>
             </li>
           ))}
         </ul>
@@ -74,7 +79,7 @@ export default function BarraFiltros({ parametros, filtros, onCambiar }) {
 // US-22 CA1-CA5: selección única; la primera opción («Todas…/Todos…») quita el filtro.
 function Desplegable({ etiqueta, todas, opciones, valor, onCambiar }) {
   return (
-    <select className="filtro-desplegable" aria-label={etiqueta} value={valor ?? ''}
+    <select className={valor ? 'filtro-desplegable activo' : 'filtro-desplegable'} aria-label={etiqueta} value={valor ?? ''}
       onChange={(evento) => onCambiar(evento.target.value)}>
       <option value="">{todas}</option>
       {opciones.map((opcion) => <option key={opcion.valor} value={opcion.valor}>{opcion.etiqueta}</option>)}
@@ -110,6 +115,7 @@ function FiltroEstado({ estados, onCambiar }) {
       <button type="button" className={estados.length > 0 ? 'filtro-boton activo' : 'filtro-boton'}
         aria-expanded={abierto} aria-controls={idPanel} onClick={() => setAbierto((valor) => !valor)}>
         {textoBotonEstado(estados)}
+        <ChevronDown className="icono-girar" size={16} aria-hidden="true" />
       </button>
       {abierto && (
         <fieldset id={idPanel} className="filtro-panel">
@@ -154,8 +160,10 @@ function FiltroPrecio({ minimo, maximo, desactivado, onAplicar }) {
             aria-invalid={invalido} aria-describedby={error ? idError : undefined} />
           <button type="submit" className="filtro-boton">{TEXTOS.aplicar}</button>
         </div>
-        {desactivado && <p className="filtro-nota">{TEXTOS.noAplica}</p>}
-        {error && !desactivado && <p id={idError} className="campo-error" role="alert">{error}</p>}
+        {desactivado && <p className="filtro-nota"><Info size={14} aria-hidden="true" />{TEXTOS.noAplica}</p>}
+        {error && !desactivado && (
+          <p id={idError} className="campo-error" role="alert"><CircleAlert size={14} aria-hidden="true" />{error}</p>
+        )}
       </fieldset>
     </form>
   );
