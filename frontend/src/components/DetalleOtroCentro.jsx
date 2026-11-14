@@ -9,6 +9,7 @@ import {
 } from '../anuncios/detalleOtroCentro.js';
 import { formatearFecha } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
+import BotonEscribirAlCentro from './BotonEscribirAlCentro.jsx';
 import GaleriaDetalle from './GaleriaDetalle.jsx';
 
 // US-24 T24-2: vista de un anuncio de otro centro en /anuncios/:id (respuesta de GET /api/catalogo/:id).
@@ -16,8 +17,8 @@ import GaleriaDetalle from './GaleriaDetalle.jsx';
 export default function DetalleOtroCentro({ anuncio }) {
   const location = useLocation();
   const reservado = anuncio.estado === 'reservado';
-  // CA10: hasta que existan US-32 (pedidos) y US-28 (mensajes), los dos botones van deshabilitados.
-  const botones = botonesDelDetalle(anuncio);
+  // CA10: hasta que exista US-32 (pedidos), «Pedir material» va deshabilitado. US-28 ya activa «Escribir al centro».
+  const botones = botonesDelDetalle(anuncio, { mensajes: true });
   const distancia = textoDistancia(anuncio.distancia_km);
 
   return (
@@ -50,7 +51,8 @@ export default function DetalleOtroCentro({ anuncio }) {
           {/* CA3, CA4 y CA10: «Pedir material» [US-32] principal y «Escribir al centro» [US-28] secundario. */}
           <div className="detalle-botones">
             <BotonDependiente id="pedir" texto={TEXTOS.pedir} estado={botones.pedir} principal />
-            <BotonDependiente id="escribir" texto={TEXTOS.escribir} estado={botones.escribir} />
+            {/* US-28 CA1-CA2: esta vista solo se pinta para anuncios activos o reservados de otro centro. */}
+            {botones.escribir.habilitado && <BotonEscribirAlCentro anuncioId={anuncio.id} />}
           </div>
 
           <section className="detalle-centro" aria-labelledby="titulo-centro">
