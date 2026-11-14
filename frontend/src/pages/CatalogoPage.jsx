@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight, CloudOff, PackageOpen, SearchX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { listarCatalogo } from '../api/catalogo.js';
@@ -67,11 +68,18 @@ export default function CatalogoPage() {
       <BarraFiltros parametros={parametros} filtros={filtros} onCambiar={cambiar} />
       <div ref={inicioResultados} />
 
-      {cargando && <p className="catalogo-cargando" role="status">{TEXTOS.cargando}</p>}
+      {/* CA13: «Cargando…» en lugar de la rejilla, con esqueletos de tarjeta (boceto de #250). */}
+      {cargando && (
+        <>
+          <p className="catalogo-cargando" role="status">{TEXTOS.cargando}</p>
+          <Esqueletos />
+        </>
+      )}
 
       {/* CA15: con la API caída, el error y «Reintentar», que repite la misma petición. */}
       {actual?.error && (
         <div className="catalogo-estado">
+          <span className="catalogo-estado-icono" aria-hidden="true"><CloudOff size={24} /></span>
           <p role="alert">{TEXTOS.error}</p>
           <button type="button" className="s2-boton" onClick={() => setIntento((n) => n + 1)}>{TEXTOS.reintentar}</button>
         </div>
@@ -110,10 +118,16 @@ function Resultados({ datos, q, pagina, alCambiarPagina }) {
       {hayPaginacion(datos) && (
         <nav className="catalogo-paginacion" aria-label={TEXTOS.paginacion}>
           <button type="button" className="s2-boton s2-boton-secundario" disabled={pagina <= 1}
-            onClick={() => alCambiarPagina(pagina - 1)}>{TEXTOS.anterior}</button>
-          <span>{textoPagina(pagina, datos.total_paginas)}</span>
+            onClick={() => alCambiarPagina(pagina - 1)}>
+            <ChevronLeft size={18} aria-hidden="true" />
+            {TEXTOS.anterior}
+          </button>
+          <span className="catalogo-pagina-actual">{textoPagina(pagina, datos.total_paginas)}</span>
           <button type="button" className="s2-boton s2-boton-secundario" disabled={pagina >= datos.total_paginas}
-            onClick={() => alCambiarPagina(pagina + 1)}>{TEXTOS.siguiente}</button>
+            onClick={() => alCambiarPagina(pagina + 1)}>
+            {TEXTOS.siguiente}
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
         </nav>
       )}
     </>
@@ -127,6 +141,7 @@ function SinAnuncios({ q, filtros, alLimpiarFiltros }) {
   if (tipo === 'filtros') {
     return (
       <div className="catalogo-estado" role="status">
+        <span className="catalogo-estado-icono" aria-hidden="true"><SearchX size={24} /></span>
         <p>{TEXTOS_FILTROS.sinResultados}</p>
         <button type="button" className="s2-boton s2-boton-secundario" onClick={alLimpiarFiltros}>{TEXTOS_FILTROS.limpiar}</button>
       </div>
@@ -134,8 +149,25 @@ function SinAnuncios({ q, filtros, alLimpiarFiltros }) {
   }
   return (
     <div className="catalogo-estado">
+      <span className="catalogo-estado-icono" aria-hidden="true"><PackageOpen size={24} /></span>
       <p>{TEXTOS.vacio}</p>
       <Link to="/anuncios/nuevo" className="s2-boton">{TEXTOS.publicar}</Link>
     </div>
+  );
+}
+
+// Esqueletos de 8 tarjetas mientras carga: solo decoración; el estado lo anuncia «Cargando…».
+function Esqueletos() {
+  return (
+    <ul className="catalogo-rejilla catalogo-esqueletos" aria-hidden="true">
+      {Array.from({ length: 8 }, (_, i) => (
+        <li key={i}>
+          <div className="tarjeta-esqueleto">
+            <div className="esqueleto-foto" />
+            <div className="esqueleto-lineas"><span /><span /><span /><span /></div>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -21,13 +21,35 @@
 }
 .catalogo-orden select:focus-visible { outline: 0; border-color: var(--s2-teal-500); box-shadow: var(--s2-foco); }
 
-/* CA13, CA14 y CA15: carga, catálogo vacío y error, en lugar de la rejilla. */
+/* CA14 y CA15: catálogo vacío, sin resultados con filtros y error, en lugar de la rejilla. */
 .catalogo-estado {
-  display: grid; justify-items: start; gap: 12px; margin-top: 22px; padding: 22px 24px; border: 1px solid var(--s2-linea);
-  border-radius: var(--s2-radio-l); background: var(--s2-superficie); box-shadow: var(--s2-sombra-1);
+  display: grid; justify-items: center; gap: 12px; margin-top: 22px; padding: 36px 24px; border: 1px solid var(--s2-linea);
+  border-radius: var(--s2-radio-l); text-align: center; background: var(--s2-superficie); box-shadow: var(--s2-sombra-1);
 }
-.catalogo-estado p { margin: 0; color: var(--s2-tinta-2); font-size: 15px; }
-.catalogo-cargando { margin: 22px 0 0; color: var(--s2-gris); font-size: 15px; }
+.catalogo-estado p { max-width: 46ch; margin: 0; color: var(--s2-tinta-2); font-size: 15px; }
+.catalogo-estado-icono {
+  display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; color: var(--s2-teal-700);
+  background: var(--s2-teal-50); box-shadow: inset 0 0 0 1px var(--s2-teal-100);
+}
+
+/* CA13: «Cargando…» y, debajo, esqueletos de tarjeta con brillo. */
+.catalogo-cargando { margin: 22px 0 16px; color: var(--s2-gris); font-size: 15px; font-weight: 550; }
+.tarjeta-esqueleto {
+  display: flex; flex: 1; flex-direction: column; overflow: hidden; border: 1px solid var(--s2-linea);
+  border-radius: var(--s2-radio-l); background: var(--s2-superficie);
+}
+.esqueleto-foto, .esqueleto-lineas span {
+  background: linear-gradient(90deg, var(--s2-linea-2) 0%, #f8fbfb 45%, var(--s2-linea-2) 90%) 0 0 / 200% 100%;
+  animation: esqueleto-brillo 1.4s ease-in-out infinite;
+}
+.esqueleto-foto { aspect-ratio: 4 / 3; }
+.esqueleto-lineas { display: grid; gap: 10px; padding: 18px; }
+.esqueleto-lineas span { display: block; height: 12px; border-radius: 6px; }
+.esqueleto-lineas span:nth-child(1) { width: 80%; height: 14px; }
+.esqueleto-lineas span:nth-child(2) { width: 45%; height: 18px; }
+.esqueleto-lineas span:nth-child(3) { width: 60%; }
+.esqueleto-lineas span:nth-child(4) { width: 70%; margin-top: 8px; }
+@keyframes esqueleto-brillo { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
 /* Rejilla: 1 columna, 2 desde 600 px, 3 desde 900 px y 4 desde 1200 px (US-96, «Pantallas para el boceto»). */
 .catalogo-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 0; padding: 0; list-style: none; }
@@ -87,9 +109,12 @@
 }
 .tarjeta-fecha { color: var(--s2-gris); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 
-/* CA8: «Anterior» · «Página X de Y» · «Siguiente». */
-.catalogo-paginacion { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 28px; }
-.catalogo-paginacion span { color: var(--s2-tinta-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+/* CA8: «Anterior» · «Página X de Y» · «Siguiente», con flechas como en el boceto. */
+.catalogo-paginacion { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 32px; }
+.catalogo-pagina-actual {
+  padding: 8px 14px; border-radius: 999px; color: var(--s2-teal-800); background: var(--s2-teal-50);
+  box-shadow: inset 0 0 0 1px var(--s2-teal-100); font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums;
+}
 
 @media (max-width: 599px) {
   .pagina.pagina-catalogo { padding-top: 28px; }
@@ -98,6 +123,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .esqueleto-foto, .esqueleto-lineas span { animation: none; }
   .catalogo-rejilla .tarjeta-anuncio, .tarjeta-foto img { transition: none; }
   .catalogo-rejilla .tarjeta-anuncio:hover, .catalogo-rejilla .tarjeta-anuncio:hover .tarjeta-foto img { transform: none; }
 }
