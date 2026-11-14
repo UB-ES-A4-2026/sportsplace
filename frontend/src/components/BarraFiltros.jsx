@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, CircleAlert, FilterX, Info, SlidersHorizontal, X } from 'lucide-react';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL } from '../anuncios/valores.js';
 import {
+  busquedaDeUrl,
   conEstados,
   conFiltro,
   conPrecio,
@@ -23,6 +24,16 @@ export default function BarraFiltros({ parametros, filtros, onCambiar }) {
   const idBarra = useId();
   const etiquetas = etiquetasActivas(filtros);
   const donacion = filtros.modalidad === 'donacion';
+  // US-73 CA2: con las 5 casillas marcadas la URL no lleva `estado_material`, pero las casillas siguen marcadas
+  // mientras la URL sea la que dejó esa acción (si cambia por «Atrás», «Limpiar filtros» u otro filtro, se desmarcan).
+  const [todosEn, setTodosEn] = useState(null);
+  const todos = todosEn !== null && todosEn === busquedaDeUrl(parametros) && filtros.estados.length === 0;
+
+  function cambiarEstados(estados) {
+    const nuevos = conEstados(parametros, estados);
+    setTodosEn(estados.length === ESTADOS_MATERIAL.length ? busquedaDeUrl(nuevos) : null);
+    onCambiar(nuevos);
+  }
 
   function aplicarPrecio(valores) {
     const resultado = conPrecio(parametros, valores);
@@ -44,10 +55,10 @@ export default function BarraFiltros({ parametros, filtros, onCambiar }) {
           valor={filtros.categoria} onCambiar={(valor) => onCambiar(conFiltro(parametros, 'categoria', valor))} />
         <Desplegable etiqueta={TEXTOS.deporte} todas={TEXTOS.todosDeportes} opciones={DEPORTES}
           valor={filtros.deporte} onCambiar={(valor) => onCambiar(conFiltro(parametros, 'deporte', valor))} />
-        <FiltroEstado estados={filtros.estados} onCambiar={(estados) => onCambiar(conEstados(parametros, estados))} />
-        {/* La clave vuelve a rellenar los campos cuando el precio cambia desde fuera (URL, etiqueta o «Limpiar»). */}
-        <FiltroPrecio key={`${filtros.precioMin}|${filtros.precioMax}|${donacion}`} minimo={filtros.precioMin}
-          maximo={filtros.precioMax} desactivado={donacion} onAplicar={aplicarPrecio} />
+        <FiltroEstado estados={todos ? ESTADOS_MATERIAL.map((opcion) => opcion.valor) : filtros.estados}
+          onCambiar={cambiarEstados} />
+        <FiltroPrecio minimo={filtros.precioMin} maximo={filtros.precioMax} desactivado={donacion}
+          onAplicar={aplicarPrecio} />
         <FiltroModalidad modalidad={filtros.modalidad}
           onCambiar={(valor) => onCambiar(conFiltro(parametros, 'modalidad', valor))} />
         {/* US-22 CA7: solo se ve con algún filtro activo. */}
@@ -90,14 +101,27 @@ function Desplegable({ etiqueta, todas, opciones, valor, onCambiar }) {
 // US-73 CA1-CA2: desplegable con 5 casillas que se aplican al marcarlas.
 function FiltroEstado({ estados, onCambiar }) {
   const [abierto, setAbierto] = useState(false);
+  // Las casillas cambian en el acto, sin esperar a que la navegación actualice la URL; si los estados cambian
+  // desde fuera (URL, etiqueta o «Limpiar filtros»), se vuelven a tomar de ahí.
+  const [marcados, setMarcados] = useState(estados);
+  const [estadosVistos, setEstadosVistos] = useState(estados);
+  if (estadosVistos.join(',') !== estados.join(',')) {
+    setEstadosVistos(estados);
+    setMarcados(estados);
+  }
   const contenedor = useRef(null);
+  const boton = useRef(null);
   const idPanel = useId();
 
-  // Se cierra al pulsar fuera o con Escape.
+  // Se cierra al pulsar fuera o con Escape. Con Escape desde dentro del panel, el foco vuelve al botón.
   useEffect(() => {
     if (!abierto) return undefined;
     const fuera = (evento) => { if (!contenedor.current?.contains(evento.target)) setAbierto(false); };
-    const escape = (evento) => { if (evento.key === 'Escape') setAbierto(false); };
+    const escape = (evento) => {
+      if (evento.key !== 'Escape') return;
+      if (contenedor.current?.contains(document.activeElement)) boton.current?.focus();
+      setAbierto(false);
+    };
     document.addEventListener('mousedown', fuera);
     document.addEventListener('keydown', escape);
     return () => {
@@ -107,14 +131,16 @@ function FiltroEstado({ estados, onCambiar }) {
   }, [abierto]);
 
   function alternar(valor, marcado) {
-    onCambiar(marcado ? [...estados, valor] : estados.filter((estado) => estado !== valor));
+    const nuevos = marcado ? [...marcados, valor] : marcados.filter((estado) => estado !== valor);
+    setMarcados(nuevos);
+    onCambiar(nuevos);
   }
 
   return (
     <div className="filtro-estado" ref={contenedor}>
-      <button type="button" className={estados.length > 0 ? 'filtro-boton activo' : 'filtro-boton'}
+      <button ref={boton} type="button" className={marcados.length > 0 ? 'filtro-boton activo' : 'filtro-boton'}
         aria-expanded={abierto} aria-controls={idPanel} onClick={() => setAbierto((valor) => !valor)}>
-        {textoBotonEstado(estados)}
+        {textoBotonEstado(marcados)}
         <ChevronDown className="icono-girar" size={16} aria-hidden="true" />
       </button>
       {abierto && (
@@ -122,7 +148,7 @@ function FiltroEstado({ estados, onCambiar }) {
           <legend>{TEXTOS.estado}</legend>
           {ESTADOS_MATERIAL.map((opcion) => (
             <label key={opcion.valor}>
-              <input type="checkbox" checked={estados.includes(opcion.valor)}
+              <input type="checkbox" checked={marcados.includes(opcion.valor)}
                 onChange={(evento) => alternar(opcion.valor, evento.target.checked)} />
               {opcion.etiqueta}
             </label>
@@ -139,6 +165,17 @@ function FiltroPrecio({ minimo, maximo, desactivado, onAplicar }) {
   const [hasta, setHasta] = useState(maximo === null ? '' : String(maximo));
   const [error, setError] = useState(null);
   const idError = useId();
+
+  // Si el precio cambia desde fuera (URL, etiqueta, «Limpiar filtros» o «Donación»), los campos se rellenan de nuevo
+  // sin desmontar el formulario, para que el foco siga en el campo donde se pulsó Intro.
+  const origen = `${minimo}|${maximo}|${desactivado}`;
+  const [origenVisto, setOrigenVisto] = useState(origen);
+  if (origenVisto !== origen) {
+    setOrigenVisto(origen);
+    setDesde(minimo === null ? '' : String(minimo));
+    setHasta(maximo === null ? '' : String(maximo));
+    setError(null);
+  }
 
   function enviar(evento) {
     evento.preventDefault();
