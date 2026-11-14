@@ -63,12 +63,9 @@ export default function CatalogoPage() {
 
   return (
     <section className="pagina pagina-catalogo" aria-labelledby="titulo-pagina" aria-busy={cargando || undefined}>
-      {/* Título, búsqueda y filtros sobre una banda clara (boceto S2 de #250). El título es el de la especificación. */}
-      <div className="catalogo-cabecera">
-        <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
-        <CuadroBusqueda q={q} alBuscar={buscar} alQuitar={quitar} />
-        <BarraFiltros parametros={parametros} filtros={filtros} onCambiar={cambiar} />
-      </div>
+      <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
+      <CuadroBusqueda q={q} alBuscar={buscar} alQuitar={quitar} />
+      <BarraFiltros parametros={parametros} filtros={filtros} onCambiar={cambiar} />
       <div ref={inicioResultados} />
 
       {/* CA13: «Cargando…» en lugar de la rejilla, con esqueletos de tarjeta (boceto de #250). */}
