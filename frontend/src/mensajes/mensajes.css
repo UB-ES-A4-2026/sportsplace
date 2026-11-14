@@ -27,8 +27,11 @@
 .cuadro-mensaje-contador { color: #62766d; font-size: 13px; font-variant-numeric: tabular-nums; }
 .cuadro-mensaje-contador.alerta { color: #a13e33; font-weight: 700; }
 
-.mensajes-titulo a { color: inherit; text-decoration: none; }
-.mensajes-titulo a:hover { text-decoration: underline; }
+.mensajes-otro-centro { margin: 6px 0 0; font-size: 18px; font-weight: 700; }
+.mensajes-otro-centro a { text-decoration: none; }
+.mensajes-otro-centro a:hover { text-decoration: underline; }
+/* El hilo ocupa todo el ancho: los mensajes propios quedan a la derecha de la pantalla. */
+.pagina-conversacion { max-width: none; }
 .mensajes-banda { margin-top: 14px; }
 
 .mensajes-hilo { display: grid; gap: 14px; margin-top: 24px; padding-bottom: 12px; }

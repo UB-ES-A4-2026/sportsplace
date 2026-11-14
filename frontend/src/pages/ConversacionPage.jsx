@@ -140,6 +140,8 @@ export default function ConversacionPage() {
       <section className="pagina pagina-mensajes pagina-conversacion" aria-labelledby="titulo-pagina"
         aria-busy={!actual || undefined}>
         <Link to="/mensajes" className="enlace-volver">{TEXTOS.volverMensajes}</Link>
+        {/* Pantalla «Conversación»: el título se ve desde el primer momento, también mientras carga. */}
+        <h1 id="titulo-pagina" className="mensajes-titulo">{TEXTOS.conversacion}</h1>
 
         {!actual && <p className="intro-text" role="status">{TEXTOS.cargando}</p>}
         {actual?.error && (
@@ -151,9 +153,10 @@ export default function ConversacionPage() {
 
         {conversacion && (
           <>
-            <h1 id="titulo-pagina" className="mensajes-titulo">
+            {/* Debajo del título, el otro centro: enlace a su perfil, o «Centro eliminado» sin enlace. */}
+            <p className="mensajes-otro-centro">
               {centro.enlace ? <Link to={centro.enlace}>{centro.nombre}</Link> : centro.nombre}
-            </h1>
+            </p>
             <CabeceraAnuncioMensajes anuncio={conversacion.anuncio} vendedor={vendedor}
               conEnlace={tituloConEnlace(conversacion.anuncio.estado)} />
             {banda && <p className="franja-pausado mensajes-banda" role="status">{banda}</p>}
