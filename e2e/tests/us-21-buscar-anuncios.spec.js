@@ -45,9 +45,9 @@ async function entrarYBuscar(page, cuentas) {
   return page.getByPlaceholder('Buscar material…');
 }
 
-// La «×» del cuadro: su nombre accesible lo fija el frontend; se acepta «×» o un texto de borrar/quitar.
+// La «×» del cuadro: T21-5 la llama «Quitar la búsqueda»; se acepta también «×» o otro texto de borrar/quitar.
 function botonBorrar(page) {
-  return page.getByRole('button', { name: /^(×|borrar búsqueda|quitar búsqueda|borrar|limpiar búsqueda)$/i });
+  return page.getByRole('button', { name: /^(×|quitar la búsqueda|borrar búsqueda|quitar búsqueda|borrar|limpiar búsqueda)$/i });
 }
 
 // ---------------------------------------------------------------- flujos e2e
