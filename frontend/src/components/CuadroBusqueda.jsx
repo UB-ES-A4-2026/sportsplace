@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import { MAX_CARACTERES, TEXTOS } from '../catalogo/busqueda.js';
 import '../catalogo/busqueda.css';
@@ -63,7 +64,7 @@ export default function CuadroBusqueda({ q, alBuscar, alQuitar }) {
           />
           {texto && (
             <button type="button" className="busqueda-quitar" aria-label={TEXTOS.quitar} onClick={quitar}>
-              <span aria-hidden="true">×</span>
+              <X size={18} aria-hidden="true" />
             </button>
           )}
         </div>
