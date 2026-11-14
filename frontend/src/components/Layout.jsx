@@ -3,13 +3,14 @@ import { useAuth } from '../auth/useAuth.js';
 import MenuCentro from './MenuCentro.jsx';
 
 export default function Layout() {
-  const { usuario } = useAuth();
+  const { usuario, cargando } = useAuth();
 
   return (
     <div className="page">
       <header className="cabecera">
-        {/* US-96 CA1: con sesión, el logo lleva al catálogo. */}
-        <Link to={usuario ? '/catalogo' : '/'} className="brand">
+        {/* US-96 CA1: con sesión, el logo lleva al catálogo. Mientras se comprueba la sesión guardada (al recargar o
+            entrar por una URL) ya apunta a /catalogo; si la sesión no vale, la ruta privada lleva a /entrar. */}
+        <Link to={usuario || cargando ? '/catalogo' : '/'} className="brand">
           <span className="brand-mark" aria-hidden="true">S</span>
           <span>Sportsplace</span>
         </Link>
