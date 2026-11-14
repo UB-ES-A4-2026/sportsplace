@@ -9,7 +9,7 @@
   border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); background: var(--s2-superficie);
   box-shadow: var(--s2-sombra-1); transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
 }
-.busqueda-cuadro:hover { border-color: #c5d6da; }
+.busqueda-cuadro:hover { border-color: var(--s2-teal-100); }
 .busqueda-cuadro:focus-within { border-color: var(--s2-teal-500); outline: 0; box-shadow: var(--s2-foco), var(--s2-sombra-1); }
 .busqueda-cuadro-error, .busqueda-cuadro-error:hover { border-color: var(--s2-peligro); }
 .busqueda-lupa { flex: none; margin-left: 16px; color: var(--s2-gris); }
