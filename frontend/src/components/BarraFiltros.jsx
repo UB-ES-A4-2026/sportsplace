@@ -10,12 +10,16 @@ import {
   sinFiltros,
   TEXTOS,
   textoBotonEstado,
+  textoBotonFiltros,
 } from '../catalogo/filtros.js';
 import '../catalogo/filtros.css';
 
 // T21-6: barra de filtros de /catalogo (US-22, US-73 y US-74). Recibe lo que devuelve useFiltrosCatalogo()
 // y llama a `onCambiar(parametros)` con la URL nueva; la pantalla navega y vuelve a pedir el catálogo.
 export default function BarraFiltros({ parametros, filtros, onCambiar }) {
+  // US-22: por debajo de 600 px la barra se pliega tras «Filtros (N)».
+  const [abierta, setAbierta] = useState(false);
+  const idBarra = useId();
   const etiquetas = etiquetasActivas(filtros);
   const donacion = filtros.modalidad === 'donacion';
 
@@ -28,7 +32,12 @@ export default function BarraFiltros({ parametros, filtros, onCambiar }) {
 
   return (
     <section className="filtros" aria-label="Filtros">
-      <div className="filtros-barra">
+      <button type="button" className="filtros-movil" aria-expanded={abierta} aria-controls={idBarra}
+        onClick={() => setAbierta((valor) => !valor)}>
+        {textoBotonFiltros(filtros)}
+      </button>
+
+      <div id={idBarra} className={abierta ? 'filtros-barra abierta' : 'filtros-barra'}>
         <Desplegable etiqueta={TEXTOS.categoria} todas={TEXTOS.todasCategorias} opciones={CATEGORIAS}
           valor={filtros.categoria} onCambiar={(valor) => onCambiar(conFiltro(parametros, 'categoria', valor))} />
         <Desplegable etiqueta={TEXTOS.deporte} todas={TEXTOS.todosDeportes} opciones={DEPORTES}
