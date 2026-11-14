@@ -70,7 +70,7 @@ describe('leerFiltros: la URL rellena la barra (US-22 CA8, US-73 CA10)', () => {
   test('US-73 CA3: precios fuera de 0-99999 o no enteros se quitan; 0 y 99999 valen', () => {
     assert.deepEqual(leerFiltros(url('precio_min=0&precio_max=99999')).filtros.precioMin, 0);
     assert.equal(leerFiltros(url('precio_min=0&precio_max=99999')).corregidos, null);
-    for (const valor of ['-1', '100000', '12,5', '12.5', 'abc', '']) {
+    for (const valor of ['-1', '100000', '12,5', '12.5', 'abc', '', ' 20 ', '+20']) {
       const { filtros, corregidos } = leerFiltros(url(`precio_max=${encodeURIComponent(valor)}`));
       assert.equal(filtros.precioMax, null, valor);
       assert.equal(corregidos.toString(), '', valor);

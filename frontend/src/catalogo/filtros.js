@@ -94,7 +94,8 @@ export function leerFiltros(parametros) {
   for (const [nombre, clave] of [['precio_min', 'precioMin'], ['precio_max', 'precioMax']]) {
     if (!parametros.has(nombre)) continue;
     const valor = unico(parametros, nombre);
-    const precio = valor === null ? undefined : leerPrecio(valor);
+    // En la URL se aplica la regla de la API tal cual (sin recortar espacios): `?precio_max=%2020%20` no vale.
+    const precio = valor !== null && /^\d{1,5}$/.test(valor) ? Number(valor) : undefined;
     if (typeof precio === 'number') filtros[clave] = precio;
     else limpios.delete(nombre);
   }
