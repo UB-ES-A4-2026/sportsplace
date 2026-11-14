@@ -46,6 +46,16 @@ export async function listarMisAnuncios({ pagina, porPagina }, { signal } = {}, 
   return llamarApi(`/anuncios/mios?${parametros}`, { signal });
 }
 
+// US-96 CA16 (T21-4): GET /api/catalogo con la búsqueda, los filtros y la página, con los mismos nombres que la URL
+// de /catalogo (E04, «Base común»). Responde 200 { anuncios, pagina, por_pagina, total, total_paginas }.
+// `consulta` es un objeto { q, categoria, …, pagina } sin valores vacíos.
+// Va aquí y no en `api/catalogo.js`: con el servidor de desarrollo, ese módulo se descarga como `/src/api/catalogo.js`
+// y los E2E que simulan la API con `page.route('**/api/catalogo**')` también lo interceptarían.
+export async function listarCatalogo(consulta, { signal } = {}, llamarApi = api) {
+  const texto = new URLSearchParams(consulta).toString().replaceAll('%2C', ',');
+  return llamarApi(`/catalogo${texto ? `?${texto}` : ''}`, { signal });
+}
+
 // US-15 CA11 y CA14: PATCH /api/anuncios/:id en multipart/form-data (`datos`, `fotos`, `foto_principal`).
 // Responde 200 { anuncio }.
 export async function editarAnuncio(id, formulario, llamarApi = api) {

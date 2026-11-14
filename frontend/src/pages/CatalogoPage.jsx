@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, CloudOff, PackageOpen, SearchX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { listarCatalogo } from '../api/catalogo.js';
+import { listarCatalogo } from '../api/anuncios.js';
 import BarraFiltros from '../components/BarraFiltros.jsx';
 import CuadroBusqueda from '../components/CuadroBusqueda.jsx';
 import SinResultadosBusqueda from '../components/SinResultadosBusqueda.jsx';
