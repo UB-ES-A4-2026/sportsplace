@@ -10,7 +10,7 @@ import {
   A1, A2, FECHA, INEXISTENTE, autorizacion, boton, cambiarEstado, campoMensaje, columnasDe, conversacionesDe,
   crearConversacion, datosCentro, enviarMensaje, esperarError, getConversacion, getConversacionDeAnuncio,
   hayApiConversaciones, hayBotonEscribir, hayPantallaConversacion, hayPantallaNueva, hayTablaConversaciones,
-  idDeUrl, insertarAnuncio, insertarConversacion, lado, limpiarAnuncios, mensajesDe, tokenDe,
+  idDeUrl, insertarAnuncio, insertarConversacion, lado, limpiarAnuncios, llegaASerVisible, mensajesDe, tokenDe,
 } from '../conversaciones.js';
 
 const PREGUNTA = 'Hola, ¿los balones tienen la presión correcta? ¿Podemos recogerlos el sábado?';
@@ -220,7 +220,7 @@ test('US-28 · E2E-5 · tercer centro', async ({ page, request, cuentas }) => {
   await page.goto(`/mensajes/${ajena}`);
   const main = page.getByRole('main');
   test.skip(
-    !(await main.getByText('Esta conversación no existe.').isVisible({ timeout: 5_000 }).catch(() => false)),
+    !(await llegaASerVisible(main.getByText('Esta conversación no existe.'))),
     'La pantalla /mensajes/:id (T28-3) aún no está en esta rama.',
   );
   await expect(main.getByRole('link', { name: 'Ir a mensajes' })).toHaveAttribute('href', '/mensajes');

@@ -176,20 +176,27 @@ export async function hayBotonEscribir(page, anuncioId) {
 // Con T28-3 existe la pantalla «Nueva conversación».
 export async function hayPantallaNueva(page, anuncioId) {
   await page.goto(`/mensajes/nueva?anuncio=${anuncioId}`);
-  return page.getByRole('heading', { name: 'Nueva conversación' }).isVisible({ timeout: 5_000 }).catch(() => false);
+  return llegaASerVisible(page.getByRole('heading', { name: 'Nueva conversación' }));
 }
 
 // Con T28-3 existe la pantalla «Conversación» con su pie de escritura.
 export async function hayPantallaConversacion(page, conversacionId) {
   await page.goto(`/mensajes/${conversacionId}`);
-  return page.getByRole('heading', { name: 'Conversación' }).isVisible({ timeout: 5_000 }).catch(() => false);
+  return llegaASerVisible(page.getByRole('heading', { name: 'Conversación' }));
 }
 
-// Mensajes propios a la derecha y del otro centro a la izquierda (posición respecto al centro del hilo).
+// `isVisible()` no espera (ignora `timeout`): las pantallas que cargan datos se daban por inexistentes.
+export async function llegaASerVisible(locator, timeout = 5_000) {
+  return locator.waitFor({ state: 'visible', timeout }).then(() => true, () => false);
+}
+
+// Mensajes propios a la derecha y del otro centro a la izquierda (posición respecto al centro del hilo,
+// no de <main>, que ocupa todo el ancho aunque el hilo vaya en una columna).
 export async function lado(page, texto) {
-  const caja = await page.getByText(texto, { exact: true }).last().boundingBox();
-  const main = await page.getByRole('main').boundingBox();
-  return caja.x + caja.width / 2 > main.x + main.width / 2 ? 'derecha' : 'izquierda';
+  const mensaje = page.getByText(texto, { exact: true }).last();
+  const caja = await mensaje.boundingBox();
+  const hilo = await mensaje.locator('xpath=ancestor::ol[1]').boundingBox();
+  return caja.x + caja.width / 2 > hilo.x + hilo.width / 2 ? 'derecha' : 'izquierda';
 }
 
 export const FECHA = /\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/;
