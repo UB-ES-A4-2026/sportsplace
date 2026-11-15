@@ -120,6 +120,10 @@
 .detalle-botones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
 .detalle-boton button { margin-top: 0; }
 .detalle-boton button:disabled { cursor: not-allowed; }
+/* US-32 (T32-3): «Pedir» es un enlace con forma de botón; y el aviso de pedido pendiente con «Ver mi pedido». */
+.detalle-boton .boton-enlace { margin-top: 0; }
+.detalle-pedido-pendiente { display: grid; gap: 4px; }
+.detalle-pedido-pendiente p { margin: 0; font-weight: 600; }
 .detalle-ayuda { margin: 6px 0 0; color: #7a8b81; font-size: 13px; }
 .detalle-centro { margin-top: 26px; padding: 16px; border-radius: 12px; background: #f4f7f4; }
 .detalle-centro-nombre { margin: 0; font-weight: 700; }
