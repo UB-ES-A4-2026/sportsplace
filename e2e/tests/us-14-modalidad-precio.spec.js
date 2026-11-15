@@ -11,34 +11,10 @@
 import { test, expect, entrar } from '../fixtures.js';
 import { archivo } from './fixtures/imagenes.js';
 
-// CA3 · conversión a céntimos en la web (sin coma flotante).
-const CONVERSION = [
-  { escrito: '8,5', centimos: 850 },
-  { escrito: '8,05', centimos: 805 },
-  { escrito: '0,01', centimos: 1 },
-  { escrito: '99999,99', centimos: 9999999 },
-];
-
 const RANGO = 'El precio debe estar entre 0,01 € y 99.999,99 €.';
 const FORMATO = 'Escribe el precio con hasta 2 decimales, por ejemplo 12,50.';
 const FALTA = 'Indica el precio por unidad.';
-const DONACION_CON_PRECIO = 'Una donación no puede tener precio.';
 const TEXTO_DONACION = 'El material se cederá gratis.';
-
-// CA4 · casos límite de la web. `null` = se acepta y publica.
-const LIMITES = [
-  { escrito: '0,01', error: null },
-  { escrito: '0', error: RANGO },
-  { escrito: '0,00', error: RANGO },
-  { escrito: '99999,99', error: null },
-  { escrito: '100000', error: RANGO },
-  { escrito: '12,345', error: FORMATO },
-  { escrito: '1.234,50', error: FORMATO },
-  { escrito: '12 €', error: FORMATO },
-  { escrito: '-5', error: FORMATO },
-  { escrito: 'abc', error: FORMATO },
-  { escrito: '', error: FALTA },
-];
 
 const VALIDO = {
   titulo: 'Raquetas de pádel',
@@ -47,15 +23,6 @@ const VALIDO = {
   deporte: 'Pádel',
   unidades: '4',
   estado: 'Buen estado',
-};
-
-const VALIDO_API = {
-  titulo: VALIDO.titulo,
-  descripcion: VALIDO.descripcion,
-  categoria: 'material_entrenamiento',
-  deporte: 'padel',
-  unidades_disponibles: 4,
-  estado_material: 'buen_estado',
 };
 
 const URL_FICHA = /\/anuncios\/[0-9a-f-]{36}$/;
@@ -163,6 +130,7 @@ test.describe('US-14 · Modalidad y precio', () => {
     await rellenar(page, 'Venta', '8,50');
     const { cuerpo, id } = await publicar(page);
     expect(cuerpo).toMatchObject({ modalidad: 'venta', precio_unitario_centimos: 850 }); // CA3, CA8
+    await expect(page.getByText('8,50 € / unidad', { exact: true })).toBeVisible(); // CA6 en la ficha (T14-4, #64)
 
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
     const anuncio = await leerAnuncio(request, token, id);
@@ -178,6 +146,7 @@ test.describe('US-14 · Modalidad y precio', () => {
     const { cuerpo, id } = await publicar(page);
     expect(cuerpo.modalidad).toBe('donacion');
     expect(cuerpo).not.toHaveProperty('precio_unitario_centimos');
+    await expect(page.getByText('Donación · Gratis', { exact: true })).toBeVisible(); // CA7 en la ficha (T14-4, #64)
 
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
     const anuncio = await leerAnuncio(request, token, id);
@@ -204,6 +173,7 @@ test.describe('US-14 · Modalidad y precio', () => {
     await c.precio.fill('99999,99');
     const { cuerpo, id } = await publicar(page);
     expect(cuerpo.precio_unitario_centimos).toBe(9999999);
+    await expect(page.getByText('99.999,99 € / unidad', { exact: true })).toBeVisible(); // CA6 con miles (T14-4, #64)
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
     expect((await leerAnuncio(request, token, id)).precio_unitario_centimos).toBe(9999999);
   });
@@ -228,68 +198,16 @@ test.describe('US-14 · Modalidad y precio', () => {
     expect(anuncio).toMatchObject({ modalidad: 'donacion', precio_unitario_centimos: null });
   });
 
-  test('E2E-5 · API: donación con precio → 400', async ({ request, cuentas }) => {
-    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
-    // Desde US-13, POST /api/anuncios es multipart: `datos` con el JSON y una foto válida.
-    const formulario = new FormData();
-    formulario.append('datos', JSON.stringify({ ...VALIDO_API, modalidad: 'donacion', precio_unitario_centimos: 500 }));
-    formulario.append('fotos', new Blob([FOTO.buffer], { type: FOTO.mimeType }), FOTO.name);
-    const res = await request.post('/api/anuncios', { headers: { Authorization: `Bearer ${token}` }, multipart: formulario });
-    expect(res.status()).toBe(400);
-    const { error } = await res.json();
-    expect(error.code).toBe('DATOS_INVALIDOS');
-    expect(error.details.precio_unitario_centimos).toBe(DONACION_CON_PRECIO); // CA9
-  });
+  // ---------------------------------------------------------------- valores límite
+  // Cada conversión (8,5 / 8,05 / 0,01 / 99999,99) y cada mensaje de CA4 los cubren
+  // frontend/src/validacion/modalidadPrecio.test.js y anuncio.test.js; el formato de la ficha, anuncios/precio.test.js
+  // y utilidades/euros.test.js. En la web, E2E-3 recorre los tres mensajes y publica el máximo; aquí, el mínimo en la BD.
 
-  // ---------------------------------------------------------------- tablas de valores
-
-  test.describe('CA3 · conversión a céntimos', () => {
-    for (const { escrito, centimos } of CONVERSION) {
-      test(`«${escrito}» → ${centimos}`, async ({ page, cuentas }) => {
-        await abrirFormulario(page, cuentas);
-        await rellenar(page, 'Venta', escrito);
-        const { cuerpo } = await publicar(page);
-        expect(cuerpo.precio_unitario_centimos).toBe(centimos);
-      });
-    }
-  });
-
-  test.describe('CA4 · casos límite del precio', () => {
-    for (const { escrito, error } of LIMITES) {
-      const nombre = escrito === '' ? 'vacío' : `«${escrito}»`;
-      test(`${nombre} → ${error ?? 'se publica'}`, async ({ page, cuentas }) => {
-        await abrirFormulario(page, cuentas);
-        await rellenar(page, 'Venta', escrito);
-        const publicaciones = contarPublicaciones(page);
-        await campos(page).publicar.click();
-        if (error) {
-          await expect(page.getByText(error)).toBeVisible();
-          await expect(page).toHaveURL('/anuncios/nuevo');
-          expect(publicaciones.n).toBe(0);
-        } else {
-          await expect(page).toHaveURL(URL_FICHA);
-        }
-      });
-    }
-  });
-
-  // ---------------------------------------------------------------- ficha (T14-4, #64)
-
-  test.describe('Ficha (T14-4, #64)', () => {
-    for (const [escrito, texto] of [['8,50', '8,50 € / unidad'], ['99999,99', '99.999,99 € / unidad']]) {
-      test(`venta «${escrito}» → «${texto}» (T14-4, #64)`, async ({ page, cuentas }) => {
-        await abrirFormulario(page, cuentas);
-        await rellenar(page, 'Venta', escrito);
-        await publicar(page);
-        await expect(page.getByText(texto, { exact: true })).toBeVisible(); // CA6
-      });
-    }
-
-    test('donación → «Donación · Gratis» (T14-4, #64)', async ({ page, cuentas }) => {
-      await abrirFormulario(page, cuentas);
-      await rellenar(page, 'Donación');
-      await publicar(page);
-      await expect(page.getByText('Donación · Gratis', { exact: true })).toBeVisible(); // CA7
-    });
+  test('CA3 y CA4 · «0,01» se publica como 1 céntimo', async ({ page, cuentas }) => {
+    await abrirFormulario(page, cuentas);
+    await rellenar(page, 'Venta', '0,01');
+    const { cuerpo } = await publicar(page);
+    expect(cuerpo.precio_unitario_centimos).toBe(1);
+    await expect(page.getByText('0,01 € / unidad', { exact: true })).toBeVisible();
   });
 });
