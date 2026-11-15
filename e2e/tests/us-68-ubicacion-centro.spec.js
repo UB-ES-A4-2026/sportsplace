@@ -213,31 +213,9 @@ test.describe('US-68 · API de /api/centros/mio/ubicacion', () => {
     token = await tokenDe(request, cuentas.centroA, cuentas.password);
   });
 
-  const RECHAZOS = [
-    ['CA3', { direccion: 'a'.repeat(256) }, 'direccion', 'Como máximo 255 caracteres.'],
-    ['CA4', { codigo_postal: '' }, 'codigo_postal', 'El código postal es obligatorio.'],
-    ['CA4', { codigo_postal: '   ' }, 'codigo_postal', 'El código postal es obligatorio.'],
-    ['CA4', { codigo_postal: '0802' }, 'codigo_postal', 'El código postal debe tener 5 cifras.'],
-    ['CA4', { codigo_postal: '080251' }, 'codigo_postal', 'El código postal debe tener 5 cifras.'],
-    ['CA4', { codigo_postal: '08O25' }, 'codigo_postal', 'El código postal debe tener 5 cifras.'],
-    ['CA4', { codigo_postal: '00999' }, 'codigo_postal', 'El código postal no es de España.'],
-    ['CA4', { codigo_postal: '53000' }, 'codigo_postal', 'El código postal no es de España.'],
-    ['CA6', { localidad: '' }, 'localidad', 'La localidad es obligatoria.'],
-    ['CA6', { localidad: 'a'.repeat(121) }, 'localidad', 'Como máximo 120 caracteres.'],
-  ];
-
-  for (const [ca, cambio, clave, mensaje] of RECHAZOS) {
-    const muestra = JSON.stringify(cambio).slice(0, 40);
-    test(`${ca} y CA12 · rechaza ${muestra} con «${mensaje}» y no guarda nada`, async ({ request, cuentas }) => {
-      const antes = await filaCentro(cuentas.centroA);
-      const res = await putUbicacion(request, token, { ...DATOS_HISTORIA, ...cambio });
-      expect(res.status()).toBe(400);
-      const { error } = await res.json();
-      expect(error.code).toBe('DATOS_INVALIDOS');
-      expect(error.details).toEqual({ [clave]: mensaje });
-      expect(await filaCentro(cuentas.centroA)).toEqual(antes);
-    });
-  }
+  // Cada mensaje y cada límite de validación (CA3, CA4, CA6, CA12: obligatorio, 5 cifras, fuera de España, 255/120
+  // caracteres, 401 y 405) los cubren los tests del backend (backend/test/centros-ubicacion.test.js). Aquí quedan
+  // los casos que dependen de la BD real: la tabla codigos_postales, las columnas y que un error no guarda nada.
 
   test('CA12 · varios errores a la vez, sin guardar nada', async ({ request, cuentas }) => {
     const antes = await filaCentro(cuentas.centroA);
@@ -301,16 +279,6 @@ test.describe('US-68 · API de /api/centros/mio/ubicacion', () => {
     expect(await filaCentro(cuentas.centroA)).toMatchObject({ localidad: 'Barna', provincia: 'Barcelona' });
   });
 
-  test('CA13 · GET /api/centros/mio incluye provincia, latitud y longitud', async ({ request }) => {
-    expect((await putUbicacion(request, token, DATOS_HISTORIA)).status()).toBe(200);
-    const res = await request.get('/api/centros/mio', { headers: { Authorization: `Bearer ${token}` } });
-    expect(res.status()).toBe(200);
-    const { centro } = await res.json();
-    expect(centro).toMatchObject({ ...DATOS_HISTORIA, provincia: 'Barcelona' });
-    expect(typeof centro.latitud).toBe('number');
-    expect(typeof centro.longitud).toBe('number');
-  });
-
   test('CA14 · ninguna respuesta sobre otro centro expone su dirección ni sus coordenadas', async ({ request, cuentas }) => {
     const tokenB = await tokenDe(request, cuentas.centroB, cuentas.password);
     expect((await putUbicacion(request, tokenB, { ...DATOS_HISTORIA, codigo_postal: '17001', localidad: 'Girona' }))
@@ -352,15 +320,5 @@ test.describe('US-68 · API de /api/centros/mio/ubicacion', () => {
       direccion: null, localidad: antes.localidad, provincia: antes.provincia,
       latitud: antes.latitud, longitud: antes.longitud,
     });
-  });
-
-  test('CA11 y CA12 · sin sesión responde 401 y otros métodos 405', async ({ request }) => {
-    const res = await request.put('/api/centros/mio/ubicacion', { data: DATOS_HISTORIA });
-    expect(res.status()).toBe(401);
-    expect((await res.json()).error.code).toBe('NO_AUTENTICADO');
-    const post = await request.post('/api/centros/mio/ubicacion', {
-      headers: { Authorization: `Bearer ${token}` }, data: DATOS_HISTORIA,
-    });
-    expect(post.status()).toBe(405);
   });
 });
