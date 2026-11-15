@@ -151,8 +151,9 @@ test('US-22 · E2E-5 · URL manipulada', async ({ page, cuentas }) => {
 
 test('US-22 · móvil · la barra se pliega tras «Filtros (N)»', async ({ page, cuentas }) => {
   await insertarDatosE2E();
-  await page.setViewportSize({ width: 390, height: 844 });
+  // A 390 px la barra está plegada y hayBarraFiltros() no la ve: se comprueba en escritorio y luego se encoge.
   await entrarYFiltrar(page, cuentas, '/catalogo?categoria=balones&deporte=baloncesto');
+  await page.setViewportSize({ width: 390, height: 844 });
   const plegar = page.getByRole('button', { name: 'Filtros (2)', exact: true });
   await expect(plegar).toBeVisible();
   await expect(desplegable(page, 'Categoría')).toBeHidden();
