@@ -357,11 +357,12 @@ test('US-24 · API · CA12 y CA15 · formato del detalle sin datos privados', as
   const cuerpo = await res.json();
   expect(Object.keys(cuerpo).sort()).toEqual([
     'categoria', 'centro', 'deporte', 'descripcion', 'distancia_km', 'es_favorito', 'es_propio', 'estado',
-    'estado_material', 'fotos', 'id', 'modalidad', 'precio_unitario_centimos', 'publicado_en', 'titulo',
-    'unidades_disponibles',
+    'estado_material', 'fotos', 'id', 'mi_pedido_pendiente_id', 'modalidad', 'precio_unitario_centimos',
+    'publicado_en', 'titulo', 'unidades_disponibles',
   ]);
   expect(cuerpo).toMatchObject({
     id, ...BALONES, estado: 'activo', publicado_en: PUBLICADO, es_favorito: false, es_propio: false,
+    mi_pedido_pendiente_id: null,
   });
   expect(cuerpo.distancia_km === null || typeof cuerpo.distancia_km === 'number').toBe(true);
 
