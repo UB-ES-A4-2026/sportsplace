@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { methodNotAllowed } from '../errors.js';
 import { getAnuncios, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
+import { anuncioNoEncontrado, esIdDeAnuncio } from '../repositories/anuncios.js';
 import { validarConsultaCatalogo } from '../validation/catalogo.js';
 
 // E04: el catálogo es privado y exige el email confirmado (CA23).
@@ -14,6 +15,13 @@ export function catalogoRouter() {
     response.json(await getAnuncios(request).listarCatalogo(request.usuario.id, consulta));
   });
   router.all('/', methodNotAllowed(['GET']));
+
+  router.get('/:id', async (request, response) => {
+    if (!esIdDeAnuncio(request.params.id)) throw anuncioNoEncontrado();
+    const anuncio = await getAnuncios(request).obtenerCatalogo(request.usuario.id, request.params.id);
+    response.json(anuncio);
+  });
+  router.all('/:id', methodNotAllowed(['GET']));
 
   return router;
 }
