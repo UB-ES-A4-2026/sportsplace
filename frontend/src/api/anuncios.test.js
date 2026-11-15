@@ -7,6 +7,7 @@ import {
   listarCatalogo,
   listarMisAnuncios,
   obtenerAnuncio,
+  obtenerAnuncioDelCatalogo,
   pausarAnuncio,
   reactivarAnuncio,
   retirarAnuncio,
@@ -205,5 +206,21 @@ describe('listarCatalogo', () => {
   test('los errores de la API llegan a la pantalla (CA15)', async () => {
     const fallo = new Error('No disponible');
     await assert.rejects(listarCatalogo({}, {}, async () => { throw fallo; }), fallo);
+  });
+});
+
+describe('obtenerAnuncioDelCatalogo (US-24 CA12)', () => {
+  test('GET /catalogo/:id con el id codificado y devuelve la respuesta tal cual', async () => {
+    const llamadas = [];
+    const respuesta = { id: 'a b', titulo: 'Balones de fútbol talla 5', es_propio: false };
+    const controlador = new AbortController();
+
+    const resultado = await obtenerAnuncioDelCatalogo('a b', { signal: controlador.signal }, async (ruta, opciones) => {
+      llamadas.push({ ruta, opciones });
+      return respuesta;
+    });
+
+    assert.deepEqual(llamadas, [{ ruta: '/catalogo/a%20b', opciones: { signal: controlador.signal } }]);
+    assert.equal(resultado, respuesta);
   });
 });
