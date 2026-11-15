@@ -6,7 +6,7 @@ import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
 import {
-  boton, contarPeticiones, datosCentro, fecha, getCatalogo, hayBusquedaEnApi, hayCuadroBusqueda,
+  boton, catalogoCargado, contarPeticiones, datosCentro, fecha, getCatalogo, hayBusquedaEnApi, hayCuadroBusqueda,
   hayFiltrosEnApi, insertarAnuncio, restablecerSemilla, tarjeta, tarjetas, tokenDe, vaciarCatalogo,
 } from '../catalogo.js';
 
@@ -162,6 +162,7 @@ test('US-21 · E2E-4 · limpiar', async ({ page, request, cuentas }) => {
 
   // CA13: la búsqueda se combina con los filtros y vuelve a la página 1.
   await page.goto('/catalogo?categoria=balones&pagina=2');
+  await catalogoCargado(page);
   await page.getByPlaceholder('Buscar material…').fill('tenis');
   await page.getByPlaceholder('Buscar material…').press('Enter');
   await expect(page).not.toHaveURL(/pagina=/);

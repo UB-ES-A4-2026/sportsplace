@@ -108,6 +108,13 @@ export async function hayCuadroBusqueda(page) {
     && page.getByPlaceholder('Buscar material…').waitFor({ timeout: 5_000 }).then(() => true, () => false);
 }
 
+// Espera a que la pantalla termine de cargar y de corregir la URL (US-96 CA10: una página mayor que la última se
+// sustituye con `replace`). Si se toca un filtro o la búsqueda antes, esa corrección puede llegar después y pisar el
+// cambio. Que un filtro o la búsqueda vuelvan a la página 1 se prueba en filtros.test.js y busqueda.test.js.
+export async function catalogoCargado(page) {
+  await expect(page.getByRole('main').locator('[aria-busy="true"]')).toHaveCount(0);
+}
+
 // Cada tarjeta es un enlace a la ficha del anuncio (US-96 CA3).
 export function tarjetas(page) {
   return page.getByRole('main').locator('a[href^="/anuncios/"]:not([href="/anuncios/nuevo"])');
