@@ -64,11 +64,12 @@ export function textoContador(n) {
   return n > 99 ? '99+' : String(n);
 }
 
-// Pestaña «Recibidos (n pendientes)» (pantalla y E2E-1). Con 0 pendientes no hay contador (CA9).
-// Decisión pendiente en la especificación: «(1 pendiente)» en singular. Se cambia aquí.
+// Pestaña «Recibidos (1 pendiente)» / «Recibidos (n pendientes)» (E06, decisión del 15/11; E2E-1).
+// Con 0 pendientes no hay contador (CA9).
 export function textoPestanaRecibidos(pendientes) {
   const contador = textoContador(pendientes);
-  return contador ? `${TEXTOS.recibidos} (${contador} pendientes)` : TEXTOS.recibidos;
+  if (!contador) return TEXTOS.recibidos;
+  return `${TEXTOS.recibidos} (${contador} ${contador === '1' ? 'pendiente' : 'pendientes'})`;
 }
 
 // Columna «Total»: «34,00 €» o «Donación».

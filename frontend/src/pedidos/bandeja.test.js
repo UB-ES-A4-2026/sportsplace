@@ -62,8 +62,9 @@ test('US-109 · CA9 · contador: oculto con 0, «99+» con más de 99', () => {
   assert.equal(textoContador(100), '99+');
 });
 
-test('US-109 · pestaña «Recibidos (n pendientes)» (E2E-1) y sin contador con 0', () => {
-  assert.equal(textoPestanaRecibidos(1), 'Recibidos (1 pendientes)');
+test('US-109 · pestaña «Recibidos (1 pendiente)» / «(n pendientes)» (E2E-1) y sin contador con 0', () => {
+  assert.equal(textoPestanaRecibidos(1), 'Recibidos (1 pendiente)');
+  assert.equal(textoPestanaRecibidos(2), 'Recibidos (2 pendientes)');
   assert.equal(textoPestanaRecibidos(3), 'Recibidos (3 pendientes)');
   assert.equal(textoPestanaRecibidos(150), 'Recibidos (99+ pendientes)');
   assert.equal(textoPestanaRecibidos(0), 'Recibidos');

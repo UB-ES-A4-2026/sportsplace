@@ -288,7 +288,7 @@ Como responsable de un centro, quiero una pantalla con los pedidos que me hacen 
 - CA14. Sin token `401`; email sin confirmar `403 EMAIL_NO_CONFIRMADO`.
 
 **Flujos e2e**
-- E2E-1. Con el pedido de 4 balones pendiente, Les Corts ve «Pedidos ①» en la cabecera, entra, pestaña «Recibidos (1 pendientes)»: fila «Balones de baloncesto talla 7 · Escola de Bàsquet Gràcia · 4 · 34,00 € · Pendiente».
+- E2E-1. Con el pedido de 4 balones pendiente, Les Corts ve «Pedidos ①» en la cabecera, entra, pestaña «Recibidos (1 pendiente)»: fila «Balones de baloncesto talla 7 · Escola de Bàsquet Gràcia · 4 · 34,00 € · Pendiente».
 - E2E-2. Gràcia entra en «Realizados»: ve el pedido de A1 y el de A2 («Donación»), pendientes primero.
 - E2E-3. Sabadell: ambas pestañas con los textos vacíos de CA7.
 - E2E-4. Con 21 pedidos recibidos sembrados: página 1 con 20, «Siguiente» muestra 1.
@@ -299,7 +299,7 @@ Como responsable de un centro, quiero una pantalla con los pedidos que me hacen 
 - T109-3 · QA: automatizar E2E-1…4 y los CA.
 
 **Decisiones pendientes**
-- Pluralización «(1 pendientes)». Propuesta: «(1 pendiente)» / «(n pendientes)».
+- ~~Pluralización «(1 pendientes)»~~. Decidido (QA, 15/11): «(1 pendiente)» / «(n pendientes)».
 
 ---
 
