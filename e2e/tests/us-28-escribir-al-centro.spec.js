@@ -258,7 +258,158 @@ test('US-28 · E2E-6 · anuncio pausado', async ({ page, request, cuentas }) => 
   expect((await mensajesDe(db, c1)).map((mensaje) => mensaje.texto)).toEqual([PREGUNTA, '¿Lo volveréis a activar?']);
 });
 
+// Retiene los POST que casen con `patron` hasta llamar a la función devuelta.
+async function retenerEnvios(page, patron) {
+  let soltar;
+  const retenido = new Promise((resolver) => { soltar = resolver; });
+  await page.route(patron, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    await retenido;
+    return route.fallback();
+  });
+  return soltar;
+}
+
+test('US-28 · CA11 · «Enviando…» deshabilitado y el texto se conserva', async ({ page, request, cuentas }) => {
+  await conApi(request, cuentas);
+  const a1 = await nuevoAnuncio();
+  const c1 = await conversacionDeB(a1);
+  const a3 = await nuevoAnuncio({ titulo: 'Conos de entrenamiento' });
+
+  // Nueva conversación: mientras POST /api/conversaciones no responde.
+  await conPantallaNueva(page, cuentas, a3);
+  const soltarNueva = await retenerEnvios(page, '**/api/conversaciones');
+  await campoMensaje(page).fill('¿Cuántos conos hay de cada color?');
+  await boton(page, 'Enviar').click();
+  await expect(boton(page, 'Enviando…')).toBeDisabled();
+  await expect(campoMensaje(page)).toHaveValue('¿Cuántos conos hay de cada color?');
+  soltarNueva();
+  await expect(page).toHaveURL(/\/mensajes\/[0-9a-f-]{36}$/);
+  expect(await conversacionesDe(db, a3)).toHaveLength(1);
+
+  // Conversación existente: mientras POST /api/conversaciones/:id/mensajes no responde.
+  await page.goto(`/mensajes/${c1}`);
+  const soltarMensaje = await retenerEnvios(page, `**/api/conversaciones/${c1}/mensajes`);
+  await campoMensaje(page).fill('¿Lo podemos recoger el sábado?');
+  await boton(page, 'Enviar').click();
+  await expect(boton(page, 'Enviando…')).toBeDisabled();
+  await expect(campoMensaje(page)).toHaveValue('¿Lo podemos recoger el sábado?');
+  soltarMensaje();
+  await expect(campoMensaje(page)).toHaveValue('');
+  await expect(boton(page, 'Enviar')).toBeVisible();
+  expect((await mensajesDe(db, c1)).map((mensaje) => mensaje.texto)).toEqual([PREGUNTA, '¿Lo podemos recoger el sábado?']);
+});
+
 // ---------------------------------------------------------------- API (CA7-CA9, CA21, CA26, CA31-CA36)
+
+// Columnas con su tipo y si admiten nulos, restricciones (pg_get_constraintdef) e índices de una tabla.
+async function esquemaDe(tabla) {
+  const { rows: columnas } = await db.query(
+    `SELECT column_name, data_type, is_nullable, character_maximum_length
+       FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1`,
+    [tabla],
+  );
+  const { rows: restricciones } = await db.query(
+    `SELECT conname, pg_get_constraintdef(oid) AS definicion
+       FROM pg_constraint WHERE conrelid = to_regclass('public.' || $1)`,
+    [tabla],
+  );
+  const { rows: indices } = await db.query(
+    "SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND tablename = $1",
+    [tabla],
+  );
+  return {
+    columnas: Object.fromEntries(columnas.map((c) => [c.column_name, c])),
+    restricciones: restricciones.map((r) => r.definicion.replace(/\s+/g, ' ')),
+    indices: indices.map((i) => i.indexdef),
+  };
+}
+
+test('US-28 · API · CA27 · tabla conversaciones', async () => {
+  test.skip(!(await hayTablaConversaciones(db)), 'Las tablas de conversaciones (T28-1) aún no están en esta rama.');
+  const { columnas, restricciones } = await esquemaDe('conversaciones');
+  const tipos = Object.fromEntries(Object.entries(columnas).map(([nombre, c]) => [nombre, c.data_type]));
+  expect(tipos).toMatchObject({
+    id: 'uuid',
+    anuncio_id: 'uuid',
+    centro_comprador_id: 'uuid',
+    centro_vendedor_id: 'uuid',
+    ultimo_mensaje_en: 'timestamp with time zone',
+    creada_en: 'timestamp with time zone',
+  });
+  for (const columna of ['id', 'anuncio_id', 'centro_comprador_id', 'centro_vendedor_id', 'creada_en']) {
+    expect(columnas[columna].is_nullable, columna).toBe('NO');
+  }
+  expect(restricciones).toEqual(expect.arrayContaining([
+    'PRIMARY KEY (id)',
+    'FOREIGN KEY (anuncio_id) REFERENCES anuncios(id)',
+    'FOREIGN KEY (centro_comprador_id) REFERENCES centros(id)',
+    'FOREIGN KEY (centro_vendedor_id) REFERENCES centros(id)',
+    'UNIQUE (anuncio_id, centro_comprador_id)',
+    'CHECK ((centro_comprador_id <> centro_vendedor_id))',
+  ]));
+
+  // La restricción única y el check se cumplen en la BD, no solo en la API.
+  const a1 = await nuevoAnuncio();
+  await conversacionDeB(a1);
+  await expect(db.query(
+    'INSERT INTO public.conversaciones (anuncio_id, centro_comprador_id, centro_vendedor_id) VALUES ($1, $2, $3)',
+    [a1, centros.b.id, centros.a.id],
+  )).rejects.toMatchObject({ code: '23505' });
+  await expect(db.query(
+    'INSERT INTO public.conversaciones (anuncio_id, centro_comprador_id, centro_vendedor_id) VALUES ($1, $2, $2)',
+    [a1, centros.a.id],
+  )).rejects.toMatchObject({ code: '23514' });
+});
+
+test('US-28 · API · CA28 · tabla mensajes', async () => {
+  test.skip(!(await hayTablaConversaciones(db)), 'Las tablas de conversaciones (T28-1) aún no están en esta rama.');
+  const { columnas, restricciones, indices } = await esquemaDe('mensajes');
+  const tipos = Object.fromEntries(Object.entries(columnas).map(([nombre, c]) => [nombre, c.data_type]));
+  expect(tipos).toMatchObject({
+    id: 'uuid',
+    conversacion_id: 'uuid',
+    centro_autor_id: 'uuid',
+    autor_usuario_id: 'uuid',
+    tipo: 'text',
+    texto: 'character varying',
+    oferta_id: 'uuid',
+    creado_en: 'timestamp with time zone',
+  });
+  expect(columnas.texto.character_maximum_length).toBe(2000);
+  expect(columnas.texto.is_nullable).toBe('YES');
+  expect(columnas.oferta_id.is_nullable).toBe('YES');
+  expect(restricciones).toEqual(expect.arrayContaining([
+    'PRIMARY KEY (id)',
+    'FOREIGN KEY (conversacion_id) REFERENCES conversaciones(id)',
+    'FOREIGN KEY (centro_autor_id) REFERENCES centros(id)',
+    'FOREIGN KEY (autor_usuario_id) REFERENCES auth.users(id)',
+  ]));
+  // Índice cuyas primeras columnas son (conversacion_id, creado_en).
+  expect(indices.some((indice) => /\(conversacion_id, creado_en\b/.test(indice))).toBe(true);
+
+  // tipo texto/oferta, texto 1-2000 y nulo si es oferta, oferta_id nulo si es texto: lo impone la BD.
+  const a1 = await nuevoAnuncio();
+  const c1 = await conversacionDeB(a1);
+  const insertar = (tipo, texto, ofertaId = null) => db.query(
+    `INSERT INTO public.mensajes (conversacion_id, centro_autor_id, autor_usuario_id, tipo, texto, oferta_id)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [c1, centros.b.id, centros.b.usuario_id, tipo, texto, ofertaId],
+  );
+  for (const [tipo, texto, ofertaId] of [
+    ['audio', 'Hola', null],
+    ['texto', '', null],
+    ['texto', null, null],
+    ['texto', 'Hola', INEXISTENTE],
+    ['oferta', 'Hola', INEXISTENTE],
+    ['oferta', null, null],
+  ]) {
+    await expect(insertar(tipo, texto, ofertaId), `${tipo} ${texto} ${ofertaId}`).rejects.toMatchObject({ code: '23514' });
+  }
+  await expect(insertar('texto', 'x'.repeat(2001))).rejects.toMatchObject({ code: '22001' });
+  expect(await mensajesDe(db, c1)).toHaveLength(1);
+});
+
 
 test('US-28 · API · CA7-CA9 · texto del mensaje', async ({ request, cuentas }) => {
   const tokens = await conApi(request, cuentas);
