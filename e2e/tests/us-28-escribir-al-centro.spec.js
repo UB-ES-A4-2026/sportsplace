@@ -1,16 +1,15 @@
 // T28-4 · E2E y tests de API de US-28 (escribir al centro de un anuncio). Casos: docs/especificacion/E05 (US-28).
 // A vende (A1, venta de 12,00 € con 20 unidades; A2, donación con 4) y B escribe. Cada caso crea sus anuncios
 // y al acabar se borran sus conversaciones y se retiran.
-// Los casos se omiten mientras su pieza no esté en la rama: tablas (T28-1), API de conversaciones (T28-2) y
-// botón «Escribir al centro» y pantallas `/mensajes/nueva` y `/mensajes/:id` (T28-3).
+// US-28 está entera en dev: ningún caso se omite por falta de pieza (si falta, falla). Solo CA35 se omite mientras
+// no exista la eliminación de centros (US-11).
 import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
 import {
   A1, A2, FECHA, INEXISTENTE, autorizacion, boton, cambiarEstado, campoMensaje, columnasDe, conversacionesDe,
   crearConversacion, datosCentro, enviarMensaje, esperarError, getConversacion, getConversacionDeAnuncio,
-  hayApiConversaciones, hayBotonEscribir, hayPantallaConversacion, hayPantallaNueva, hayTablaConversaciones,
-  idDeUrl, insertarAnuncio, insertarConversacion, lado, limpiarAnuncios, llegaASerVisible, mensajesDe, tokenDe,
+  idDeUrl, insertarAnuncio, insertarConversacion, lado, limpiarAnuncios, mensajesDe, tokenDe,
 } from '../conversaciones.js';
 
 const PREGUNTA = 'Hola, ¿los balones tienen la presión correcta? ¿Podemos recogerlos el sábado?';
@@ -53,10 +52,8 @@ function conversacionDeB(anuncioId, texto = PREGUNTA) {
   });
 }
 
-// Comprueba que la API de conversaciones está en la rama y devuelve los tokens de A y B.
+// Tokens de A y B. US-28 está en dev: si falta una pieza, el caso falla (no se omite).
 async function conApi(request, cuentas) {
-  test.skip(!(await hayTablaConversaciones(db)), 'Las tablas de conversaciones (T28-1) aún no están en esta rama.');
-  test.skip(!(await hayApiConversaciones(request)), 'La API de conversaciones (T28-2) aún no está en esta rama.');
   return {
     a: await tokenDe(request, cuentas.centroA, cuentas.password),
     b: await tokenDe(request, cuentas.centroB, cuentas.password),
@@ -65,12 +62,20 @@ async function conApi(request, cuentas) {
 
 async function conPantallaNueva(page, cuentas, anuncioId) {
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayPantallaNueva(page, anuncioId)), 'La pantalla /mensajes/nueva (T28-3) aún no está en esta rama.');
+  await page.goto(`/mensajes/nueva?anuncio=${anuncioId}`);
+  await expect(page.getByRole('heading', { name: 'Nueva conversación' })).toBeVisible();
 }
 
 async function conPantallaConversacion(page, email, password, conversacionId) {
   await entrar(page, email, password);
-  test.skip(!(await hayPantallaConversacion(page, conversacionId)), 'La pantalla /mensajes/:id (T28-3) aún no está en esta rama.');
+  await page.goto(`/mensajes/${conversacionId}`);
+  await expect(page.getByRole('heading', { name: 'Conversación' })).toBeVisible();
+}
+
+// CA1: el detalle de un anuncio de otro centro muestra «Escribir al centro».
+async function abrirDetalleConBoton(page, anuncioId) {
+  await page.goto(`/anuncios/${anuncioId}`);
+  await expect(boton(page, 'Escribir al centro')).toBeVisible();
 }
 
 // ---------------------------------------------------------------- flujos e2e
@@ -79,7 +84,7 @@ test('US-28 · E2E-1 · camino feliz', async ({ page, request, cuentas }) => {
   const tokens = await conApi(request, cuentas);
   const a1 = await nuevoAnuncio();
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBotonEscribir(page, a1)), '«Escribir al centro» en el detalle del anuncio (T28-3) aún no está en esta rama.');
+  await abrirDetalleConBoton(page, a1);
 
   // CA3: sin conversación, el botón lleva a la pantalla de nueva conversación.
   await boton(page, 'Escribir al centro').click();
@@ -137,7 +142,7 @@ test('US-28 · E2E-2 · conversación existente', async ({ page, request, cuenta
   const c1 = (await res.json()).conversacion.id;
 
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBotonEscribir(page, a1)), '«Escribir al centro» en el detalle del anuncio (T28-3) aún no está en esta rama.');
+  await abrirDetalleConBoton(page, a1);
   await boton(page, 'Escribir al centro').click();
   await expect(page).toHaveURL(`/mensajes/${c1}`);
   await expect(page.getByRole('main').getByText(PREGUNTA, { exact: true })).toBeVisible();
@@ -219,10 +224,7 @@ test('US-28 · E2E-5 · tercer centro', async ({ page, request, cuentas }) => {
   await entrar(page, cuentas.centroB, cuentas.password);
   await page.goto(`/mensajes/${ajena}`);
   const main = page.getByRole('main');
-  test.skip(
-    !(await llegaASerVisible(main.getByText('Esta conversación no existe.'))),
-    'La pantalla /mensajes/:id (T28-3) aún no está en esta rama.',
-  );
+  await expect(main.getByText('Esta conversación no existe.')).toBeVisible();
   await expect(main.getByRole('link', { name: 'Ir a mensajes' })).toHaveAttribute('href', '/mensajes');
   await expect(main.getByText(PREGUNTA)).toHaveCount(0);
 });
@@ -326,7 +328,6 @@ async function esquemaDe(tabla) {
 }
 
 test('US-28 · API · CA27 · tabla conversaciones', async () => {
-  test.skip(!(await hayTablaConversaciones(db)), 'Las tablas de conversaciones (T28-1) aún no están en esta rama.');
   const { columnas, restricciones } = await esquemaDe('conversaciones');
   const tipos = Object.fromEntries(Object.entries(columnas).map(([nombre, c]) => [nombre, c.data_type]));
   expect(tipos).toMatchObject({
@@ -363,7 +364,6 @@ test('US-28 · API · CA27 · tabla conversaciones', async () => {
 });
 
 test('US-28 · API · CA28 · tabla mensajes', async () => {
-  test.skip(!(await hayTablaConversaciones(db)), 'Las tablas de conversaciones (T28-1) aún no están en esta rama.');
   const { columnas, restricciones, indices } = await esquemaDe('mensajes');
   const tipos = Object.fromEntries(Object.entries(columnas).map(([nombre, c]) => [nombre, c.data_type]));
   expect(tipos).toMatchObject({
