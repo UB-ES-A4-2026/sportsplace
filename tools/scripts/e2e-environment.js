@@ -20,6 +20,16 @@ export function localEnvironment(environment) {
   return Object.fromEntries(Object.entries(environment).filter(([name]) => !/^(SUPABASE_|DATABASE_|MIGRATION_|PG|GOTRUE_)/i.test(name)));
 }
 
+// Only the SQL test files of supabase/tests, in a stable order.
+export function sqlTestFiles(names) {
+  return names.filter((name) => /^[\w-]+\.sql$/.test(name)).sort();
+}
+
+// psql only reports the failing statement and the test message; nothing from the connection.
+export function sqlErrorLines(stderr) {
+  return stderr.split('\n').filter((line) => /^(psql:|ERROR:|CONTEXT:|DETAIL:)/.test(line)).slice(0, 10);
+}
+
 export function validateStatus(status) {
   const api = new URL(status.API_URL);
   const database = new URL(status.DB_URL);
@@ -55,6 +65,37 @@ function command(binary, args, { input } = {}) {
     child.stdin.on('error', () => {});
     child.stdin.end(input);
   });
+}
+
+function runSqlTest(container, name, input) {
+  return new Promise((resolveTest, reject) => {
+    const child = spawn('docker', ['exec', '-i', container, 'psql', '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q'],
+      { cwd: runtime, env: localEnvironment(process.env), shell: false, stdio: ['pipe', 'ignore', 'pipe'] });
+    const errors = [];
+    child.stderr.on('data', (chunk) => { if (errors.length < 64) errors.push(chunk); });
+    child.on('error', () => reject(new Error('No se pudo ejecutar Docker. Comprueba Docker Desktop.')));
+    child.on('close', (code) => code === 0
+      ? resolveTest()
+      : reject(new Error([`Falló la prueba SQL ${name}:`, ...sqlErrorLines(Buffer.concat(errors).toString('utf8'))].join('\n'))));
+    child.stdin.on('error', () => {});
+    child.stdin.end(input);
+  });
+}
+
+async function sqlTests(container) {
+  const folder = join(root, 'supabase/tests');
+  const failures = [];
+  for (const name of sqlTestFiles(await readdir(folder))) {
+    try {
+      await runSqlTest(container, name, await readFile(join(folder, name)));
+      console.log(`ok   ${name}`);
+    } catch (error) {
+      console.log(`FAIL ${name}`);
+      failures.push(error.message);
+    }
+  }
+  if (failures.length) throw new Error(failures.join('\n'));
+  console.log('Pruebas SQL de supabase/tests en verde (todas terminan en ROLLBACK).');
 }
 
 const cli = (...args) => command(process.execPath, [cliPath, ...args, '--workdir', runtime]);
@@ -208,8 +249,8 @@ async function writeRuntime(status) {
 
 export async function run(argv = process.argv.slice(2)) {
   const [action, ...flags] = argv;
-  if (!['up', 'seed', 'down'].includes(action) || flags.some((flag) => flag !== '--require-anuncios') || (action === 'down' && flags.length)) {
-    throw new Error('Uso: test-environment.js up|seed [--require-anuncios] | down');
+  if (!['up', 'seed', 'down', 'sql'].includes(action) || flags.some((flag) => flag !== '--require-anuncios') || (['down', 'sql'].includes(action) && flags.length)) {
+    throw new Error('Uso: test-environment.js up|seed [--require-anuncios] | down | sql');
   }
   const { project } = await owner({ create: action === 'up' });
   if (action === 'down') {
@@ -217,6 +258,11 @@ export async function run(argv = process.argv.slice(2)) {
     await cli('stop', '--no-backup');
     await unlink(join(runtime, 'runtime.env')).catch((error) => { if (error.code !== 'ENOENT') throw error; });
     console.log('Entorno de pruebas de este checkout detenido; volúmenes locales de pruebas eliminados.');
+    return;
+  }
+  if (action === 'sql') {
+    await verifyConfig(project);
+    await sqlTests(await verifyContainer(project));
     return;
   }
   if (action === 'up') {

@@ -13,6 +13,7 @@
     "test-env:up": "node scripts/e2e-environment.js up",
     "test-env:seed": "node scripts/e2e-environment.js seed",
     "test-env:down": "node scripts/e2e-environment.js down",
+    "test-env:sql": "node scripts/e2e-environment.js sql",
     "deploy:check": "node scripts/check-deployment.js",
     "deploy:wait": "node scripts/wait-for-deployment.js"
   },
