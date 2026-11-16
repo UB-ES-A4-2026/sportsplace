@@ -73,13 +73,13 @@ test('US-35 · E2E-1 · transferencia, en la BD y en el detalle para los dos', a
   await transferencia.check();
   await elegirRecogida(page);
   await boton(page, 'Enviar pedido').click();
-  test.skip(!(await estaEnPantallaPedido(page)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await estaEnPantallaPedido(page), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   await expect(page.getByText('Pedido enviado. El vendedor lo revisará.')).toBeVisible();
   const pedidoId = idDeUrl(page);
   expect((await pedidosDe(db, a1))[0].metodo_pago).toBe('transferencia');
 
   // CA6: lo ven comprador y vendedor.
-  test.skip(!(await hayPantallaPedido(page, pedidoId)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await hayPantallaPedido(page, pedidoId), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   await expect(page.getByText(/Forma de pago:?\s*Transferencia bancaria/)).toBeVisible();
   await cambiarDeCuenta(page, entrar, cuentas.centroA, cuentas.password);
   await page.goto(`/pedidos/${pedidoId}`);
