@@ -10,6 +10,7 @@ import MisAnunciosPage from './pages/MisAnunciosPage.jsx';
 import InicioPage from './pages/InicioPage.jsx';
 import NoEncontradaPage from './pages/NoEncontradaPage.jsx';
 import PanelPage from './pages/PanelPage.jsx';
+import PedidosPage from './pages/PedidosPage.jsx';
 import PerfilPage from './pages/PerfilPage.jsx';
 import PublicarAnuncioPage from './pages/PublicarAnuncioPage.jsx';
 import RecuperarContrasenaPage from './pages/RecuperarContrasenaPage.jsx';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
           <Route path="anuncios/:id" element={<DetalleAnuncioPage />} />
           <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
+          <Route path="pedidos" element={<PedidosPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>
