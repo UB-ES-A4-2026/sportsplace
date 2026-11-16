@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router';
 import Layout from './components/Layout.jsx';
 import RutaPrivada from './components/RutaPrivada.jsx';
+import CentroPage from './pages/CentroPage.jsx';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage.jsx';
 import ConversacionPage from './pages/ConversacionPage.jsx';
 import DetalleAnuncioPage from './pages/DetalleAnuncioPage.jsx';
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
           <Route path="mensajes/nueva" element={<MensajeNuevoPage />} />
           <Route path="mensajes/:id" element={<ConversacionPage />} />
+          <Route path="centros/:id" element={<CentroPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>
