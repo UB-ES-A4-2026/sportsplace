@@ -4,6 +4,7 @@
 // sus fotos directamente en `anuncio_fotos` (no se sube nada a Storage: la galería solo necesita `src` y `alt`).
 // Al acabar se borran las fotos creadas y se retiran los anuncios.
 // El 403 EMAIL_NO_CONFIRMADO y el 405 los cubren los tests del backend (backend/test/catalogo-api.test.js).
+// Al final, US-10 CA1: el nombre del centro en «Ofrecido por» enlaza a su perfil (T10-2).
 import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
@@ -172,10 +173,11 @@ test('US-24 · E2E-1 · camino feliz: datos, galería en bucle y volver al catá
   expect(posiciones.every((p) => p >= 0)).toBe(true);
   expect([...posiciones].sort((x, y) => x - y)).toEqual(posiciones);
 
-  // CA10: hasta US-32 y US-28, los dos botones deshabilitados con «Disponible próximamente».
+  // CA10: «Pedir material» sigue deshabilitado con «Disponible próximamente» hasta US-32. US-28 (T28-3) ya habilita
+  // «Escribir al centro», que deja de llevar ese texto.
   await expect(boton(page, 'Pedir material')).toBeDisabled();
-  await expect(boton(page, 'Escribir al centro')).toBeDisabled();
-  await expect(main.getByText(TEXTOS.proximamente)).toHaveCount(2);
+  await expect(boton(page, 'Escribir al centro')).toBeEnabled();
+  await expect(main.getByText(TEXTOS.proximamente)).toHaveCount(1);
 
   // CA6 y CA7: principal primero, «›» dos veces → foto 3, «›» otra vez → vuelve a la 1; «‹» desde la 1 → la 3.
   await expect(fotoGrande(page, 1, 3)).toHaveAttribute('src', new RegExp(`${rutas[2]}$`));
@@ -222,8 +224,8 @@ test('US-24 · E2E-2 · anuncio reservado', async ({ page, request, cuentas }) =
   const texto = await main.innerText();
   expect(texto.indexOf(TEXTOS.reservado)).toBeLessThan(texto.indexOf(BALONES.titulo));
   await expect(boton(page, 'Pedir material')).toBeDisabled();
-  // «Escribir al centro» seguirá habilitado con US-28; hasta entonces aplica CA10 (deshabilitado y «próximamente»).
-  await expect(boton(page, 'Escribir al centro')).toHaveAccessibleDescription(TEXTOS.proximamente);
+  // CA4 y US-28 CA1: con el anuncio reservado se sigue pudiendo escribir al centro.
+  await expect(boton(page, 'Escribir al centro')).toBeEnabled();
 
   // CA12: la API mantiene el estado `reservado` para que la web lo indique.
   const tokenB = await tokenDe(request, cuentas.centroB, cuentas.password);
@@ -400,4 +402,22 @@ test('US-24 · API · CA16 · sin sesión responde 401', async ({ request }) => 
   const res = await request.get(`/api/catalogo/${id}`);
   expect(res.status()).toBe(401);
   expect((await res.json()).error.code).toBe('NO_AUTENTICADO');
+});
+
+// ---------------------------------------------------------------- US-10 CA1 (enlace desde el detalle)
+// Va aquí porque se recorre desde el detalle de US-24; cuando entre el spec de US-10 (#291), se puede mover allí.
+
+test('US-10 · CA1 · el nombre del centro en «Ofrecido por» lleva a su perfil', async ({ page, cuentas }) => {
+  const id = await nuevoAnuncio();
+  await entrar(page, cuentas.centroB, cuentas.password);
+  await page.goto(`/anuncios/${id}`);
+
+  const ofrecido = page.getByRole('main').getByRole('region', { name: 'Ofrecido por' });
+  const enlace = ofrecido.getByRole('link', { name: centros.a.nombre, exact: true });
+  await expect(enlace).toHaveAttribute('href', `/centros/${centros.a.id}`);
+
+  await enlace.click();
+  await expect(page).toHaveURL(`/centros/${centros.a.id}`);
+  await expect(page.getByRole('heading', { level: 1, name: centros.a.nombre })).toBeVisible();
+  await expect(page.getByText('Perfil de centro', { exact: true })).toBeVisible();
 });
