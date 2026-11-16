@@ -76,6 +76,11 @@ describe('botonesDelVendedor (US-33 CA1, US-79 CA1, US-34 CA9)', () => {
     });
   });
 
+  test('aviso sin stock en singular con 1 unidad pedida', () => {
+    const pedido = { ...PEDIDO, unidades: 1, anuncio: { ...PEDIDO.anuncio, unidades_disponibles: 0 }, acciones: ['rechazar'] };
+    assert.equal(botonesDelVendedor(pedido).avisoSinStock, 'Este pedido pide 1 unidad y solo te quedan 0.');
+  });
+
   test('sin `rechazar` no se pinta el «Aceptar» deshabilitado aunque falten unidades', () => {
     const pedido = { ...PEDIDO, anuncio: { ...PEDIDO.anuncio, unidades_disponibles: 3 }, acciones: [] };
     assert.equal(botonesDelVendedor(pedido).aceptar, false);
@@ -162,12 +167,24 @@ describe('resultadoDelFallo', () => {
     assert.deepEqual(resultadoDelFallo(fallo), { errores: { motivo_codigo: 'Elige un motivo.' } });
   });
 
-  test('404 → «no existe»; 403 → el message; red, 500 y 503 → aviso genérico', () => {
+  test('404 → «no existe»; 403 → el message (los dos cierran el diálogo)', () => {
     assert.deepEqual(resultadoDelFallo(new ErrorApi(404, { code: 'NO_ENCONTRADO' })), { noEncontrado: true });
     assert.deepEqual(resultadoDelFallo(new ErrorApi(403, { code: 'SIN_PERMISO', message: 'No puedes realizar esta acción en este pedido.' })),
       { mensaje: 'No puedes realizar esta acción en este pedido.' });
-    for (const status of [0, 500, 503]) {
-      assert.deepEqual(resultadoDelFallo(new ErrorApi(status)), { mensaje: MENSAJE_ERROR_GENERICO });
+  });
+
+  test('guía común: red caída, 500 y 503 → aviso genérico y se conservan los datos escritos', () => {
+    for (const fallo of [
+      new ErrorApi(0, { code: 'SIN_CONEXION', message: 'No se ha podido conectar con el servidor.' }),
+      new ErrorApi(500, { code: 'ERROR_INTERNO', message: 'Error' }),
+      new ErrorApi(503, { code: 'BASE_DATOS_NO_DISPONIBLE', message: 'Error' }),
+    ]) {
+      assert.deepEqual(resultadoDelFallo(fallo), { mensaje: MENSAJE_ERROR_GENERICO, conservar: true });
     }
+  });
+
+  test('409, 400 con campos, 404 y 403 no conservan: el diálogo se cierra o muestra el error bajo su campo', () => {
+    assert.equal(resultadoDelFallo(new ErrorApi(409, { code: 'TRANSICION_NO_PERMITIDA', message: 'x' })).conservar, undefined);
+    assert.equal(resultadoDelFallo(new ErrorApi(404)).conservar, undefined);
   });
 });

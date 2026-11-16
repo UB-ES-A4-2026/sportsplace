@@ -21,8 +21,8 @@ import DialogoRechazo from './DialogoRechazo.jsx';
 // - `onActualizado(pedido)`: el pedido que devuelve la API, para refrescar estado, contacto, motivo e historial.
 // - `onAviso({ tipo: 'exito', texto })`.
 // - `onFallo(resultado)`: { mensaje, recargar } (409: aviso rojo con el `message` y recargar el pedido, US-33 CA9),
-//   { noEncontrado } (404) o { mensaje } (resto). El diálogo se cierra sin cambios, salvo los errores de campo
-//   del rechazo, que se quedan en el diálogo.
+//   { noEncontrado } (404) o { mensaje } (resto). El diálogo se cierra sin cambios, salvo en el rechazo con
+//   errores de campo (se quedan bajo su campo) o con la red caída, 500 o 503 (sigue abierto con lo escrito).
 // Uso en /pedidos/:id: <AccionesPedidoVendedor pedido={pedido} onActualizado={setPedido} onAviso={setAviso} onFallo={mostrarFallo} />
 export default function AccionesPedidoVendedor({ pedido, onActualizado, onAviso, onFallo }) {
   const [dialogo, setDialogo] = useState(null); // 'aceptar' | 'rechazar' | null
@@ -52,8 +52,9 @@ export default function AccionesPedidoVendedor({ pedido, onActualizado, onAviso,
         setErroresRechazo(resultado.errores);
         return;
       }
-      cerrar();
-      onFallo?.(resultado);
+      // Red caída, 500 o 503 al rechazar: el diálogo sigue abierto con el motivo y la explicación escritos.
+      if (!(resultado.conservar && dialogo === 'rechazar')) cerrar();
+      onFallo?.({ mensaje: resultado.mensaje, recargar: resultado.recargar, noEncontrado: resultado.noEncontrado });
       return;
     }
     setEnviando(false);

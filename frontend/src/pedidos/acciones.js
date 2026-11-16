@@ -69,9 +69,9 @@ export function faltanUnidades(pedido) {
 
 const unidades = (n) => (n === 1 ? '1 unidad' : `${n} unidades`);
 
-// US-34: aviso amarillo «Este pedido pide <u> unidades y solo te quedan <n>.»
+// US-34: aviso amarillo «Este pedido pide <u> unidades y solo te quedan <n>.» (con 1, «1 unidad»).
 export function textoFaltanUnidades(pedido) {
-  return `Este pedido pide ${pedido.unidades} unidades y solo te quedan ${pedido.anuncio.unidades_disponibles}.`;
+  return `Este pedido pide ${unidades(pedido.unidades)} y solo te quedan ${pedido.anuncio.unidades_disponibles}.`;
 }
 
 // Qué botones de esta tarea se pintan. Los permisos los decide el servidor con `acciones` (US-108 CA9):
@@ -111,7 +111,9 @@ export function dialogoAceptar(pedido) {
 // - 400 DATOS_INVALIDOS del rechazo: cada mensaje bajo su campo del diálogo (US-79 CA8).
 // - 404: la pantalla «Este pedido no existe o no tienes acceso.» (US-108 CA3).
 // - 403: el `message` de la API (SIN_PERMISO o EMAIL_NO_CONFIRMADO).
-// - 500, 503, sin conexión y el resto: aviso genérico; el diálogo se queda abierto con lo escrito.
+// - 500, 503, sin conexión y el resto: aviso genérico y `conservar: true`. El diálogo de rechazo se queda
+//   abierto con lo escrito, para reintentar sin volver a escribirlo (guía común: «Los datos del formulario
+//   se conservan»).
 export function resultadoDelFallo(fallo) {
   if (fallo?.status === 409) return { mensaje: fallo.message || MENSAJE_ERROR_GENERICO, recargar: true };
   if (fallo?.status === 400 && fallo.details) {
@@ -121,5 +123,5 @@ export function resultadoDelFallo(fallo) {
   }
   if (fallo?.status === 404) return { noEncontrado: true };
   if (fallo?.status === 403 && fallo.message) return { mensaje: fallo.message };
-  return { mensaje: MENSAJE_ERROR_GENERICO };
+  return { mensaje: MENSAJE_ERROR_GENERICO, conservar: true };
 }
