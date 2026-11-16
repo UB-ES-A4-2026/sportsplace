@@ -40,7 +40,7 @@ const ESTADOS = ['Nuevo', 'Como nuevo', 'Buen estado', 'Usado', 'Para reparar'];
 
 async function entrarYFiltrar(page, cuentas, ruta = '/catalogo') {
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBarraFiltros(page)), 'La barra de filtros (T21-6) aún no está en esta rama.');
+  expect(await hayBarraFiltros(page), 'La barra de filtros (T21-6) tiene que estar en la story.').toBe(true);
   if (ruta !== '/catalogo') await page.goto(ruta);
 }
 
@@ -181,7 +181,7 @@ async function titulos(request, token, parametros) {
 
 test('US-73 · API · estado y precio (CA6 a CA8)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayFiltroEnApi(request, token, 'estado_material=roto')), 'Los filtros de estado y precio (T21-3) aún no están en esta rama.');
+  expect(await hayFiltroEnApi(request, token, 'estado_material=roto'), 'Los filtros de estado y precio (T21-3) tienen que estar en la story.').toBe(true);
   await insertarDatosE2E();
   const a = { centro_id: centros.a.id };
   await insertarAnuncio(db, { ...a, titulo: 'B1 venta 20,00', precio_unitario_centimos: 2000, publicado_en: fecha(16) });
@@ -203,7 +203,7 @@ test('US-73 · API · estado y precio (CA6 a CA8)', async ({ request, cuentas })
 
 test('US-73 · API · validación (CA11, CA12)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayFiltroEnApi(request, token, 'estado_material=roto')), 'Los filtros de estado y precio (T21-3) aún no están en esta rama.');
+  expect(await hayFiltroEnApi(request, token, 'estado_material=roto'), 'Los filtros de estado y precio (T21-3) tienen que estar en la story.').toBe(true);
   const fueraDeRango = 'Indica un precio entero entre 0 y 99.999 €.';
   for (const [parametros, campo, mensaje] of [
     ['estado_material=nuevo,roto', 'estado_material', 'Estado del material no válido.'],

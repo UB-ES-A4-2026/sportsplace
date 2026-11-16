@@ -47,7 +47,7 @@ async function insertarDatosE2E() {
 
 async function entrarYFiltrar(page, cuentas, ruta = '/catalogo') {
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBarraFiltros(page)), 'La barra de filtros (T21-6) aún no está en esta rama.');
+  expect(await hayBarraFiltros(page), 'La barra de filtros (T21-6) tiene que estar en la story.').toBe(true);
   if (ruta !== '/catalogo') await page.goto(ruta);
 }
 
@@ -109,8 +109,8 @@ test('US-22 · E2E-2 · quitar uno', async ({ page, cuentas }) => {
 test('US-22 · E2E-3 · limpiar con búsqueda', async ({ page, cuentas }) => {
   await insertarDatosE2E();
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBarraFiltros(page)), 'La barra de filtros (T21-6) aún no está en esta rama.');
-  test.skip(!(await hayCuadroBusqueda(page)), 'El cuadro de búsqueda (T21-5) aún no está en esta rama.');
+  expect(await hayBarraFiltros(page), 'La barra de filtros (T21-6) tiene que estar en la story.').toBe(true);
+  expect(await hayCuadroBusqueda(page), 'El cuadro de búsqueda (T21-5) tiene que estar en la story.').toBe(true);
 
   // CA9: búsqueda y filtro a la vez. CA7: «Limpiar filtros» conserva q y orden.
   await page.goto('/catalogo?q=molten&categoria=balones&orden=recientes');
@@ -172,7 +172,7 @@ async function titulos(request, token, parametros) {
 
 test('US-22 · API · filtros por categoría y deporte (CA4, CA11)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayFiltroEnApi(request, token, 'categoria=pelotas')), 'Los filtros de GET /api/catalogo (T21-3) aún no están en esta rama.');
+  expect(await hayFiltroEnApi(request, token, 'categoria=pelotas'), 'Los filtros de GET /api/catalogo (T21-3) tienen que estar en la story.').toBe(true);
   await insertarDatosE2E();
   await insertarAnuncio(db, { centro_id: centros.a.id, titulo: 'Material de varios deportes', deporte: 'varios', categoria: 'otros', publicado_en: fecha(17) });
   await insertarAnuncio(db, { centro_id: centros.b.id, titulo: 'Balones propios de B', deporte: 'baloncesto', publicado_en: fecha(21) });
@@ -191,7 +191,7 @@ test('US-22 · API · filtros por categoría y deporte (CA4, CA11)', async ({ re
 
 test('US-22 · API · validación (CA12, CA13)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayFiltroEnApi(request, token, 'categoria=pelotas')), 'Los filtros de GET /api/catalogo (T21-3) aún no están en esta rama.');
+  expect(await hayFiltroEnApi(request, token, 'categoria=pelotas'), 'Los filtros de GET /api/catalogo (T21-3) tienen que estar en la story.').toBe(true);
   for (const [parametros, campo, mensaje] of [
     ['categoria=pelotas', 'categoria', 'Categoría no válida.'],
     ['categoria=Balones', 'categoria', 'Categoría no válida.'],

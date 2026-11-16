@@ -39,7 +39,7 @@ async function insertarDatosE2E() {
 
 async function entrarYFiltrar(page, cuentas, ruta = '/catalogo') {
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBarraFiltros(page)), 'La barra de filtros (T21-6) aún no está en esta rama.');
+  expect(await hayBarraFiltros(page), 'La barra de filtros (T21-6) tiene que estar en la story.').toBe(true);
   if (ruta !== '/catalogo') await page.goto(ruta);
 }
 
@@ -122,7 +122,7 @@ async function titulos(request, token, parametros) {
 
 test('US-74 · API · modalidad (CA2, CA3, CA6)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayFiltroEnApi(request, token, 'modalidad=gratis')), 'El filtro de modalidad (T21-3) aún no está en esta rama.');
+  expect(await hayFiltroEnApi(request, token, 'modalidad=gratis'), 'El filtro de modalidad (T21-3) tiene que estar en la story.').toBe(true);
   await insertarDatosE2E();
 
   expect(await titulos(request, token, 'modalidad=venta')).toEqual(['Venta 1', 'Venta 2', 'Venta 3']);
