@@ -10,7 +10,7 @@ import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
 import {
-  A1, DIRECCION, boton, campoUnidades, columnasDe, contarEnvios, cuerpoPedido, datosCentro, getPedido,
+  A1, DIRECCION, boton, cambiarDeCuenta, campoUnidades, columnasDe, contarEnvios, cuerpoPedido, datosCentro, getPedido,
   hayFormularioPedir, hayGetPedido, hayPantallaPedido, hayPostPedidos, hayTablaPedidos, idDeUrl, insertarAnuncio,
   insertarPedido, pedidosDe, postPedido, retirarAnuncios, tokenDe,
 } from '../pedidos.js';
@@ -116,8 +116,8 @@ async function alFormulario(page, cuentas, anuncioId) {
 
 async function alPedido(page, cuentas, id, email = cuentas.centroB) {
   await entrar(page, email, cuentas.password);
-  test.skip(!(await hayPantallaPedido(page, id)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
-  test.skip(!(await page.getByText(/^Método:/).count()), 'La sección «Entrega» de /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await hayPantallaPedido(page, id), 'pantalla /pedidos/:id (T32-5)').toBe(true);
+  await expect(page.getByText(/^Método:/)).toHaveCount(1);
 }
 
 function opcionEnvio(page) {
@@ -182,11 +182,11 @@ test('US-40 · E2E-1 · envío con la dirección del centro prerrellenada', asyn
   expect(perfil).toEqual({ direccion: DATOS_B.direccion, telefono: DATOS_B.telefono });
 
   // Detalle para el comprador y para el vendedor.
-  test.skip(!(await hayPantallaPedido(page, pedidoId)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await hayPantallaPedido(page, pedidoId), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   const lineas = ['Marta Puig', 'Carrer de Verdi 12', /08012 Barcelona \(Barcelona\)/, '612345678', /Indicaciones:\s*Entrada por el pabellón/];
   await expect(main.getByText('Método: Envío a tu dirección')).toBeVisible();
   for (const linea of lineas) await expect(main.getByText(linea).first()).toBeVisible();
-  await entrar(page, cuentas.centroA, cuentas.password);
+  await cambiarDeCuenta(page, entrar, cuentas.centroA, cuentas.password);
   await page.goto(`/pedidos/${pedidoId}`);
   await expect(main.getByText('Método: Envío a la dirección del comprador')).toBeVisible();
   for (const linea of lineas) await expect(main.getByText(linea).first()).toBeVisible();
@@ -204,14 +204,16 @@ test('US-40 · E2E-2 · recogida: la dirección del vendedor sale al aceptar', a
   const [pedido] = await pedidosDe(db, a1);
   expect(pedido).toMatchObject({ metodo_entrega: 'recogida', direccion_envio: null });
 
-  test.skip(!(await hayPantallaPedido(page, pedidoId)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await hayPantallaPedido(page, pedidoId), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   const main = page.getByRole('main');
   await expect(main.getByText('Método: Recogida en el centro vendedor')).toBeVisible();
   await expect(main.getByText(ESPERA_RECOGIDA)).toBeVisible();
   await expect(main.getByText(RECOGIDA_A)).toHaveCount(0);
 
   // A acepta (US-33 llega por su story: aquí se pasa a aceptado en la BD).
-  await db.query("UPDATE public.pedidos SET estado = 'aceptado', respondido_en = now() WHERE id = $1", [pedidoId]);
+  // respondido_en llega con la migración de US-33: se rellena solo si la columna ya existe en la rama.
+  const respondido = columnas.has('respondido_en') ? ', respondido_en = now()' : '';
+  await db.query(`UPDATE public.pedidos SET estado = 'aceptado'${respondido} WHERE id = $1`, [pedidoId]);
   await page.reload();
   await expect(main.getByText(RECOGIDA_A)).toBeVisible();
   await expect(main.getByText(ESPERA_RECOGIDA)).toHaveCount(0);
@@ -418,7 +420,7 @@ test('US-40 · CA15 y CA16 · textos de la sección «Entrega» según el estado
 
   // CA16: el vendedor ve la dirección de envío con el pedido pendiente.
   const conEnvio = await nuevoPedido(envio());
-  await entrar(page, cuentas.centroA, cuentas.password);
+  await cambiarDeCuenta(page, entrar, cuentas.centroA, cuentas.password);
   await page.goto(`/pedidos/${conEnvio.id}`);
   await expect(main.getByText('Método: Envío a la dirección del comprador')).toBeVisible();
   await expect(main.getByText(DIRECCION.destinatario)).toBeVisible();

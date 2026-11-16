@@ -10,3 +10,9 @@ export async function crearPedido(cuerpo, llamarApi = api) {
   const datos = await llamarApi('/pedidos', { method: 'POST', body: cuerpo });
   return datos.pedido;
 }
+
+// US-108 CA10: GET /api/pedidos/:id → 200 { pedido }; 404 NO_ENCONTRADO si no existe o el centro no es parte.
+export async function obtenerPedido(id, { signal } = {}, llamarApi = api) {
+  const datos = await llamarApi(`/pedidos/${encodeURIComponent(id)}`, { signal });
+  return datos.pedido;
+}

@@ -91,7 +91,7 @@ test('US-32 · E2E-1 · venta, camino feliz', async ({ page, request, cuentas })
 
   // CA14: detalle del pedido con el aviso verde.
   await expect(page).toHaveURL(/\/pedidos\/[0-9a-f-]{36}$/);
-  test.skip(!(await estaEnPantallaPedido(page)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await estaEnPantallaPedido(page), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   await expect(page.getByText(ENVIADO)).toBeVisible();
   await expect(main.getByText('Pendiente', { exact: true }).first()).toBeVisible();
 
@@ -118,7 +118,7 @@ test('US-32 · E2E-2 · donación', async ({ page, request, cuentas }) => {
   // El aviso del dinero solo sale en venta.
   await expect(main.getByText(/Sportsplace no cobra ni gestiona el dinero/)).toHaveCount(0);
   await boton(page, 'Enviar pedido').click();
-  test.skip(!(await estaEnPantallaPedido(page)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await estaEnPantallaPedido(page), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   await expect(page.getByText(ENVIADO)).toBeVisible();
 
   const [pedido] = await pedidosDe(db, a2);
@@ -308,7 +308,7 @@ test('US-32 · CA7 a CA9 · límites de unidades, contador y total', async ({ pa
   await expect(main.getByText('500/500')).toBeVisible();
   await completarPagoYEntrega(page);
   await boton(page, 'Enviar pedido').click();
-  test.skip(!(await estaEnPantallaPedido(page)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await estaEnPantallaPedido(page), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   await expect(page.getByText(ENVIADO)).toBeVisible();
   expect((await pedidosDe(db, a1))[0].mensaje).toHaveLength(500);
 });
@@ -325,7 +325,7 @@ test('US-32 · CA10 y CA27 · doble clic solo crea un pedido', async ({ page, re
   });
   await boton(page, 'Enviar pedido').dblclick();
   await expect(page.getByRole('button', { name: 'Enviando…' })).toBeDisabled();
-  test.skip(!(await estaEnPantallaPedido(page)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await estaEnPantallaPedido(page), 'pantalla /pedidos/:id (T32-5)').toBe(true);
   await expect(page.getByText(ENVIADO)).toBeVisible();
   expect(await pedidosDe(db, a1)).toHaveLength(1);
 });

@@ -8,7 +8,7 @@ import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
 import {
-  A1, A2, INEXISTENTE, boton, datosCentro, getPedido, hayGetPedido, hayPantallaPedido, hayTablaPedidos,
+  A1, A2, INEXISTENTE, boton, cambiarDeCuenta, datosCentro, getPedido, hayGetPedido, hayPantallaPedido, hayTablaPedidos,
   insertarAnuncio, insertarPedido, retirarAnuncios, tokenDe,
 } from '../pedidos.js';
 
@@ -56,7 +56,7 @@ async function conApi(request, cuentas) {
 
 async function alPedido(page, cuentas, id, email = cuentas.centroB) {
   await entrar(page, email, cuentas.password);
-  test.skip(!(await hayPantallaPedido(page, id)), 'La pantalla /pedidos/:id (T32-5) aún no está en esta rama.');
+  expect(await hayPantallaPedido(page, id), 'pantalla /pedidos/:id (T32-5)').toBe(true);
 }
 
 // ---------------------------------------------------------------- flujos e2e
@@ -136,7 +136,7 @@ test('US-108 · CA2 · «Volver a pedidos» según el papel', async ({ page, cue
   await boton(page, '← Volver a pedidos').click();
   await expect(page).toHaveURL('/pedidos?pestana=realizados');
 
-  await entrar(page, cuentas.centroA, cuentas.password);
+  await cambiarDeCuenta(page, entrar, cuentas.centroA, cuentas.password);
   await page.goto(`/pedidos/${id}`);
   await boton(page, '← Volver a pedidos').click();
   await expect(page).toHaveURL('/pedidos?pestana=recibidos');

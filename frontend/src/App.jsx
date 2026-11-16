@@ -9,6 +9,7 @@ import EntrarPage from './pages/EntrarPage.jsx';
 import MisAnunciosPage from './pages/MisAnunciosPage.jsx';
 import InicioPage from './pages/InicioPage.jsx';
 import NoEncontradaPage from './pages/NoEncontradaPage.jsx';
+import PedidoPage from './pages/PedidoPage.jsx';
 import PedirPage from './pages/PedirPage.jsx';
 import PanelPage from './pages/PanelPage.jsx';
 import PerfilPage from './pages/PerfilPage.jsx';
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
           {/* US-32 CA4: privada; sin sesión lleva a /entrar y, al entrar, vuelve aquí. */}
           <Route path="anuncios/:id/pedir" element={<PedirPage />} />
+          <Route path="pedidos/:id" element={<PedidoPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>
