@@ -41,7 +41,7 @@ async function insertarDatosE2E() {
 
 async function entrarYBuscar(page, cuentas) {
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayCuadroBusqueda(page)), 'El cuadro de búsqueda (T21-5) aún no está en esta rama.');
+  expect(await hayCuadroBusqueda(page), 'El cuadro de búsqueda (T21-5) tiene que estar en la story.').toBe(true);
   return page.getByPlaceholder('Buscar material…');
 }
 
@@ -147,7 +147,7 @@ test('US-21 · E2E-3 · longitudes', async ({ page, cuentas }) => {
 
 test('US-21 · E2E-4 · limpiar', async ({ page, request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayFiltrosEnApi(request, token)), 'El filtro de categoría (T21-3) aún no está en esta rama.');
+  expect(await hayFiltrosEnApi(request, token), 'El filtro de categoría (T21-3) tiene que estar en la story.').toBe(true);
   await insertarDatosE2E();
   await insertarAnuncio(db, { centro_id: centros.a.id, titulo: 'Pelotas de tenis', deporte: 'tenis', publicado_en: fecha(16) });
   await entrarYBuscar(page, cuentas);
@@ -193,7 +193,7 @@ async function buscar(request, token, q) {
 
 test('US-21 · API · reglas de la búsqueda (CA7 a CA12, CA19, CA22, CA23)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBusquedaEnApi(request, token)), 'El parámetro q de GET /api/catalogo (T21-2) aún no está en esta rama.');
+  expect(await hayBusquedaEnApi(request, token), 'El parámetro q de GET /api/catalogo (T21-2) tiene que estar en la story.').toBe(true);
   const a = { centro_id: centros.a.id };
   await insertarAnuncio(db, { ...a, titulo: 'Balón talla 5', descripcion: 'Ideal para fútbol 7, poco uso y bien inflado.', publicado_en: fecha(20) });
   await insertarAnuncio(db, { ...a, titulo: 'Redes de voleibol', deporte: 'voleibol', publicado_en: fecha(19) });
@@ -244,7 +244,7 @@ test('US-21 · API · reglas de la búsqueda (CA7 a CA12, CA19, CA22, CA23)', as
 
 test('US-21 · API · validación (CA20)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayBusquedaEnApi(request, token)), 'El parámetro q de GET /api/catalogo (T21-2) aún no está en esta rama.');
+  expect(await hayBusquedaEnApi(request, token), 'El parámetro q de GET /api/catalogo (T21-2) tiene que estar en la story.').toBe(true);
   for (const [q, mensaje] of [
     ['a', 'Escribe al menos 2 caracteres.'],
     ['  a  ', 'Escribe al menos 2 caracteres.'],

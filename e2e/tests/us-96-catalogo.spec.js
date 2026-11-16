@@ -29,7 +29,7 @@ test.afterAll(async () => {
 
 async function entrarAlCatalogo(page, cuentas) {
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayPantallaCatalogo(page)), 'La pantalla /catalogo (T21-4) aún no está en esta rama.');
+  expect(await hayPantallaCatalogo(page), 'La pantalla /catalogo (T21-4) tiene que estar en la story.').toBe(true);
 }
 
 async function insertarVarios(n, cambios = {}) {
@@ -58,7 +58,7 @@ test('US-96 · E2E-1 · camino feliz', async ({ page, cuentas }) => {
   });
 
   await entrar(page, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayPantallaCatalogo(page)), 'La pantalla /catalogo (T21-4) aún no está en esta rama.');
+  expect(await hayPantallaCatalogo(page), 'La pantalla /catalogo (T21-4) tiene que estar en la story.').toBe(true);
 
   // CA1: «Catálogo» de la cabecera lleva a /catalogo y queda marcado como activo; el logo también.
   await page.goto('/panel');
@@ -225,7 +225,7 @@ test('US-96 · CA2 y CA13 · sin sesión y «Cargando…»', async ({ page, brow
 
 test('US-96 · API · respuesta, campos y estados (CA16, CA20, CA21, CA24)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayApiCatalogo(request, token)), 'GET /api/catalogo (T21-1) aún no está en esta rama.');
+  expect(await hayApiCatalogo(request, token), 'GET /api/catalogo (T21-1) tiene que estar en la story.').toBe(true);
   const id = await insertarAnuncio(db, {
     centro_id: centros.a.id, titulo: 'Balones de fútbol talla 5', publicado_en: fecha(20), unidades_disponibles: 12,
   });
@@ -259,7 +259,7 @@ test('US-96 · API · respuesta, campos y estados (CA16, CA20, CA21, CA24)', asy
 
 test('US-96 · API · paginación y validación (CA5, CA7, CA17, CA18, CA19)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayApiCatalogo(request, token)), 'GET /api/catalogo (T21-1) aún no está en esta rama.');
+  expect(await hayApiCatalogo(request, token), 'GET /api/catalogo (T21-1) tiene que estar en la story.').toBe(true);
 
   // CA19: sin anuncios.
   const vacio = await (await getCatalogo(request, token)).json();
@@ -299,7 +299,7 @@ test('US-96 · API · paginación y validación (CA5, CA7, CA17, CA18, CA19)', a
 
 test('US-96 · API · acceso (CA23)', async ({ request, cuentas }) => {
   const token = await tokenDe(request, cuentas.centroB, cuentas.password);
-  test.skip(!(await hayApiCatalogo(request, token)), 'GET /api/catalogo (T21-1) aún no está en esta rama.');
+  expect(await hayApiCatalogo(request, token), 'GET /api/catalogo (T21-1) tiene que estar en la story.').toBe(true);
   const sinToken = await getCatalogo(request, null);
   expect(sinToken.status()).toBe(401);
   expect((await sinToken.json()).error.code).toBe('NO_AUTENTICADO');
