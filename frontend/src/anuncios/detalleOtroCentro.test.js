@@ -5,6 +5,7 @@ import {
   TEXTOS,
   botonesDelDetalle,
   destinoDeVolver,
+  enlaceAlCentro,
   esDelPropioCentro,
   fotoAnterior,
   fotoConTecla,
@@ -173,5 +174,16 @@ describe('vista de /anuncios/:id (CA2, CA5, CA11, CA13, CA14)', () => {
   test('404 también como propietario → «no existe o ya no está disponible»; otro fallo → error', () => {
     assert.equal(vistaSegunPropietario({ fallo: { status: 404 } }), VISTAS.noDisponible);
     assert.equal(vistaSegunPropietario({ fallo: { status: 503 } }), VISTAS.error);
+  });
+});
+
+describe('enlaceAlCentro (US-10 CA1)', () => {
+  test('el nombre del centro lleva a /centros/:centro_id', () => {
+    assert.equal(enlaceAlCentro({ id: 'c1', nombre: 'Club Natació Exemple' }), '/centros/c1');
+  });
+
+  test('sin centro o sin id, no hay enlace', () => {
+    assert.equal(enlaceAlCentro(null), null);
+    assert.equal(enlaceAlCentro({ nombre: 'Centro' }), null);
   });
 });
