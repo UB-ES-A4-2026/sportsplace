@@ -5,7 +5,8 @@
 .filtros button { margin-top: 0; }
 
 .filtros-barra { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
-.filtros-movil { display: none; }
+/* Dos clases: si otra hoja vuelve a cargar tokens.css después, `.s2-boton { display: inline-flex }` no lo muestra. */
+.filtros .filtros-movil { display: none; }
 
 /* Controles: misma altura, borde fino, sombra con desplazamiento y anillo de foco teal. */
 .filtro-desplegable,
