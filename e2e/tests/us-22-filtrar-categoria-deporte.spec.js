@@ -5,7 +5,7 @@ import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
 import {
-  consulta, datosCentro, desplegable, etiqueta, fecha, getCatalogo, hayBarraFiltros, hayCuadroBusqueda,
+  catalogoCargado, consulta, datosCentro, desplegable, etiqueta, fecha, getCatalogo, hayBarraFiltros, hayCuadroBusqueda,
   hayFiltroEnApi, insertarAnuncio, limpiarFiltros, quitarEtiqueta, restablecerSemilla, tarjetas, tokenDe,
   vaciarCatalogo,
 } from '../catalogo.js';
@@ -56,6 +56,9 @@ async function entrarYFiltrar(page, cuentas, ruta = '/catalogo') {
 test('US-22 · E2E-1 · camino feliz', async ({ page, cuentas }) => {
   await insertarDatosE2E();
   await entrarYFiltrar(page, cuentas, '/catalogo?pagina=2');
+  // No hay página 2: se corrige a la 1 antes de tocar los filtros (US-96 CA10).
+  await catalogoCargado(page);
+  await expect(page).toHaveURL('/catalogo');
 
   // CA1 y CA2: opciones, orden y valor por defecto.
   await expect(desplegable(page, 'Categoría').locator('option')).toHaveText(['Todas las categorías', ...CATEGORIAS]);
@@ -148,8 +151,9 @@ test('US-22 · E2E-5 · URL manipulada', async ({ page, cuentas }) => {
 
 test('US-22 · móvil · la barra se pliega tras «Filtros (N)»', async ({ page, cuentas }) => {
   await insertarDatosE2E();
-  await page.setViewportSize({ width: 390, height: 844 });
+  // A 390 px la barra está plegada y hayBarraFiltros() no la ve: se comprueba en escritorio y luego se encoge.
   await entrarYFiltrar(page, cuentas, '/catalogo?categoria=balones&deporte=baloncesto');
+  await page.setViewportSize({ width: 390, height: 844 });
   const plegar = page.getByRole('button', { name: 'Filtros (2)', exact: true });
   await expect(plegar).toBeVisible();
   await expect(desplegable(page, 'Categoría')).toBeHidden();

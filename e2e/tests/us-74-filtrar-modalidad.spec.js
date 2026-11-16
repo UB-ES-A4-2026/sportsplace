@@ -5,7 +5,7 @@ import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';
 import { loadTestEnvironment } from '../environment.js';
 import {
-  consulta, datosCentro, etiqueta, fecha, getCatalogo, hayBarraFiltros, hayFiltroEnApi, insertarAnuncio,
+  catalogoCargado, consulta, datosCentro, etiqueta, fecha, getCatalogo, hayBarraFiltros, hayFiltroEnApi, insertarAnuncio,
   limpiarFiltros, quitarEtiqueta, restablecerSemilla, tarjetas, tokenDe, vaciarCatalogo,
 } from '../catalogo.js';
 
@@ -53,7 +53,10 @@ function opcion(page, nombre) {
 test('US-74 · E2E-1 · camino feliz', async ({ page, cuentas }) => {
   await insertarDatosE2E();
   await entrarYFiltrar(page, cuentas, '/catalogo?pagina=2');
-  await expect(tarjetas(page)).toHaveCount(0);
+  // Con 5 anuncios no hay página 2: se corrige a la 1 antes de tocar los filtros (US-96 CA10).
+  await catalogoCargado(page);
+  await expect(page).toHaveURL('/catalogo');
+  await expect(tarjetas(page)).toHaveCount(5);
 
   // CA1 y CA2: se aplica en el acto y vuelve a la página 1.
   await opcion(page, 'Donación').click();
