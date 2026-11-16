@@ -1,6 +1,7 @@
 // Vista de un anuncio de otro centro en /anuncios/:id (US-24 T24-2 y T24-3): textos de la pantalla, orden y
 // navegación de la galería, formatos, estado de los botones y destino de «← Volver al catálogo».
 // `anuncio` es la respuesta de GET /api/catalogo/:id (US-24 CA12).
+import { rutaDelCentro } from '../perfil/perfilPublico.js';
 import { formatearEuros } from '../utilidades/euros.js';
 
 export const RUTA_CATALOGO = '/catalogo';
@@ -113,4 +114,9 @@ export function vistaSegunCatalogo({ anuncio, fallo } = {}) {
 export function vistaSegunPropietario({ anuncio, fallo } = {}) {
   if (anuncio) return VISTAS.propietario;
   return fallo?.status === 404 ? VISTAS.noDisponible : VISTAS.error;
+}
+
+// US-10 CA1: el nombre del centro en «Ofrecido por» enlaza a su perfil (/centros/:centro_id). Sin id no hay enlace.
+export function enlaceAlCentro(centro) {
+  return centro?.id ? rutaDelCentro(centro.id) : null;
 }
