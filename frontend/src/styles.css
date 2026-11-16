@@ -136,3 +136,8 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 .foto-estrella, .foto-quitar { position: absolute; top: 6px; width: 32px; min-height: 32px; height: 32px; margin: 0; padding: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: #174f46; font-size: 15px; line-height: 1; box-shadow: none; }
 .foto-estrella { left: 6px; }
 .foto-quitar { right: 6px; color: #a13e33; }
+
+/* /pedidos/:id · cierre del pedido (T42-2: US-80 y US-42) */
+.etiqueta-pagado { color: #fff; background: #1d5c33; }
+.pedido-acciones-cierre { display: flex; flex-wrap: wrap; gap: 10px; }
+.pedido-acciones-cierre button { margin-top: 0; }
