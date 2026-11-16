@@ -11,7 +11,11 @@ export const TEXTOS = {
   noDisponible: 'Este anuncio no existe o ya no está disponible.',
   irAlCatalogo: 'Ir al catálogo',
   detalles: 'Detalles',
-  pedir: 'Pedir material',
+  // US-32 CA1-CA3 (T32-3): «Pedir» sustituye al «Pedir material» provisional de US-24.
+  pedir: 'Pedir',
+  noDisponibleParaPedir: 'No disponible',
+  pedidoPendiente: 'Ya tienes un pedido pendiente en este anuncio.',
+  verMiPedido: 'Ver mi pedido',
   escribir: 'Escribir al centro',
   proximamente: 'Disponible próximamente',
   ofrecidoPor: 'Ofrecido por',
@@ -67,8 +71,9 @@ export function precioDelDetalle({ modalidad, precio_unitario_centimos: centimos
   return `${formatearEuros(centimos)} / unidad`;
 }
 
-// CA3, CA4 y CA10: «Pedir material» depende de US-32 y «Escribir al centro» de US-28. Mientras no existan, los dos
-// se ven deshabilitados con «Disponible próximamente». Con un anuncio reservado, «Pedir material» queda deshabilitado
+// CA3, CA4 y CA10: «Escribir al centro» depende de US-28 y, mientras no exista, se ve deshabilitado con «Disponible
+// próximamente». La pantalla ya no usa `pedir` de aquí: «Pedir» lo decide accionDePedir (US-32). Con un anuncio
+// reservado, `pedir` queda deshabilitado
 // y «Escribir al centro» no.
 export function botonesDelDetalle(anuncio, { pedidos = false, mensajes = false } = {}) {
   const reservado = anuncio.estado === 'reservado';
@@ -76,6 +81,18 @@ export function botonesDelDetalle(anuncio, { pedidos = false, mensajes = false }
     pedir: { habilitado: pedidos && !reservado, ayuda: pedidos ? null : TEXTOS.proximamente },
     escribir: { habilitado: mensajes, ayuda: mensajes ? null : TEXTOS.proximamente },
   };
+}
+
+// US-32 CA1-CA3 (T32-3): qué se ve en el sitio de «Pedir».
+// - Con un pedido pendiente propio: «Ya tienes un pedido pendiente en este anuncio.» y «Ver mi pedido» (CA3).
+// - Reservado: «Pedir» deshabilitado con «No disponible» (CA2).
+// - Activo: «Pedir», que lleva a /anuncios/:id/pedir (CA1, CA4).
+// Los anuncios propios no llegan aquí: se ven con la ficha de propietario de E03 (CA2).
+export function accionDePedir(anuncio) {
+  if (anuncio.mi_pedido_pendiente_id) return { tipo: 'pendiente', ruta: `/pedidos/${anuncio.mi_pedido_pendiente_id}` };
+  if (anuncio.estado === 'reservado') return { tipo: 'reservado' };
+  if (anuncio.estado === 'activo') return { tipo: 'pedir', ruta: `/anuncios/${anuncio.id}/pedir` };
+  return null;
 }
 
 // CA1 (T24-3): la tarjeta del catálogo deja en `state.desde` la URL de la que se viene (ruta + `q`, filtros y

@@ -3,6 +3,7 @@ import { describe, test } from 'node:test';
 import {
   RUTA_CATALOGO,
   TEXTOS,
+  accionDePedir,
   botonesDelDetalle,
   destinoDeVolver,
   esDelPropioCentro,
@@ -116,6 +117,27 @@ describe('botonesDelDetalle (CA3, CA4, CA10)', () => {
     const botones = botonesDelDetalle({ estado: 'reservado' }, { pedidos: true, mensajes: true });
     assert.equal(botones.pedir.habilitado, false);
     assert.equal(botones.escribir.habilitado, true);
+  });
+});
+
+describe('accionDePedir (US-32 CA1-CA3)', () => {
+  test('activo: «Pedir» lleva a /anuncios/:id/pedir', () => {
+    assert.deepEqual(accionDePedir({ id: 'a1', estado: 'activo', mi_pedido_pendiente_id: null }), { tipo: 'pedir', ruta: '/anuncios/a1/pedir' });
+    assert.equal(TEXTOS.pedir, 'Pedir');
+  });
+
+  test('reservado: deshabilitado con «No disponible»', () => {
+    assert.deepEqual(accionDePedir({ id: 'a1', estado: 'reservado', mi_pedido_pendiente_id: null }), { tipo: 'reservado' });
+    assert.equal(TEXTOS.noDisponibleParaPedir, 'No disponible');
+  });
+
+  test('con un pedido pendiente propio: «Ver mi pedido» lleva a ese pedido', () => {
+    assert.deepEqual(accionDePedir({ id: 'a1', estado: 'activo', mi_pedido_pendiente_id: 'p1' }), { tipo: 'pendiente', ruta: '/pedidos/p1' });
+    assert.equal(TEXTOS.pedidoPendiente, 'Ya tienes un pedido pendiente en este anuncio.');
+  });
+
+  test('otros estados: nada', () => {
+    assert.equal(accionDePedir({ id: 'a1', estado: 'pausado', mi_pedido_pendiente_id: null }), null);
   });
 });
 

@@ -167,15 +167,16 @@ test('US-24 · E2E-1 · camino feliz: datos, galería en bucle y volver al catá
   await expect(ofrecido.getByText(centros.a.nombre, { exact: true })).toBeVisible();
   await expect(ofrecido).toContainText(centros.a.localidad);
   const texto = await main.innerText();
-  const posiciones = [BALONES.titulo, '12,50 € / unidad', 'Detalles', 'Pedir material', 'Escribir al centro', 'Ofrecido por', 'Descripción']
+  const posiciones = [BALONES.titulo, '12,50 € / unidad', 'Detalles', 'Pedir', 'Escribir al centro', 'Ofrecido por', 'Descripción']
     .map((trozo) => texto.indexOf(trozo));
   expect(posiciones.every((p) => p >= 0)).toBe(true);
   expect([...posiciones].sort((x, y) => x - y)).toEqual(posiciones);
 
-  // CA10: hasta US-32 y US-28, los dos botones deshabilitados con «Disponible próximamente».
-  await expect(boton(page, 'Pedir material')).toBeDisabled();
+  // CA10: con US-32 (T32-3), «Pedir» ya está disponible y lleva a /anuncios/:id/pedir. «Escribir al centro» sigue
+  // deshabilitado con «Disponible próximamente» hasta US-28.
+  await expect(main.getByRole('link', { name: 'Pedir', exact: true })).toHaveAttribute('href', `/anuncios/${id}/pedir`);
   await expect(boton(page, 'Escribir al centro')).toBeDisabled();
-  await expect(main.getByText(TEXTOS.proximamente)).toHaveCount(2);
+  await expect(main.getByText(TEXTOS.proximamente)).toHaveCount(1);
 
   // CA6 y CA7: principal primero, «›» dos veces → foto 3, «›» otra vez → vuelve a la 1; «‹» desde la 1 → la 3.
   await expect(fotoGrande(page, 1, 3)).toHaveAttribute('src', new RegExp(`${rutas[2]}$`));
@@ -217,11 +218,12 @@ test('US-24 · E2E-2 · anuncio reservado', async ({ page, request, cuentas }) =
   await page.goto(`/anuncios/${id}`);
   const main = page.getByRole('main');
   await expect(main.getByRole('heading', { level: 1, name: BALONES.titulo })).toBeVisible();
-  // CA4: etiqueta antes del título y «Pedir material» deshabilitado.
+  // CA4 (y US-32 CA2): etiqueta antes del título y «Pedir» deshabilitado con «No disponible».
   await expect(main.getByText(TEXTOS.reservado, { exact: true })).toBeVisible();
   const texto = await main.innerText();
   expect(texto.indexOf(TEXTOS.reservado)).toBeLessThan(texto.indexOf(BALONES.titulo));
-  await expect(boton(page, 'Pedir material')).toBeDisabled();
+  await expect(boton(page, 'Pedir')).toBeDisabled();
+  await expect(main.getByText('No disponible', { exact: true })).toBeVisible();
   // «Escribir al centro» seguirá habilitado con US-28; hasta entonces aplica CA10 (deshabilitado y «próximamente»).
   await expect(boton(page, 'Escribir al centro')).toHaveAccessibleDescription(TEXTOS.proximamente);
 
@@ -275,7 +277,9 @@ test('US-24 · E2E-4 · anuncio propio', async ({ page, request, cuentas }) => {
     await expect(main.getByRole('heading', { level: 1, name: BALONES.titulo })).toBeVisible();
     await expect(main.getByRole('link', { name: 'Editar', exact: true })).toBeVisible();
     await expect(main.getByRole('link', { name: TEXTOS.volver })).toHaveCount(0);
-    await expect(boton(page, 'Pedir material')).toHaveCount(0);
+    // US-32 CA2: en un anuncio propio no hay «Pedir».
+    await expect(boton(page, 'Pedir')).toHaveCount(0);
+    await expect(main.getByRole('link', { name: 'Pedir', exact: true })).toHaveCount(0);
   }
 });
 
