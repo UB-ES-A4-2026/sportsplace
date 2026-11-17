@@ -86,7 +86,8 @@ test('US-33 · E2E-1 · el vendedor acepta y los dos ven el contacto', async ({ 
   // CA4.
   await expect(page.getByText('Pedido aceptado.', { exact: true })).toBeVisible();
   await expect(main.getByText('Aceptado', { exact: true }).first()).toBeVisible();
-  await expect(main.getByText(cuentas.centroB)).toBeVisible();
+  // Privacidad (#331): B no tiene email de contacto en la semilla, así que no sale ningún email; el de acceso, nunca.
+  await expect(main.getByText(cuentas.centroB)).toHaveCount(0);
   const telefonoB = await telefonoDe(db, centros.b.id);
   if (telefonoB) await expect(main.getByText(telefonoB)).toBeVisible();
   await expect(main.getByText(/Aceptado el \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/)).toBeVisible();
@@ -204,7 +205,9 @@ test('US-33 · CA6 · la API responde el pedido aceptado', async ({ request, cue
   expect(respuesta.acciones).not.toContain('rechazar');
   expect(Math.abs(new Date(respuesta.respondido_en).getTime() - antes)).toBeLessThan(60_000);
   // US-108 CA7: con el pedido aceptado ya van el email y el teléfono del comprador.
-  expect(respuesta.comprador.email).toBe(cuentas.centroB);
+  // Privacidad (#331): el email es el de contacto; nunca el de acceso.
+  expect(respuesta.comprador).toHaveProperty('email');
+  expect(respuesta.comprador.email).not.toBe(cuentas.centroB);
   expect(respuesta.comprador).toHaveProperty('telefono');
 });
 
