@@ -1,13 +1,17 @@
 import { Route, Routes } from 'react-router';
 import Layout from './components/Layout.jsx';
+import CatalogoPage from './pages/CatalogoPage.jsx';
 import RutaPrivada from './components/RutaPrivada.jsx';
+import CentroPage from './pages/CentroPage.jsx';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage.jsx';
+import ConversacionPage from './pages/ConversacionPage.jsx';
 import DetalleAnuncioPage from './pages/DetalleAnuncioPage.jsx';
 import EditarAnuncioPage from './pages/EditarAnuncioPage.jsx';
 import EditarPerfilPage from './pages/EditarPerfilPage.jsx';
 import EntrarPage from './pages/EntrarPage.jsx';
 import MisAnunciosPage from './pages/MisAnunciosPage.jsx';
 import InicioPage from './pages/InicioPage.jsx';
+import MensajeNuevoPage from './pages/MensajeNuevoPage.jsx';
 import NoEncontradaPage from './pages/NoEncontradaPage.jsx';
 import PedidoPage from './pages/PedidoPage.jsx';
 import PedirPage from './pages/PedirPage.jsx';
@@ -31,6 +35,8 @@ export default function App() {
         <Route path="restablecer-contrasena" element={<RestablecerContrasenaPage />} />
         <Route element={<RutaPrivada />}>
           <Route path="panel" element={<PanelPage />} />
+          {/* US-96 CA2: el catálogo es privado; sin sesión lleva a /entrar. */}
+          <Route path="catalogo" element={<CatalogoPage />} />
           <Route path="mis-anuncios" element={<MisAnunciosPage />} />
           <Route path="perfil" element={<PerfilPage />} />
           <Route path="perfil/editar" element={<EditarPerfilPage />} />
@@ -41,6 +47,9 @@ export default function App() {
           {/* US-32 CA4: privada; sin sesión lleva a /entrar y, al entrar, vuelve aquí. */}
           <Route path="anuncios/:id/pedir" element={<PedirPage />} />
           <Route path="pedidos/:id" element={<PedidoPage />} />
+          <Route path="mensajes/nueva" element={<MensajeNuevoPage />} />
+          <Route path="mensajes/:id" element={<ConversacionPage />} />
+          <Route path="centros/:id" element={<CentroPage />} />
         </Route>
         <Route path="*" element={<NoEncontradaPage />} />
       </Route>

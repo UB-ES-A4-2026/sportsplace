@@ -5,6 +5,7 @@ import {
   accionDePedir,
   botonesDelDetalle,
   destinoDeVolver,
+  enlaceAlCentro,
   precioDelDetalle,
   textoDistancia,
   textoUnidades,
@@ -12,6 +13,7 @@ import {
 import { formatearFecha } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
 import Aviso from './Aviso.jsx';
+import BotonEscribirAlCentro from './BotonEscribirAlCentro.jsx';
 import GaleriaDetalle from './GaleriaDetalle.jsx';
 
 // US-24 T24-2: vista de un anuncio de otro centro en /anuncios/:id (respuesta de GET /api/catalogo/:id).
@@ -19,8 +21,8 @@ import GaleriaDetalle from './GaleriaDetalle.jsx';
 export default function DetalleOtroCentro({ anuncio }) {
   const location = useLocation();
   const reservado = anuncio.estado === 'reservado';
-  // CA10: hasta que exista US-28 (mensajes), «Escribir al centro» va deshabilitado. «Pedir» ya es de US-32.
-  const botones = botonesDelDetalle(anuncio);
+  // CA10: «Pedir» es de US-32 y US-28 activa «Escribir al centro».
+  const botones = botonesDelDetalle(anuncio, { mensajes: true });
   const distancia = textoDistancia(anuncio.distancia_km);
   // US-32 CA20: al volver de /anuncios/:id/pedir porque el anuncio ya no está disponible, aviso rojo.
   const [aviso, setAviso] = useState(() => location.state?.aviso ?? null);
@@ -58,13 +60,18 @@ export default function DetalleOtroCentro({ anuncio }) {
           {/* CA3, CA4 y CA10: «Pedir» [US-32] principal y «Escribir al centro» [US-28] secundario. */}
           <div className="detalle-botones">
             <BloquePedir accion={accionDePedir(anuncio)} />
-            <BotonDependiente id="escribir" texto={TEXTOS.escribir} estado={botones.escribir} />
+            {/* US-28 CA1-CA2: esta vista solo se pinta para anuncios activos o reservados de otro centro. */}
+            {botones.escribir.habilitado && <BotonEscribirAlCentro anuncioId={anuncio.id} />}
           </div>
 
           <section className="detalle-centro" aria-labelledby="titulo-centro">
             <h2 id="titulo-centro" className="detalle-subtitulo">{TEXTOS.ofrecidoPor}</h2>
-            {/* [Depende de US-10] el nombre enlazará a /centros/:id cuando exista esa página; ahora es texto. */}
-            <p className="detalle-centro-nombre">{anuncio.centro?.nombre}</p>
+            {/* US-10 CA1: el nombre del centro enlaza a su perfil. */}
+            <p className="detalle-centro-nombre">
+              {enlaceAlCentro(anuncio.centro)
+                ? <Link to={enlaceAlCentro(anuncio.centro)}>{anuncio.centro.nombre}</Link>
+                : anuncio.centro?.nombre}
+            </p>
             <p className="detalle-centro-datos">
               {anuncio.centro?.localidad}
               {distancia && <> · {distancia}</>}
@@ -106,23 +113,6 @@ function BloquePedir({ accion }) {
   return (
     <div className="detalle-boton">
       <Link to={accion.ruta} className="boton-enlace">{TEXTOS.pedir}</Link>
-    </div>
-  );
-}
-
-function BotonDependiente({ id, texto, estado, principal = false }) {
-  const idAyuda = estado.ayuda ? `ayuda-${id}` : undefined;
-  return (
-    <div className="detalle-boton">
-      <button
-        type="button"
-        className={principal ? undefined : 'boton-secundario'}
-        disabled={!estado.habilitado}
-        aria-describedby={idAyuda}
-      >
-        {texto}
-      </button>
-      {estado.ayuda && <p id={idAyuda} className="detalle-ayuda">{estado.ayuda}</p>}
     </div>
   );
 }
