@@ -36,8 +36,8 @@ export function contadorPedidos(request, token) {
 }
 
 // Lanza las peticiones con la fila del anuncio bloqueada desde otra conexión y solo la suelta cuando todas
-// esperan ese bloqueo: así se solapan de verdad dentro de la transacción de T33-3 y la
-// carrera no depende de la suerte (US-33 CA10 y US-34 CA8). Devuelve las respuestas en el mismo orden.
+// esperan ese bloqueo: así se solapan de verdad dentro de la transacción de T33-3 y la carrera no depende
+// de la suerte (US-33 CA10 y US-34 CA8). Devuelve las respuestas en el mismo orden.
 export async function aLaVez(db, anuncioId, peticiones) {
   let enVuelo = [];
   await db.transaction(async (client) => {
@@ -55,7 +55,10 @@ export async function aLaVez(db, anuncioId, peticiones) {
         [pid],
       );
       return n;
-    }, { message: 'las peticiones esperan el bloqueo del anuncio', timeout: 10_000 }).toBe(peticiones.length);
+    }, {
+      // El backend corta las sentencias a los 5 s (statement_timeout): hay que soltar antes.
+      message: 'las peticiones esperan el bloqueo del anuncio', intervals: [50, 100, 200], timeout: 3_000,
+    }).toBe(peticiones.length);
   }).catch(async (error) => {
     await Promise.allSettled(enVuelo);
     throw error;
