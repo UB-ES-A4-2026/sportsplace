@@ -35,6 +35,34 @@ export function contadorPedidos(request, token) {
   return request.get('/api/pedidos/contador', { headers: autorizacion(token) });
 }
 
+// Lanza las peticiones con la fila del anuncio bloqueada desde otra conexión y solo la suelta cuando todas
+// esperan ese bloqueo: así se solapan de verdad dentro de la transacción de T33-3 y la
+// carrera no depende de la suerte (US-33 CA10 y US-34 CA8). Devuelve las respuestas en el mismo orden.
+export async function aLaVez(db, anuncioId, peticiones) {
+  let enVuelo = [];
+  await db.transaction(async (client) => {
+    await client.query('SELECT 1 FROM public.anuncios WHERE id = $1 FOR UPDATE', [anuncioId]);
+    const { rows: [{ pid }] } = await client.query('SELECT pg_backend_pid() AS pid');
+    enVuelo = peticiones.map((peticion) => peticion());
+    // Se cuenta desde otra conexión (dentro de la transacción pg_stat_activity no cambia) y con toda la
+    // cadena: la primera espera a esta conexión y las demás esperan a la primera.
+    await expect.poll(async () => {
+      const { rows: [{ n }] } = await db.query(
+        `WITH RECURSIVE esperan(pid) AS (
+           SELECT pid FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))
+           UNION SELECT a.pid FROM pg_stat_activity a JOIN esperan e ON e.pid = ANY(pg_blocking_pids(a.pid))
+         ) SELECT count(*)::int AS n FROM esperan`,
+        [pid],
+      );
+      return n;
+    }, { message: 'las peticiones esperan el bloqueo del anuncio', timeout: 10_000 }).toBe(peticiones.length);
+  }).catch(async (error) => {
+    await Promise.allSettled(enVuelo);
+    throw error;
+  });
+  return Promise.all(enVuelo);
+}
+
 export async function errorDe(res, status, code) {
   expect(res.status()).toBe(status);
   const { error } = await res.json();
