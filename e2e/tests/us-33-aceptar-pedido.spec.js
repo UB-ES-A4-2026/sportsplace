@@ -12,7 +12,7 @@ import {
   hayTablaPedidos, retirarAnuncios, tokenDe,
 } from '../pedidos.js';
 import {
-  SIN_PERMISO, TRANSICION, aceptar, anuncioConPedido, cambiarEstado, contadorPedidos, errorDe, hayContador,
+  SIN_PERMISO, TRANSICION, aLaVez, aceptar, anuncioConPedido, cambiarEstado, contadorPedidos, errorDe, hayContador,
   hayBotonesVendedor, hayRuta, pedido, telefonoDe, tokenSinConfirmar,
 } from '../pedidos-respuesta.js';
 
@@ -246,9 +246,10 @@ test('US-33 · CA9 · ante 409 la web avisa y recarga el pedido', async ({ page,
 });
 
 test('US-33 · CA10 · dos aceptaciones a la vez: una 200 y otra 409', async ({ request, cuentas }) => {
-  const { id } = await nuevoPedido();
+  const { id, anuncioId } = await nuevoPedido();
   const tokens = await conApi(request, cuentas, id);
-  const respuestas = await Promise.all([aceptar(request, tokens.a, id), aceptar(request, tokens.a, id)]);
+  // Las dos esperan el mismo bloqueo del anuncio antes de soltarlo: se solapan siempre.
+  const respuestas = await aLaVez(db, anuncioId, [() => aceptar(request, tokens.a, id), () => aceptar(request, tokens.a, id)]);
   const estados = respuestas.map((res) => res.status()).sort();
   expect(estados).toEqual([200, 409]);
   const perdedora = respuestas.find((res) => res.status() === 409);

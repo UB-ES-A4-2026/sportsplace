@@ -14,7 +14,7 @@ import {
   hayPostPedidos, hayTablaPedidos, insertarAnuncio, insertarPedido, postPedido, retirarAnuncios, tokenDe,
 } from '../pedidos.js';
 import {
-  SIN_STOCK, aceptar, errorDe, hayBotonesVendedor, hayRuta, pedido, pedidosComo,
+  SIN_STOCK, aLaVez, aceptar, errorDe, hayBotonesVendedor, hayRuta, pedido, pedidosComo,
 } from '../pedidos-respuesta.js';
 
 const AUTOMATICO = 'El pedido se ha rechazado automáticamente porque ya no quedan unidades suficientes.';
@@ -115,23 +115,22 @@ test('US-34 · E2E-3 · agotar el anuncio lo deja reservado', async ({ request, 
 });
 
 test('US-34 · E2E-5 · dos aceptaciones a la vez sobre las últimas unidades', async ({ request, cuentas }) => {
-  // Se repite para que la carrera no dependa de la suerte de una sola ejecución.
-  for (let vuelta = 0; vuelta < 3; vuelta += 1) {
-    const { anuncioId, ids } = await escenario(5, { sabadell: 4, b: 4 });
-    const tokens = await conApi(request, cuentas, ids.b);
-    const respuestas = await Promise.all([aceptar(request, tokens.a, ids.sabadell), aceptar(request, tokens.a, ids.b)]);
-    const estados = respuestas.map((res) => res.status());
-    expect(estados.filter((estado) => estado === 200), `vuelta ${vuelta}`).toHaveLength(1);
-    const perdedora = respuestas.find((res) => res.status() !== 200);
-    expect(perdedora.status()).toBe(409);
-    expect(['UNIDADES_INSUFICIENTES', 'TRANSICION_NO_PERMITIDA']).toContain((await perdedora.json()).error.code);
+  const { anuncioId, ids } = await escenario(5, { sabadell: 4, b: 4 });
+  const tokens = await conApi(request, cuentas, ids.b);
+  // Las dos esperan el mismo bloqueo del anuncio antes de soltarlo: se solapan siempre.
+  const respuestas = await aLaVez(db, anuncioId, [
+    () => aceptar(request, tokens.a, ids.sabadell),
+    () => aceptar(request, tokens.a, ids.b),
+  ]);
+  expect(respuestas.map((res) => res.status()).sort()).toEqual([200, 409]);
+  const perdedora = respuestas.find((res) => res.status() === 409);
+  expect(['UNIDADES_INSUFICIENTES', 'TRANSICION_NO_PERMITIDA']).toContain((await perdedora.json()).error.code);
 
-    // CA8: quedan 1 y nunca negativas; un aceptado y el otro rechazado por el sistema.
-    expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 1 });
-    const filas = [await pedido(db, ids.sabadell), await pedido(db, ids.b)];
-    expect(filas.map((fila) => fila.estado).sort()).toEqual(['aceptado', 'rechazado']);
-    expect(filas.find((fila) => fila.estado === 'rechazado')).toMatchObject({ motivo_codigo: 'anuncio_sin_stock', cerrado_por: 'sistema' });
-  }
+  // CA8: quedan 1 y nunca negativas; un aceptado y el otro rechazado por el sistema.
+  expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 1 });
+  const filas = [await pedido(db, ids.sabadell), await pedido(db, ids.b)];
+  expect(filas.map((fila) => fila.estado).sort()).toEqual(['aceptado', 'rechazado']);
+  expect(filas.find((fila) => fila.estado === 'rechazado')).toMatchObject({ motivo_codigo: 'anuncio_sin_stock', cerrado_por: 'sistema' });
 });
 
 // ---------------------------------------------------------------- criterios de aceptación
