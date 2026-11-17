@@ -166,17 +166,25 @@ test('US-108 · CA5, CA7 y CA8 · frase, contacto y anuncio retirado según el e
     [{ estado: 'cancelado', cancelado_en: new Date().toISOString(), cerrado_por: 'comprador', motivo_codigo: 'ya_no_necesario' }, `Pedido cancelado por ${centros.b.nombre}.`, false],
     [{ estado: 'recibido' }, 'Material recibido. Pedido cerrado.', true],
   ];
-  let primero = true;
-  for (const [cambios, frase, conContacto] of casos) {
-    const { id } = await nuevoPedido(cambios);
-    if (primero) await alPedido(page, cuentas, id);
-    primero = false;
-    await page.goto(`/pedidos/${id}`);
-    const main = page.getByRole('main');
-    await expect(main.getByText(frase)).toBeVisible();
-    // El email de A solo se ve aceptado o recibido (A no tiene email de contacto distinto en la semilla).
-    if (conContacto) await expect(main.getByText(cuentas.centroA)).toBeVisible();
-    else await expect(main.getByText(cuentas.centroA)).toHaveCount(0);
+  // Privacidad: solo se enseña el email de contacto de A, y solo aceptado o recibido; el de acceso, nunca.
+  const contactoA = 'material-a@sportsplace-qa.test';
+  const { rows: [previo] } = await db.query('SELECT email_contacto FROM public.centros WHERE id = $1', [centros.a.id]);
+  await db.query('UPDATE public.centros SET email_contacto = $2 WHERE id = $1', [centros.a.id, contactoA]);
+  try {
+    let primero = true;
+    for (const [cambios, frase, conContacto] of casos) {
+      const { id } = await nuevoPedido(cambios);
+      if (primero) await alPedido(page, cuentas, id);
+      primero = false;
+      await page.goto(`/pedidos/${id}`);
+      const main = page.getByRole('main');
+      await expect(main.getByText(frase)).toBeVisible();
+      if (conContacto) await expect(main.getByText(contactoA)).toBeVisible();
+      else await expect(main.getByText(contactoA)).toHaveCount(0);
+      await expect(main.getByText(cuentas.centroA)).toHaveCount(0);
+    }
+  } finally {
+    await db.query('UPDATE public.centros SET email_contacto = $2 WHERE id = $1', [centros.a.id, previo.email_contacto]);
   }
 
   // CA8: anuncio retirado, título sin enlace.
@@ -229,6 +237,8 @@ test('US-108 · CA10, CA12 y CA13 · GET /api/pedidos/:id para cada papel', asyn
   await db.query("UPDATE public.pedidos SET estado = 'aceptado' WHERE id = $1", [id]);
   const aceptado = (await (await getPedido(request, tokens.b, id)).json()).pedido;
   expect(aceptado.vendedor).toHaveProperty('email');
+  // Privacidad: nunca el email de acceso (sin email de contacto, null).
+  expect(aceptado.vendedor.email).not.toBe(cuentas.centroA);
   expect(aceptado.vendedor).toHaveProperty('telefono');
   const aceptadoVendedor = (await (await getPedido(request, tokens.a, id)).json()).pedido;
   expect(aceptadoVendedor.acciones).not.toContain('aceptar');
