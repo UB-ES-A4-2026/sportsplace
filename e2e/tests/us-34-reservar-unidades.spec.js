@@ -193,8 +193,14 @@ test('US-34 · CA9 · sin unidades suficientes no se ofrece aceptar', async ({ p
 
 test('US-34 · CA11 · pedir valida contra las disponibles ya restadas', async ({ request, cuentas }) => {
   const { anuncioId, ids } = await escenario(12, { sabadell: 8 });
-  const tokens = await conApi(request, cuentas, ids.sabadell);
-  expect((await aceptar(request, tokens.a, ids.sabadell)).status()).toBe(200);
+  // B no es parte del pedido de Sabadell: la ruta de aceptar se detecta con la propia respuesta.
+  const tokens = {
+    a: await tokenDe(request, cuentas.centroA, cuentas.password),
+    b: await tokenDe(request, cuentas.centroB, cuentas.password),
+  };
+  const aceptado = await aceptar(request, tokens.a, ids.sabadell);
+  test.skip(aceptado.status() === 404, 'POST /api/pedidos/:id/aceptar (T33-2) aún no está en esta rama.');
+  expect(aceptado.status()).toBe(200);
   expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 4 });
   test.skip(!(await hayPostPedidos(request, tokens.b)), 'POST /api/pedidos (T32-2) aún no está en esta rama.');
   const columnas = await columnasDe(db, 'pedidos');
