@@ -106,7 +106,7 @@ test('US-34 · E2E-3 · agotar el anuncio lo deja reservado', async ({ request, 
   const tokens = await conApi(request, cuentas, ids.b);
   expect((await aceptar(request, tokens.a, ids.b)).status()).toBe(200);
   expect(await anuncio(db, anuncioId)).toEqual({ estado: 'reservado', unidades_disponibles: 0 });
-  // CA11: pedir valida contra las disponibles ya restadas.
+  // Con 0 disponibles y el anuncio reservado ya no se puede pedir (US-32 CA20).
   test.skip(!(await hayPostPedidos(request, tokens.b)), 'POST /api/pedidos (T32-2) aún no está en esta rama.');
   const columnas = await columnasDe(db, 'pedidos');
   const res = await postPedido(request, tokens.b, cuerpoPedido(anuncioId, { columnas, unidades: 1 }));
@@ -189,4 +189,24 @@ test('US-34 · CA9 · sin unidades suficientes no se ofrece aceptar', async ({ p
   const botonAceptar = page.getByRole('button', { name: 'Aceptar', exact: true });
   if (await botonAceptar.count()) await expect(botonAceptar).toBeDisabled();
   await expect(boton(page, 'Rechazar')).toBeEnabled();
+});
+
+test('US-34 · CA11 · pedir valida contra las disponibles ya restadas', async ({ request, cuentas }) => {
+  const { anuncioId, ids } = await escenario(12, { sabadell: 8 });
+  const tokens = await conApi(request, cuentas, ids.sabadell);
+  expect((await aceptar(request, tokens.a, ids.sabadell)).status()).toBe(200);
+  expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 4 });
+  test.skip(!(await hayPostPedidos(request, tokens.b)), 'POST /api/pedidos (T32-2) aún no está en esta rama.');
+  const columnas = await columnasDe(db, 'pedidos');
+
+  // 5 cabían en las 12 originales, pero ya solo quedan 4.
+  const error = await errorDe(await postPedido(request, tokens.b, cuerpoPedido(anuncioId, { columnas, unidades: 5 })), 409, 'UNIDADES_INSUFICIENTES');
+  expect(error).toMatchObject({ message: 'Solo quedan 4 unidades disponibles.', details: { unidades_disponibles: 4 } });
+  expect(await pedidosComo(db, 'anuncio_id', anuncioId)).toBe(1);
+
+  // Las 4 que quedan sí se pueden pedir, y pedir no reserva nada (US-32 CA12).
+  const res = await postPedido(request, tokens.b, cuerpoPedido(anuncioId, { columnas, unidades: 4 }));
+  expect(res.status()).toBe(201);
+  expect((await res.json()).pedido).toMatchObject({ estado: 'pendiente', unidades: 4 });
+  expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 4 });
 });
