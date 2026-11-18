@@ -24,7 +24,8 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      - name: Tests con umbral de cobertura (docs/estrategia-test.md)
+        run: npm test -- --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=90 --test-coverage-functions=95
 
   frontend:
     name: Frontend (lint y build)
@@ -41,7 +42,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm test --if-present
+      - name: Tests con umbral de cobertura (docs/estrategia-test.md)
+        run: npm test -- --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=90 --test-coverage-functions=95
       - run: npm run build
 
   tools:
