@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
-  TEXTOS, avisoEfectivoConEnvio, direccionInicial, errorDeUnidades, hayCambios, leerUnidades, resultadoDelFallo,
+  TEXTOS, avisoEfectivoConEnvio, direccionInicial, errorDeUnidades, hayCambios, leerUnidades, normalizarTelefono, resultadoDelFallo,
   sePuedePedir, textoDisponibles, textoModalidad, textoTotal, validarPedido,
 } from './pedir.js';
 
@@ -67,6 +67,34 @@ describe('textoTotal (CA9)', () => {
 
   test('donación: «Donación: sin coste»', () => {
     assert.equal(textoTotal(A2, '10'), 'Donación: sin coste');
+  });
+});
+
+describe('normalizarTelefono (T32-8)', () => {
+  test('quita el prefijo +34 o 0034', () => {
+    assert.equal(normalizarTelefono('+34612345678'), '612345678');
+    assert.equal(normalizarTelefono('0034612345678'), '612345678');
+  });
+
+  test('quita los espacios, con prefijo o sin él', () => {
+    assert.equal(normalizarTelefono('+34 612 34 56 78'), '612345678');
+    assert.equal(normalizarTelefono('612 345 678'), '612345678');
+    assert.equal(normalizarTelefono(' 93 123 45 67 '), '931234567');
+  });
+
+  test('sin prefijo ni espacios, igual', () => {
+    assert.equal(normalizarTelefono('612345678'), '612345678');
+  });
+
+  test('si no quedan 9 cifras, no quita el prefijo', () => {
+    assert.equal(normalizarTelefono('+34 6123'), '+346123');
+    assert.equal(normalizarTelefono('+44 20 7946 0958'), '+442079460958');
+  });
+
+  test('sin teléfono, vacío', () => {
+    assert.equal(normalizarTelefono(null), '');
+    assert.equal(normalizarTelefono(undefined), '');
+    assert.equal(normalizarTelefono(''), '');
   });
 });
 
