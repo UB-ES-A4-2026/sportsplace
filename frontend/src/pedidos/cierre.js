@@ -33,8 +33,8 @@ export const ACCIONES_CIERRE = {
     aviso: 'Pedido marcado como recibido.',
     dialogo: (pedido) => ({
       titulo: '¿Confirmas que has recibido el material?',
-      texto: `Confirmas que has recibido ${unidades(pedido.unidades)} de «${pedido.anuncio.titulo}». `
-        + 'El pedido quedará cerrado y no se podrá deshacer.',
+      // T42-4 (decisión de la PO, 17/11): sin «El pedido quedará cerrado y no se podrá deshacer.».
+      texto: `Confirmas que has recibido ${unidades(pedido.unidades)} de «${pedido.anuncio.titulo}».`,
       textoConfirmar: 'Sí, lo he recibido',
       textoEnviando: 'Guardando…',
     }),
