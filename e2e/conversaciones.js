@@ -66,13 +66,11 @@ export async function cambiarEstado(db, id, estado) {
 // Borra las conversaciones (y sus mensajes) de los anuncios creados y los retira.
 export async function limpiarAnuncios(db, ids) {
   if (ids.length === 0) return;
-  if (await hayTablaConversaciones(db)) {
-    await db.query(
-      'DELETE FROM public.mensajes WHERE conversacion_id IN (SELECT id FROM public.conversaciones WHERE anuncio_id = ANY($1::uuid[]))',
-      [ids],
-    );
-    await db.query('DELETE FROM public.conversaciones WHERE anuncio_id = ANY($1::uuid[])', [ids]);
-  }
+  await db.query(
+    'DELETE FROM public.mensajes WHERE conversacion_id IN (SELECT id FROM public.conversaciones WHERE anuncio_id = ANY($1::uuid[]))',
+    [ids],
+  );
+  await db.query('DELETE FROM public.conversaciones WHERE anuncio_id = ANY($1::uuid[])', [ids]);
   await db.query(
     `UPDATE public.anuncios SET estado = 'retirado', retirado_en = COALESCE(retirado_en, now()), entregado_en = NULL
      WHERE id = ANY($1::uuid[])`,
@@ -115,22 +113,6 @@ export async function mensajesDe(db, conversacionId) {
   return rows;
 }
 
-// Mientras la pieza no esté fusionada en la rama de la historia, sus casos se omiten con el motivo.
-// QA (T28-4) quita estas comprobaciones antes de la PR story → dev: allí todo tiene que ejecutarse.
-export async function hayTablaConversaciones(db) {
-  const { rows: [{ existe }] } = await db.query("SELECT to_regclass('public.conversaciones') IS NOT NULL AS existe");
-  return existe;
-}
-
-// Con T28-2 las rutas exigen sesión (401); sin ellas, 404 genérico.
-export async function hayApiConversaciones(request) {
-  const [crear, leer] = await Promise.all([
-    request.post('/api/conversaciones', { data: {} }),
-    request.get(`/api/conversaciones/${INEXISTENTE}`),
-  ]);
-  return crear.status() === 401 && leer.status() === 401;
-}
-
 export function crearConversacion(request, token, datos) {
   return request.post('/api/conversaciones', { headers: autorizacion(token), data: datos });
 }
@@ -164,30 +146,6 @@ export function campoMensaje(page) {
 
 export function idDeUrl(page) {
   return new URL(page.url()).pathname.split('/').at(-1);
-}
-
-// Con T28-3 el detalle del anuncio de otro centro muestra «Escribir al centro».
-export async function hayBotonEscribir(page, anuncioId) {
-  await page.goto(`/anuncios/${anuncioId}`);
-  await page.getByRole('heading', { level: 1 }).first().waitFor({ timeout: 5_000 }).catch(() => {});
-  return (await boton(page, 'Escribir al centro').count()) > 0;
-}
-
-// Con T28-3 existe la pantalla «Nueva conversación».
-export async function hayPantallaNueva(page, anuncioId) {
-  await page.goto(`/mensajes/nueva?anuncio=${anuncioId}`);
-  return llegaASerVisible(page.getByRole('heading', { name: 'Nueva conversación' }));
-}
-
-// Con T28-3 existe la pantalla «Conversación» con su pie de escritura.
-export async function hayPantallaConversacion(page, conversacionId) {
-  await page.goto(`/mensajes/${conversacionId}`);
-  return llegaASerVisible(page.getByRole('heading', { name: 'Conversación' }));
-}
-
-// `isVisible()` no espera (ignora `timeout`): las pantallas que cargan datos se daban por inexistentes.
-export async function llegaASerVisible(locator, timeout = 5_000) {
-  return locator.waitFor({ state: 'visible', timeout }).then(() => true, () => false);
 }
 
 // Mensajes propios a la derecha y del otro centro a la izquierda (posición respecto al centro del hilo,

@@ -155,6 +155,7 @@ la revisión del esquema y la coordinación establecidas en el README.
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-13, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
+| `GET /api/catalogo` | US-96, US-21, US-22, US-73 y US-74 | Sí (email confirmado) | Marta y Carlos |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 | `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
@@ -572,6 +573,55 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del ce
 - `foto_principal_url` es la URL pública de la foto con `es_principal` (US-13) o `null` si el anuncio no tiene fotos.
 - `modalidad` y `precio_unitario_centimos` son los del anuncio (US-14, CA7): `"donacion"` con `null`, o `"venta"` con el precio en céntimos.
 
+### `GET /api/catalogo` (US-96, US-21, US-22, US-73 y US-74)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **otros** centros (E04 «Base común» y US-96), 20 por página: `GET /api/catalogo?pagina=2`.
+
+- `pagina`: entero de 1 a 10000, por defecto 1. Un parámetro vacío (`pagina=`) equivale a no enviarlo y los parámetros desconocidos se ignoran.
+- `q` es opcional. Se recortan y compactan los espacios. Si queda vacío se usa el catálogo sin búsqueda. Admite de 2 a 100 caracteres Unicode y hasta 5 palabras. Los valores inválidos devuelven `400 DATOS_INVALIDOS` con `details.q`.
+- Cada palabra debe aparecer como fragmento en el título o la descripción. Se ignoran mayúsculas y acentos, y se tratan literalmente `%`, `_` y `\`. Por ejemplo, `?q=balon+futbol` encuentra «Balón talla 5» si la descripción contiene «fútbol». El total y las páginas se calculan sobre las mismas coincidencias y se mantiene el orden por publicación.
+- La migración de T21-2 mantiene una columna derivada de título y descripción, normalizada con `unaccent`, y la indexa con GIN y `pg_trgm`.
+- Filtros (T21-3), con los slugs de E03 (E04 «Base común»). Todos son opcionales; vacíos equivalen a no enviarlos. Filtros distintos se combinan con Y entre sí y con `q`:
+  - `categoria` y `deporte`: un slug exacto (distingue mayúsculas; «Varios» y «Otros» son valores normales) (US-22 CA4 y CA11).
+  - `estado_material`: uno o varios slugs separados por comas, sin repetir, combinados con O. Los 5 a la vez equivalen a no filtrar (US-73 CA1, CA2 y CA11).
+  - `precio_min` y `precio_max`: euros enteros de 0 a 99999 por unidad, extremos incluidos (`precio_max=20` incluye 20,00 € y excluye 20,01 €). Las donaciones cuentan como 0 €: aparecen sin `precio_min` o con `precio_min=0` (US-73 CA3, CA6 y CA7).
+  - `modalidad`: `venta` o `donacion` (US-74 CA2). `modalidad=donacion&precio_min=1` responde `200` sin anuncios (CA3).
+- `200`:
+
+```json
+{
+  "anuncios": [
+    {
+      "id": "uuid",
+      "titulo": "Balones de fútbol talla 5",
+      "modalidad": "venta",
+      "precio_unitario_centimos": 1250,
+      "estado": "activo",
+      "estado_material": "buen_estado",
+      "unidades_disponibles": 12,
+      "foto_principal_url": "https://… o null",
+      "publicado_en": "2026-10-20T09:15:00.000Z",
+      "centro": { "id": "uuid", "nombre": "CE Montjuïc", "localidad": "Barcelona" },
+      "distancia_km": null,
+      "es_favorito": false
+    }
+  ],
+  "pagina": 1,
+  "por_pagina": 20,
+  "total": 41,
+  "total_paginas": 3
+}
+```
+
+- Solo anuncios `activo` o `reservado` con `unidades_disponibles` > 0 y de centros distintos al de la sesión (CA4, CA24). Los `reservado` van en su sitio del orden; la web les pone «No disponible» (CA6).
+- Orden: `publicado_en` descendente y, a igual fecha, `id` ascendente, estable entre páginas (CA5). Lo sirve el índice `anuncios_catalogo_estado_publicado` sobre `anuncios(estado, publicado_en DESC, id)` (CA22).
+- `total` cuenta todos los anuncios que cumplen la consulta y `total_paginas` = ⌈`total` / 20⌉ (CA11). Con 0 anuncios, `total: 0` y `total_paginas: 0` (CA19). Una `pagina` mayor que `total_paginas` responde `200` con `anuncios: []` y el `total` real (CA18); la web corrige la URL a la última página (CA10).
+- `foto_principal_url` es la URL pública de la foto con `es_principal` o `null` si no hay fotos (CA20). `distancia_km` lo rellenará US-23 y `es_favorito`, US-25: hasta entonces van a `null` y `false`.
+- Nunca incluye la descripción completa ni el email, el teléfono o la dirección del centro (CA21).
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «La página debe ser un número entero entre 1 y 10000.» (`0`, `10001`, `abc`, `2.5`, `-1` o el parámetro repetido) (CA17).
+- Con los filtros, el mismo `400` con un campo por parámetro inválido (el parámetro repetido también lo es): `details.categoria` «Categoría no válida.», `details.deporte` «Deporte no válido.» (US-22 CA12 y CA13), `details.estado_material` «Estado del material no válido.», `details.precio_min` o `details.precio_max` «Indica un precio entero entre 0 y 99.999 €.», `details.precio_min` «El precio mínimo no puede ser mayor que el máximo.» (US-73 CA11 y CA12) y `details.modalidad` «Modalidad no válida.» (US-74 CA6).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO` (CA23), `503 BASE_DATOS_NO_DISPONIBLE`. Con otro método, `405` con `Allow: GET`.
+
 ### Cambios de estado de un anuncio (E03)
 
 Siguen la tabla «Estados del anuncio y transiciones» de E03. Cada cambio es un único `UPDATE ... WHERE id = … AND centro_id = <centro de la sesión> AND estado IN (<estados de origen>)`: si el estado actual no está en la lista no se cambia nada, así que dos peticiones simultáneas no pueden saltarse la regla (una recibe `200` y la otra `409`). El servicio común está en `backend/src/services/transiciones-anuncio.js` (tabla de acciones) y en `transicionar` del repositorio de anuncios. Acciones: `pausar`, `reactivar` (US-16), `reservar`, `quitar-reserva`, `entregar` (US-17) y `retirar` (US-70, con `DELETE`).
@@ -658,7 +708,7 @@ Privadas: `requireAuth` + `requireEmailConfirmado`. Bandeja de pedidos del centr
     "anuncio": { "id": "uuid", "titulo": "Balones de baloncesto talla 7", "foto_principal_url": "https://..." },
     "otro_centro": { "id": "uuid", "nombre": "Escola de Bàsquet Gràcia" },
     "unidades": 4, "modalidad": "venta", "total_centimos": 3400,
-    "estado": "pendiente", "pagado_en": null, "creado_en": "2026-10-21T08:30:00.000Z"
+    "estado": "pendiente", "metodo_entrega": "recogida", "pagado_en": null, "creado_en": "2026-10-21T08:30:00.000Z"
   }],
   "pagina": 1, "total": 1, "por_pagina": 20
 }
@@ -666,6 +716,7 @@ Privadas: `requireAuth` + `requireEmailConfirmado`. Bandeja de pedidos del centr
 
 - `recibidos`: pedidos con `vendedor_centro_id` = mi centro y `otro_centro` el comprador; `realizados`: `comprador_centro_id` = mi centro y `otro_centro` el vendedor (CA3). Nunca salen pedidos de terceros (CA13).
 - Orden: primero los `pendiente` y después el resto; dentro de cada grupo, `creado_en` descendente (CA4). Siempre 20 por página; `total` cuenta todos los del papel.
+- `metodo_entrega` es `recogida` o `envio` (US-40 CA18: la fila muestra «Recogida» o «Envío»).
 - `anuncio.titulo` es la copia guardada al pedir; `foto_principal_url` la foto principal actual o `null`. `pagado_en` es `null` hasta que US-80 añada la columna.
 - `rol` ausente, vacío, repetido o distinto de `recibidos`/`realizados` → `400 DATOS_INVALIDOS`, `details.rol` «Indica recibidos o realizados.». `pagina` menor que 1 o no entera → `400 DATOS_INVALIDOS` con `details.pagina`. Una página mayor que la última → `200` con `pedidos: []` (CA11).
 

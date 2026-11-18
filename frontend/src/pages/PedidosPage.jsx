@@ -139,6 +139,7 @@ function Bandeja({ lista, pestana, pagina, irAPagina }) {
               </td>
               <td className="pedidos-anuncio" data-columna={anuncio}>
                 <Link to={fila.ruta} onClick={(evento) => evento.stopPropagation()}>{fila.anuncio}</Link>
+                {fila.entrega && <span className="pedidos-entrega">{fila.entrega}</span>}
               </td>
               <td data-columna={centro}>{fila.centro}</td>
               <td data-columna={unidades}>{fila.unidades}</td>

@@ -99,6 +99,8 @@ export function filaDePedido(pedido) {
     total: textoTotal(pedido),
     estado,
     pagado: Boolean(pedido.pagado_en),
+    // US-40 CA18: cada fila indica «Recogida» o «Envío».
+    entrega: { recogida: 'Recogida', envio: 'Envío' }[pedido.metodo_entrega] ?? null,
     fecha: textoFecha(pedido),
   };
 }

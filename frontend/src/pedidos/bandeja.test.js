@@ -86,6 +86,7 @@ test('US-109 · CA6 y E2E-1 · fila del pedido', () => {
     total: '34,00 €',
     estado: { etiqueta: 'Pendiente', color: 'amarillo' },
     pagado: false,
+    entrega: null,
     fecha: '21/10/2026',
   });
   assert.equal(filaDePedido({ ...RESUMEN, pagado_en: '2026-10-22T10:00:00Z' }).pagado, true);
@@ -116,4 +117,12 @@ test('US-109 · CA8 · textos de carga y error de la convención de listas', () 
   assert.equal(TEXTOS.cargando, 'Cargando…');
   assert.equal(TEXTOS.error, 'No se ha podido cargar. ');
   assert.equal(TEXTOS.reintentar, 'Reintentar');
+});
+
+test('US-40 CA18: la fila indica «Recogida» o «Envío» según metodo_entrega', async () => {
+  const { filaDePedido } = await import('./bandeja.js');
+  const base = { id: 'p1', anuncio: { titulo: 'Balones' }, otro_centro: { nombre: 'Gràcia' }, unidades: 1, modalidad: 'donacion', total_centimos: 0, estado: 'pendiente', creado_en: '2026-10-21T08:30:00Z' };
+  assert.equal(filaDePedido({ ...base, metodo_entrega: 'recogida' }).entrega, 'Recogida');
+  assert.equal(filaDePedido({ ...base, metodo_entrega: 'envio' }).entrega, 'Envío');
+  assert.equal(filaDePedido({ ...base, metodo_entrega: null }).entrega, null);
 });
