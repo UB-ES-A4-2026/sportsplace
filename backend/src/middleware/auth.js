@@ -33,6 +33,12 @@ export function getPedidos(request) {
   return pedidos;
 }
 
+export function getConversaciones(request) {
+  const conversaciones = request.app.get('conversaciones');
+  if (!conversaciones) throw databaseUnavailable();
+  return conversaciones;
+}
+
 export function getFotosStorage(request) {
   const fotos = request.app.get('fotos');
   if (!fotos) throw storageUnavailable();

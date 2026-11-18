@@ -56,8 +56,11 @@ Cualquier error de la API tiene esta forma:
 | 409 | `EMAIL_YA_REGISTRADO` | Ya existe una cuenta con ese email. |
 | 409 | `ANUNCIO_NO_EDITABLE` | El anuncio está entregado y ya no se puede modificar (US-15). |
 | 409 | `TRANSICION_NO_PERMITIDA` | El estado actual del anuncio no permite esa acción; `details.estado_actual` dice cuál es (E03, US-16). |
+| 409 | `ANUNCIO_PROPIO` | Un centro intenta abrir una conversación sobre su propio anuncio (US-28). |
+| 409 | `ANUNCIO_NO_DISPONIBLE` | El anuncio está `pausado` o `entregado` y no admite conversaciones nuevas (US-28). |
+| 409 | `CONVERSACION_YA_EXISTE` | El centro ya tiene una conversación sobre ese anuncio; `details.conversacion_id` dice cuál (US-28). |
 | 413 | `PETICION_DEMASIADO_GRANDE` | El cuerpo JSON supera 100 kB, o la petición multipart de `POST /api/anuncios` o `PATCH /api/anuncios/:id` supera 40 MB (41.943.040 bytes). |
-| 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos. |
+| 429 | `DEMASIADOS_INTENTOS` | Supabase limita los intentos, o el centro ha enviado 30 mensajes en el último minuto (US-28). |
 | 500 | `ERROR_INTERNO` | Error inesperado del servidor. |
 | 503 | `BASE_DATOS_NO_DISPONIBLE` | PostgreSQL no responde o no está configurado. |
 | 503 | `AUTH_NO_DISPONIBLE` | Supabase Auth no responde o no está configurado. |
@@ -107,6 +110,37 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 
 ## Endpoints
 
+### Persistencia de conversaciones y mensajes (T28-1)
+
+La migración `20261111090000_crear_conversaciones_mensajes.sql` incorpora la base
+de US-28 y las marcas de lectura de US-77. La API de conversaciones (T28-2) está en
+«Conversaciones y mensajes (US-28, T28-2)», más abajo.
+
+- `conversaciones` guarda el anuncio, el centro comprador, el centro vendedor,
+  `creada_en`, `ultimo_mensaje_en`, `leida_hasta_comprador` y
+  `leida_hasta_vendedor`. Las marcas de lectura empiezan en `null`.
+- El par `(anuncio_id, centro_comprador_id)` es único. Los dos centros de una
+  conversación deben ser distintos. T28-2 copia el vendedor desde el anuncio
+  y comprueba que quien crea la conversación es el centro interesado.
+- `mensajes` conserva la conversación, el centro autor y el usuario de Auth que
+  envió el mensaje. El usuario sirve de trazabilidad. La pertenencia del centro
+  autor a la conversación se comprueba en la API.
+- Un mensaje de tipo `texto` exige contenido entre 1 y 2000 caracteres y
+  `oferta_id = null`. La API recorta los extremos antes de guardar el texto.
+  Un mensaje de tipo `oferta` exige `texto = null`
+  y un UUID en `oferta_id`. US-30 añadirá la FK cuando cree la tabla de ofertas.
+- Cada inserción de mensaje actualiza `ultimo_mensaje_en` en la base de datos.
+  Insertar después un mensaje de fecha anterior conserva la fecha más reciente.
+- Los índices permiten ordenar los mensajes por conversación, fecha e ID,
+  consultar la actividad por centro y listar las conversaciones de un anuncio.
+- Las FKs conservan sus referencias y usan `NO ACTION`. Las tablas tienen RLS
+  activado y se revocan los permisos de `PUBLIC`, `anon` y `authenticated`.
+  El acceso de la aplicación se realiza a través del servidor.
+
+La prueba `supabase/tests/conversaciones.sql` se ejecuta en una base aislada
+después de aplicar las migraciones. La aplicación al Supabase compartido requiere
+la revisión del esquema y la coordinación establecidas en el README.
+
 | Método y ruta | Historia | Privada | Responsable backend |
 |---|---|---|---|
 | `GET /api/health` | TR-02 | No | Carlos |
@@ -121,11 +155,14 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `POST /api/auth/logout` | US-67 | Sí | Alex |
 | `POST /api/anuncios` | US-12, US-13, US-14 | Sí (email confirmado) | Anass |
 | `GET /api/anuncios/mios` | US-18 | Sí (email confirmado) | Alex |
+| `GET /api/catalogo` | US-96, US-21, US-22, US-73 y US-74 | Sí (email confirmado) | Marta y Carlos |
 | `GET /api/anuncios/:id` | US-12 | Sí (email confirmado) | Anass |
 | `PATCH /api/anuncios/:id` | US-15, US-14 | Sí (email confirmado) | Alex |
 | `GET /api/centros/mio` | US-07 | Sí | Alex |
 | `PATCH /api/centros/mio` | US-07 | Sí, con email confirmado | Alex |
 | `PUT /api/centros/mio/ubicacion` | US-68 | Sí, con email confirmado | Alex |
+| `GET /api/centros/:id` | US-10 | Sí (email confirmado) | Alex |
+| `GET /api/centros/:id/anuncios` | US-10 | Sí (email confirmado) | Alex |
 | `POST /api/anuncios/:id/pausar` | US-16 | Sí (email confirmado) | Anass |
 | `POST /api/anuncios/:id/reactivar` | US-16 | Sí (email confirmado) | Anass |
 | `DELETE /api/anuncios/:id` | US-70 | Sí (email confirmado) | Anass |
@@ -136,6 +173,10 @@ Fechas ISO 8601 en UTC. `fotos` va ordenado por `orden` (1..n) y exactamente una
 | `GET /api/pedidos/:id` | US-108 y US-40 (US-32) | Sí (email confirmado) | Alex y Carlos |
 | `POST /api/pedidos/:id/marcar-pagado` | US-80 (US-42) | Sí (email confirmado) | Alex |
 | `POST /api/pedidos/:id/recibir` | US-42 | Sí (email confirmado) | Alex |
+| `GET /api/anuncios/:id/conversacion` | US-28 | Sí (email confirmado) | Alex |
+| `POST /api/conversaciones` | US-28 | Sí (email confirmado) | Alex |
+| `GET /api/conversaciones/:id` | US-28 | Sí (email confirmado) | Alex |
+| `POST /api/conversaciones/:id/mensajes` | US-28, US-77 | Sí (email confirmado) | Alex |
 
 ### `GET /api/health`
 
@@ -460,6 +501,40 @@ Se recortan los espacios antes de validar. Las claves que no son estas tres (p. 
 - `400 CODIGO_POSTAL_DESCONOCIDO`, `message` y `details.codigo_postal` «No conocemos este código postal. Revísalo.», si el formato es válido pero el código no está en la tabla. No se cambia nada.
 - `400 JSON_INVALIDO`, `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (como en `GET`), `405` con otros métodos, `503 BASE_DATOS_NO_DISPONIBLE`.
 
+### `GET /api/centros/:id` (US-10)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Perfil que ven los demás centros (también el propio, para «Ver cómo ven mi perfil»).
+
+- `200 { "centro": centro }`, con una proyección cerrada:
+
+```json
+{
+  "centro": {
+    "id": "uuid", "nombre": "Club Natació Exemple", "localidad": "Barcelona", "provincia": "Barcelona",
+    "descripcion": "Club de natación…", "telefono": "+34 931 234 567",
+    "email_contacto": "material@clubnatacio.cat", "web": "https://clubnatacio.cat",
+    "creado_en": "2026-10-09T10:00:00.000Z", "es_mio": false
+  }
+}
+```
+
+- `es_mio` es `true` si el centro es el de la sesión.
+- Nunca incluye `email` (de acceso), `usuario_id`, `direccion`, `codigo_postal`, `latitud`, `longitud`, `politica_privacidad_aceptada`, `email_confirmado_en` ni los miembros (CA14).
+- `404 NO_ENCONTRADO` («Centro no encontrado.») si no existe, si el id no es un UUID o si el centro está eliminado (US-11). Los demás métodos sobre esta ruta también responden 404: no hay ruta para editar otro centro (US-07, CA22).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
+
+### `GET /api/centros/:id/anuncios` (US-10)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Anuncios del perfil del centro: `GET /api/centros/:id/anuncios?pagina=1`.
+
+- `pagina`: entero mayor que 0, por defecto 1. El tamaño de página es fijo, 20; `por_pagina` se ignora.
+- `200 { "anuncios": [resumen], "pagina": 1, "total": 21 }`. Cada elemento tiene el mismo formato que en `GET /api/anuncios/mios` (con `foto_principal_url`).
+- Solo los anuncios `activo` y `reservado` (la web muestra estos como «No disponible»); nunca `pausado`, `entregado`, `retirado` ni `borrador`, aunque sea el propio centro (CA6, CA15). `total` cuenta los mismos.
+- Orden: `publicado_en` descendente y, a igualdad, `id` descendente.
+- Una página sin resultados devuelve `anuncios: []` con la `pagina` pedida (no se ajusta a la última).
+- `400 DATOS_INVALIDOS` con `details.pagina` «Debe ser un número entero mayor que 0.» (`0`, `abc`, `2.5`, `-1` o el parámetro repetido).
+- `404 NO_ENCONTRADO` como en `GET /api/centros/:id`; `405` con otros métodos; `401`, `403` y `503` como arriba.
+
 ### `GET /api/anuncios/mios` (US-18)
 
 Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del centro de la sesión, paginada: `GET /api/anuncios/mios?pagina=1&por_pagina=20`.
@@ -497,6 +572,55 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Lista «Mis anuncios» del ce
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `foto_principal_url` es la URL pública de la foto con `es_principal` (US-13) o `null` si el anuncio no tiene fotos.
 - `modalidad` y `precio_unitario_centimos` son los del anuncio (US-14, CA7): `"donacion"` con `null`, o `"venta"` con el precio en céntimos.
+
+### `GET /api/catalogo` (US-96, US-21, US-22, US-73 y US-74)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **otros** centros (E04 «Base común» y US-96), 20 por página: `GET /api/catalogo?pagina=2`.
+
+- `pagina`: entero de 1 a 10000, por defecto 1. Un parámetro vacío (`pagina=`) equivale a no enviarlo y los parámetros desconocidos se ignoran.
+- `q` es opcional. Se recortan y compactan los espacios. Si queda vacío se usa el catálogo sin búsqueda. Admite de 2 a 100 caracteres Unicode y hasta 5 palabras. Los valores inválidos devuelven `400 DATOS_INVALIDOS` con `details.q`.
+- Cada palabra debe aparecer como fragmento en el título o la descripción. Se ignoran mayúsculas y acentos, y se tratan literalmente `%`, `_` y `\`. Por ejemplo, `?q=balon+futbol` encuentra «Balón talla 5» si la descripción contiene «fútbol». El total y las páginas se calculan sobre las mismas coincidencias y se mantiene el orden por publicación.
+- La migración de T21-2 mantiene una columna derivada de título y descripción, normalizada con `unaccent`, y la indexa con GIN y `pg_trgm`.
+- Filtros (T21-3), con los slugs de E03 (E04 «Base común»). Todos son opcionales; vacíos equivalen a no enviarlos. Filtros distintos se combinan con Y entre sí y con `q`:
+  - `categoria` y `deporte`: un slug exacto (distingue mayúsculas; «Varios» y «Otros» son valores normales) (US-22 CA4 y CA11).
+  - `estado_material`: uno o varios slugs separados por comas, sin repetir, combinados con O. Los 5 a la vez equivalen a no filtrar (US-73 CA1, CA2 y CA11).
+  - `precio_min` y `precio_max`: euros enteros de 0 a 99999 por unidad, extremos incluidos (`precio_max=20` incluye 20,00 € y excluye 20,01 €). Las donaciones cuentan como 0 €: aparecen sin `precio_min` o con `precio_min=0` (US-73 CA3, CA6 y CA7).
+  - `modalidad`: `venta` o `donacion` (US-74 CA2). `modalidad=donacion&precio_min=1` responde `200` sin anuncios (CA3).
+- `200`:
+
+```json
+{
+  "anuncios": [
+    {
+      "id": "uuid",
+      "titulo": "Balones de fútbol talla 5",
+      "modalidad": "venta",
+      "precio_unitario_centimos": 1250,
+      "estado": "activo",
+      "estado_material": "buen_estado",
+      "unidades_disponibles": 12,
+      "foto_principal_url": "https://… o null",
+      "publicado_en": "2026-10-20T09:15:00.000Z",
+      "centro": { "id": "uuid", "nombre": "CE Montjuïc", "localidad": "Barcelona" },
+      "distancia_km": null,
+      "es_favorito": false
+    }
+  ],
+  "pagina": 1,
+  "por_pagina": 20,
+  "total": 41,
+  "total_paginas": 3
+}
+```
+
+- Solo anuncios `activo` o `reservado` con `unidades_disponibles` > 0 y de centros distintos al de la sesión (CA4, CA24). Los `reservado` van en su sitio del orden; la web les pone «No disponible» (CA6).
+- Orden: `publicado_en` descendente y, a igual fecha, `id` ascendente, estable entre páginas (CA5). Lo sirve el índice `anuncios_catalogo_estado_publicado` sobre `anuncios(estado, publicado_en DESC, id)` (CA22).
+- `total` cuenta todos los anuncios que cumplen la consulta y `total_paginas` = ⌈`total` / 20⌉ (CA11). Con 0 anuncios, `total: 0` y `total_paginas: 0` (CA19). Una `pagina` mayor que `total_paginas` responde `200` con `anuncios: []` y el `total` real (CA18); la web corrige la URL a la última página (CA10).
+- `foto_principal_url` es la URL pública de la foto con `es_principal` o `null` si no hay fotos (CA20). `distancia_km` lo rellenará US-23 y `es_favorito`, US-25: hasta entonces van a `null` y `false`.
+- Nunca incluye la descripción completa ni el email, el teléfono o la dirección del centro (CA21).
+- `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «La página debe ser un número entero entre 1 y 10000.» (`0`, `10001`, `abc`, `2.5`, `-1` o el parámetro repetido) (CA17).
+- Con los filtros, el mismo `400` con un campo por parámetro inválido (el parámetro repetido también lo es): `details.categoria` «Categoría no válida.», `details.deporte` «Deporte no válido.» (US-22 CA12 y CA13), `details.estado_material` «Estado del material no válido.», `details.precio_min` o `details.precio_max` «Indica un precio entero entre 0 y 99.999 €.», `details.precio_min` «El precio mínimo no puede ser mayor que el máximo.» (US-73 CA11 y CA12) y `details.modalidad` «Modalidad no válida.» (US-74 CA6).
+- `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO` (CA23), `503 BASE_DATOS_NO_DISPONIBLE`. Con otro método, `405` con `Allow: GET`.
 
 ### Cambios de estado de un anuncio (E03)
 
@@ -546,6 +670,68 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. Retirada lógica 
 - `/api/anuncios/:id` admite `GET`, `PATCH` y `DELETE`; con otro método, `405` con `Allow: GET, PATCH, DELETE`.
 - US-32 añadirá `409 ANUNCIO_CON_PEDIDOS_EN_CURSO` (US-70 CA13); no se implementa aquí.
 
+### Conversaciones y mensajes (US-28, T28-2)
+
+Privadas: `requireAuth` + `requireEmailConfirmado` (`401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, que se comprueban antes de leer el cuerpo). Actúa el centro de la sesión, no la persona. Los mensajes no se editan ni se borran: no hay `PATCH` ni `DELETE` (CA30; `405 METODO_NO_PERMITIDO`). Fallos de PostgreSQL: `503 BASE_DATOS_NO_DISPONIBLE`.
+
+Objeto `conversacion` (CA23):
+
+```json
+{
+  "id": "uuid",
+  "anuncio": {
+    "id": "uuid", "titulo": "Balones de baloncesto Molten talla 7",
+    "foto_principal_url": "https://... o null", "modalidad": "venta",
+    "precio_unitario_centimos": 1200, "estado": "activo"
+  },
+  "otro_centro": { "id": "uuid", "nombre": "Club Natació Sabadell", "eliminado": false },
+  "soy": "comprador",
+  "puede_escribir": true,
+  "creada_en": "2026-11-13T11:00:00.000Z"
+}
+```
+
+- `anuncio` se devuelve en cualquier estado, también `retirado` (CA34); la web decide la banda con `anuncio.estado`.
+- `otro_centro.eliminado` y `puede_escribir = false` llegan con US-11 (CA35); hasta entonces son `false` y `true`.
+
+Objeto `mensaje` (CA24): `{ "id": "uuid", "texto": "...", "es_mio": true, "tipo": "texto", "creado_en": "ISO 8601" }`. `es_mio` es `true` si lo escribió el centro de la sesión. El texto se guarda recortado y tal cual (sin interpretar HTML, CA15).
+
+Texto de un mensaje (CA7-CA9): obligatorio, de 1 a 2000 caracteres tras quitar los espacios de los extremos; se aceptan saltos de línea. Errores en `400 DATOS_INVALIDOS`: `details.texto` «Escribe un mensaje.», «El mensaje no puede superar los 2000 caracteres.» o «El mensaje contiene caracteres no válidos.» (el carácter U+0000, que PostgreSQL no guarda).
+
+Límite (CA26): como mucho 30 mensajes por minuto por centro, sumando todas sus conversaciones (crear y responder cuentan igual). El 31.º responde `429 DEMASIADOS_INTENTOS` «Has enviado demasiados mensajes seguidos. Espera un minuto.».
+
+#### `GET /api/anuncios/:id/conversacion` (CA19)
+
+- `200 { "conversacion": { "id": "uuid" } }` si el centro de la sesión ya habló de ese anuncio como interesado; si no, `200 { "conversacion": null }` (también en un anuncio propio).
+- `404 NO_ENCONTRADO` «Anuncio no encontrado.» si no existe, está `retirado` o `:id` no es un UUID.
+
+#### `POST /api/conversaciones` (CA20, CA21, CA32, CA33, CA36)
+
+Cuerpo: `{ "anuncio_id": "uuid", "texto": "..." }`.
+
+- `201 { "conversacion": conversacion, "mensaje": mensaje }` con `Location: /api/conversaciones/<id>`. La conversación (con el vendedor copiado del anuncio) y su primer mensaje se crean en una única transacción.
+- `400 DATOS_INVALIDOS`: `details.texto` y/o `details.anuncio_id` «El anuncio no es válido.».
+- `404 NO_ENCONTRADO`: anuncio inexistente o `retirado`.
+- `409 ANUNCIO_PROPIO` «No puedes escribirte sobre tu propio anuncio.» (el vendedor no inicia conversaciones, CA32).
+- `409 ANUNCIO_NO_DISPONIBLE` «Este anuncio ya no está disponible.» si está `pausado` o `entregado`. `reservado` se admite.
+- `409 CONVERSACION_YA_EXISTE` con `details.conversacion_id`. Dos envíos simultáneos del mismo centro crean una sola conversación y el segundo recibe este error (CA36), también si el primero completa el límite de CA26: el duplicado se comprueba antes que el límite.
+- `429 DEMASIADOS_INTENTOS` (límite de CA26).
+
+#### `GET /api/conversaciones/:id` (CA22, CA31)
+
+- `200 { "conversacion": conversacion, "mensajes": [mensaje], "hay_anteriores": bool }`, mensajes en orden ascendente (`creado_en`, `id`).
+- Sin parámetros: los 50 más recientes. `?antes=<mensaje_id>`: los 50 anteriores a ese mensaje. `?despues=<mensaje_id>`: todos los posteriores (sondeo de CA14; `hay_anteriores` es `true`).
+- `400 DATOS_INVALIDOS` si `antes` o `despues` no es un UUID, si llegan los dos o si el mensaje no es de esta conversación (`details.antes` / `details.despues`).
+- `404 NO_ENCONTRADO` «Conversación no encontrada.» si no existe, el centro no participa en ella o `:id` no es un UUID.
+
+#### `POST /api/conversaciones/:id/mensajes` (CA25, CA31, CA33, CA34)
+
+Cuerpo: `{ "texto": "..." }`. Lo usan el comprador (US-28) y el vendedor (US-77).
+
+- `201 { "mensaje": mensaje }`. Se puede escribir con el anuncio en cualquier estado, también `pausado`, `entregado` o `retirado`.
+- `400 DATOS_INVALIDOS` (`details.texto`), `404 NO_ENCONTRADO` (como en el `GET`), `429 DEMASIADOS_INTENTOS`.
+- `409 CENTRO_ELIMINADO` si el otro centro está eliminado [Depende de US-11].
+
 ## Pedidos (US-32)
 
 ### `POST /api/pedidos` (T32-2)
@@ -578,7 +764,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Detalle de un pedido del que 
 - `200 { "pedido": pedido }` con el objeto `pedido` de la base común de E06 (`docs/especificacion/E06-pedidos-y-pago.md`). Además: `anuncio.unidades_disponibles` (US-34 CA9) y `metodo_entrega` (US-40). `anuncio.titulo` es la copia guardada al pedir (`titulo_anuncio`) y `anuncio.foto_principal_url` la foto principal actual (o `null`).
 - `mi_papel`: `comprador` o `vendedor` según el centro de la sesión.
 - `entrega` contiene `{ metodo, direccion_envio, direccion_recogida }`. La copia de envío está disponible para los participantes. Para recogida, la dirección actual del vendedor se devuelve solo al comprador en `aceptado` o `recibido` y si está informada; en los demás casos es `null`.
-- `comprador.email`/`telefono` y `vendedor.email`/`telefono` solo vienen en `aceptado` y `recibido`; en otro estado esas claves no aparecen (CA7, CA12). El email es el `email_contacto` del centro y, si no tiene, el de la cuenta.
+- `comprador.email`/`telefono` y `vendedor.email`/`telefono` solo vienen en `aceptado` y `recibido`; en otro estado esas claves no aparecen (CA7, CA12). El email es el `email_contacto` del centro y, si no tiene, `null`: el email de acceso de la cuenta no sale nunca (privacidad).
 - `pagado_en` (US-80) y `recibido_en` (US-42) son fechas ISO o `null`. Las columnas que aún no existen en `pedidos` (las añaden US-33, US-79 y US-39 con su migración) salen `null`: `respondido_en`, `motivo_codigo`, `motivo_texto`, `cerrado_por`, `cancelado_en`.
 - `acciones` se calcula en el servidor con la tabla de `backend/src/services/transiciones-pedido.js`, la misma que valida las transiciones (`comprobarTransicion`, CA13). Ahora: `aceptar` y `rechazar` para el vendedor en `pendiente` (`aceptar` no aparece si `unidades` > `anuncio.unidades_disponibles`); `marcar_pagado` para el vendedor de una venta `aceptado` o `recibido` con `pagado_en` nulo (US-80 CA1); `recibir` para el comprador en `aceptado` sin incidencia abierta (US-42 CA1). `cancelar` (US-39) se añade a la tabla con su endpoint.
 - `404 NO_ENCONTRADO` «Pedido no encontrado.» si el id no es UUID, el pedido no existe o el centro no es parte (CA11, CA14).

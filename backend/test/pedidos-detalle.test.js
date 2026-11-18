@@ -135,6 +135,15 @@ test('repositorio: lee el pedido del centro de la sesión y monta el objeto de l
   assert.match(database.log[0].sql, /yo\.usuario_id = \$1 AND yo\.id IN \(cc\.id, cv\.id\)/);
 });
 
+test('privacidad: el contacto del pedido es el email de contacto, nunca el de acceso', async () => {
+  const database = fakeDatabase([]);
+  await assert.rejects(createPedidosRepository(database).obtener('usuario-lescorts', PEDIDO));
+  const { sql } = database.log[0];
+  assert.match(sql, /'email', cc\.email_contacto,/);
+  assert.match(sql, /'email', cv\.email_contacto,/);
+  assert.doesNotMatch(sql, /(cc|cv)\.email[^_]/);
+});
+
 test('repositorio: sin fotos, foto_principal_url es null', async () => {
   const database = fakeDatabase([{
     fila, anuncio: { id: 'a1', estado: 'activo', unidades_disponibles: 12 }, ruta_foto: null,

@@ -38,3 +38,25 @@
   .perfil-contacto dd { margin-bottom: 8px; }
   .menu-centro-opciones { right: auto; left: 0; }
 }
+
+/* US-10 CA4: «Editar perfil» y «Ver cómo ven mi perfil» en la misma fila */
+.perfil-acciones { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.perfil-acciones .boton-enlace-secundario { margin-top: 0; }
+
+/* US-10 T10-2: perfil de otro centro en /centros/:id */
+.centro-antetitulo { margin: 0 0 4px; color: #587068; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.pagina-centro h1 { overflow-wrap: anywhere; }
+.centro-banda-propia { margin-bottom: 20px; }
+.centro-contacto { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.centro-contacto a { overflow-wrap: anywhere; }
+.centro-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.tarjeta-centro-enlace { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid #dfe7df; border-radius: 12px; color: inherit; text-decoration: none; background: #fff; }
+.tarjeta-centro-enlace:hover { box-shadow: 0 4px 14px rgb(25 55 47 / 12%); }
+.tarjeta-centro-foto { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #eef4ef; }
+.tarjeta-centro-sin-foto { display: grid; place-items: center; color: #587068; font-weight: 600; }
+.tarjeta-centro-cuerpo { display: grid; gap: 6px; padding: 12px; }
+.tarjeta-centro-cuerpo .etiqueta-estado { justify-self: start; }
+.tarjeta-centro-titulo { font-weight: 700; overflow-wrap: anywhere; }
+.tarjeta-centro-precio { color: #174f46; font-weight: 700; }
+.centro-paginacion { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin-top: 18px; }
+.centro-paginacion button { margin-top: 0; }
