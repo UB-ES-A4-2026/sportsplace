@@ -56,11 +56,13 @@ describe('diálogos', () => {
   test('US-42: «¿Confirmas que has recibido el material?» con las unidades y el título', () => {
     assert.deepEqual(ACCIONES_CIERRE.recibir.dialogo(PEDIDO), {
       titulo: '¿Confirmas que has recibido el material?',
-      texto: 'Confirmas que has recibido 4 unidades de «Balones de baloncesto talla 7». El pedido quedará cerrado y no se podrá deshacer.',
+      texto: 'Confirmas que has recibido 4 unidades de «Balones de baloncesto talla 7».',
       textoConfirmar: 'Sí, lo he recibido',
       textoEnviando: 'Guardando…',
     });
     assert.match(ACCIONES_CIERRE.recibir.dialogo({ ...PEDIDO, unidades: 1 }).texto, /has recibido 1 unidad de/);
+    // T42-4: el diálogo ya no dice que el pedido quedará cerrado.
+    assert.doesNotMatch(ACCIONES_CIERRE.recibir.dialogo(PEDIDO).texto, /quedará cerrado|no se podrá deshacer/);
   });
 });
 
