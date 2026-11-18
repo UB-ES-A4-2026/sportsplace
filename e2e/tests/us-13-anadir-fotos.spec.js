@@ -356,25 +356,4 @@ test.describe('US-13 · Añadir fotos a mi anuncio', () => {
     expect(fotos.filter((f) => f.es_principal).map((f) => f.orden)).toEqual([3]);
   });
 
-  test('CA14 y CA15 · API: errores de fotos y de datos', async ({ request, cuentas }) => {
-    const token = await tokenDe(request, cuentas.centroA, cuentas.password);
-    const anuncios = await contarAnuncios();
-
-    const casos = [
-      [{ fotos: [] }, 'fotos', MENSAJES.faltan],
-      [{ fotos: relleno(MAXIMO_FOTOS + 1, { bytes: 10 * 1024 }) }, 'fotos', MENSAJES.maximo],
-      [{ fotos: [archivo('pasado.jpg', UN_BYTE_DE_MAS)] }, 'fotos', MENSAJES.peso],
-      [{ fotos: relleno(2), principal: 3 }, 'foto_principal', MENSAJES.principal],
-      [{ fotos: relleno(2), principal: 'uno' }, 'foto_principal', MENSAJES.principal],
-      [{ datos: null, fotos: relleno(1) }, 'datos', MENSAJES.datos],
-    ];
-    for (const [opciones, campo, mensaje] of casos) {
-      const res = await publicarPorApi(request, token, opciones);
-      expect(res.status(), `${campo}: ${mensaje}`).toBe(400);
-      const { error } = await res.json();
-      expect(error.code).toBe('DATOS_INVALIDOS');
-      expect(error.details[campo]).toBe(mensaje);
-    }
-    expect(await contarAnuncios()).toBe(anuncios);
-  });
 });

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { localEnvironment, projectId, validateStatus } from '../scripts/e2e-environment.js';
+import { localEnvironment, projectId, sqlErrorLines, sqlTestFiles, validateStatus } from '../scripts/e2e-environment.js';
 import { fixtureAnuncios, fixtureCentros, seedAnuncios } from '../scripts/e2e-fixtures.js';
 
 const status = {
@@ -22,6 +22,20 @@ test('el estado solo acepta los endpoints del proyecto local', () => {
     { DB_URL: 'postgresql://postgres:local@127.0.0.1:54322/postgres?sslmode=disable' },
     { SERVICE_ROLE_KEY: '' },
   ]) assert.throws(() => validateStatus({ ...status, ...change }));
+});
+
+test('las pruebas SQL son solo los .sql de supabase/tests, en orden estable', () => {
+  assert.deepEqual(sqlTestFiles(['centros.sql', 'README.md', 'anuncios.sql', '.oculto.sql', 'notas.sql.bak', 'catalogo_indice.sql']),
+    ['anuncios.sql', 'catalogo_indice.sql', 'centros.sql']);
+});
+
+test('del fallo de psql solo se muestran el error y su contexto', () => {
+  const stderr = 'NOTICE:  aviso\npsql:<stdin>:15: ERROR:  falta el indice anuncios_catalogo_estado_publicado (CA22)\nCONTEXT:  PL/pgSQL function inline_code_block line 10 at RAISE\notra linea\n';
+  assert.deepEqual(sqlErrorLines(stderr), [
+    'psql:<stdin>:15: ERROR:  falta el indice anuncios_catalogo_estado_publicado (CA22)',
+    'CONTEXT:  PL/pgSQL function inline_code_block line 10 at RAISE',
+  ]);
+  assert.equal(sqlErrorLines(Array.from({ length: 20 }, () => 'ERROR: x').join('\n')).length, 10);
 });
 
 test('cada checkout identifica sus propios contenedores', () => {

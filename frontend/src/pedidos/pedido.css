@@ -1,0 +1,20 @@
+/* /pedidos/:id (T32-5: US-108, US-35 y US-40) */
+.pagina-pedido { max-width: 760px; }
+.pagina-pedido .enlace-volver { display: inline-block; margin-bottom: 12px; font-weight: 600; }
+.pedido-estado { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+.pedido-frase { margin: 12px 0 0; font-size: 16px; font-weight: 600; }
+.pedido-anuncio { display: flex; gap: 14px; align-items: center; margin-top: 20px; padding: 12px; border: 1px solid #cdd9d0; border-radius: 12px; }
+.pedido-anuncio img, .pedido-anuncio-sin-foto { flex: none; width: 96px; height: 72px; border-radius: 8px; object-fit: cover; background: #eef4ef; }
+.pedido-anuncio-sin-foto { display: flex; align-items: center; justify-content: center; color: #587068; font-size: 13px; }
+.pedido-anuncio-titulo { display: block; margin: 0; font-weight: 700; }
+.pedido-anuncio-modalidad { margin: 4px 0 0; color: #587068; font-size: 14px; }
+.pedido-seccion { margin-top: 24px; }
+.pedido-seccion h2 { margin: 0 0 8px; font-size: 18px; }
+.pedido-seccion p { margin: 4px 0; overflow-wrap: anywhere; }
+.pedido-entrega-aviso { padding: 10px 14px; border-radius: 10px; color: #6b4a00; background: #fff4cc; font-size: 14px; }
+.pedido-historial { margin: 0; padding-left: 18px; }
+.etiqueta-amarilla { color: #6b4a00; background: #fff4cc; }
+.etiqueta-roja { color: #8a2b22; background: #fbe3e0; }
+.etiqueta-pagado { color: #fff; background: #1d5c33; }
+.pedido-acciones { margin-top: 24px; }
+.pedido-acciones:empty { display: none; }

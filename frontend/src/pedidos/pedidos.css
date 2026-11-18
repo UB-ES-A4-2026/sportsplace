@@ -1,0 +1,59 @@
+/* US-109 (T33-4): /pedidos y contador de la cabecera. */
+.pedidos-pestanas { display: flex; gap: 4px; margin: 8px 0 20px; border-bottom: 1px solid #d7e2dc; }
+.pedidos-pestana {
+  margin: 0 0 -1px; padding: 10px 16px; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  color: #587068; background: none; font-weight: 650;
+}
+.pedidos-pestana:hover { color: #174f46; background: none; }
+.pedidos-pestana[aria-selected='true'] { color: #174f46; border-bottom-color: #174f46; }
+
+.pedidos-tabla { width: 100%; border-collapse: collapse; font-size: 15px; }
+.pedidos-tabla th { padding: 8px 10px; color: #587068; font-size: 13px; font-weight: 700; text-align: left; }
+.pedidos-tabla td { padding: 10px; border-top: 1px solid #e3ebe7; vertical-align: middle; }
+.pedidos-fila { cursor: pointer; }
+.pedidos-fila:hover { background: #f4f8f6; }
+.pedidos-anuncio a { color: inherit; font-weight: 650; text-decoration: none; }
+.pedidos-anuncio a:hover, .pedidos-anuncio a:focus-visible { text-decoration: underline; }
+.pedidos-foto { width: 56px; }
+.pedidos-foto img, .pedidos-sin-foto { display: block; width: 56px; height: 56px; border-radius: 6px; object-fit: cover; background: #e6ebe8; }
+.pedidos-vacio { display: grid; gap: 12px; justify-items: start; }
+
+.etiqueta-pedido {
+  display: inline-block; margin: 2px 6px 2px 0; padding: 4px 10px; border-radius: 999px;
+  font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+.etiqueta-pedido-amarillo { color: #6b4e00; background: #fbefc5; }
+.etiqueta-pedido-verde { color: #14472f; background: #dff1e5; }
+.etiqueta-pedido-rojo { color: #8c1d18; background: #fbe1df; }
+.etiqueta-pedido-gris { color: #4a5651; background: #e6ebe8; }
+.etiqueta-pedido-azul { color: #1d3f72; background: #e0eafa; }
+.etiqueta-pedido-pagado { color: #fff; background: #1d5c33; }
+
+/* CA9: contador de la cabecera (círculo). */
+.contador-pedidos {
+  display: inline-block; min-width: 20px; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+  color: #fff; background: #b3261e; font-size: 12px; line-height: 18px; text-align: center;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Móvil: cada pedido es una tarjeta. */
+@media (max-width: 640px) {
+  .pedidos-tabla thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .pedidos-tabla, .pedidos-tabla tbody, .pedidos-tabla tr, .pedidos-tabla td { display: block; width: 100%; }
+  .pedidos-fila {
+    display: grid !important; grid-template-columns: 56px 1fr; gap: 4px 12px; margin-bottom: 12px; padding: 12px;
+    border: 1px solid #e3ebe7; border-radius: 8px;
+  }
+  .pedidos-tabla td { padding: 0; border: 0; }
+  .pedidos-foto { grid-row: span 6; }
+  .pedidos-tabla td[data-columna]:not(.pedidos-anuncio)::before {
+    content: attr(data-columna) ': '; color: #587068; font-size: 13px; font-weight: 600;
+  }
+}
+
+/* US-40 CA18: «Recogida» o «Envío» bajo el título */
+.pedidos-entrega { display: block; margin-top: 2px; color: #587068; font-size: 13px; }

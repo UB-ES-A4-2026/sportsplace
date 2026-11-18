@@ -3,24 +3,31 @@ import express from 'express';
 import { errorHandler, notFoundHandler } from './errors.js';
 import { anunciosRouter } from './routes/anuncios.js';
 import { authRouter } from './routes/auth.js';
+import { catalogoRouter } from './routes/catalogo.js';
 import { centrosRouter } from './routes/centros.js';
+import { conversacionesRouter } from './routes/conversaciones.js';
 import { healthRouter } from './routes/health.js';
+import { pedidosRouter } from './routes/pedidos.js';
 import { staticWeb } from './static-web.js';
 import { marcarEnterosConDecimales } from './validation/anuncios.js';
 
 // `auth` es el servicio de autenticación (Supabase Auth en producción y un
-// doble en las pruebas); `centros` y `anuncios`, los repositorios de sus tablas;
-// `fotos`, el bucket de Storage de las fotos de los anuncios (US-13).
+// doble en las pruebas); `centros`, `anuncios` y `pedidos`, los repositorios de sus tablas;
+// `fotos`, el bucket de Storage de las fotos de los anuncios (US-13);
+// `conversaciones`, el repositorio de conversaciones y mensajes (US-28).
 // Cualquiera puede ser null si falta su configuración.
 export function createApp({
-  auth = null, centros = null, anuncios = null, fotos = null, webRoot = null, renderGitCommit = null,
+  auth = null, centros = null, anuncios = null, pedidos = null, fotos = null, conversaciones = null, webRoot = null,
+  renderGitCommit = null,
 } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('auth', auth);
   app.set('centros', centros);
   app.set('anuncios', anuncios);
+  app.set('pedidos', pedidos);
   app.set('fotos', fotos);
+  app.set('conversaciones', conversaciones);
 
   app.use((request, response, next) => {
     response.set('Cache-Control', 'no-store');
@@ -31,7 +38,10 @@ export function createApp({
   app.use(healthRouter({ commit: renderGitCommit }));
   app.use('/api/auth', authRouter());
   app.use('/api/anuncios', anunciosRouter());
+  app.use('/api/catalogo', catalogoRouter());
   app.use('/api/centros', centrosRouter());
+  app.use('/api/pedidos', pedidosRouter());
+  app.use('/api/conversaciones', conversacionesRouter());
 
   if (webRoot !== null) app.use(staticWeb(webRoot));
 
