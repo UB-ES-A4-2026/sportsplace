@@ -89,7 +89,18 @@ export function textoTotal(anuncio, textoUnidades) {
   return `Total: ${formatearEuros(unidades * anuncio.precio_unitario_centimos)}`;
 }
 
+// T32-8: el perfil admite «+34 612 34 56 78», pero la dirección de envío pide 9 cifras seguidas.
+// Se quitan los espacios y el prefijo +34 (o 0034) solo si después quedan 9 cifras; si no, el
+// teléfono se deja como está para que la validación del formulario lo señale.
+export function normalizarTelefono(telefono) {
+  if (!telefono) return '';
+  const seguido = telefono.replace(/\s/g, '');
+  const sinPrefijo = seguido.replace(/^(\+34|0034)(?=\d{9}$)/, '');
+  return sinPrefijo;
+}
+
 // US-40 CA3: al elegir envío la primera vez se rellena con los datos del centro; persona y provincia, vacías.
+// T32-8: el teléfono se copia normalizado para que pase la validación del envío.
 export function direccionInicial(centro) {
   return {
     destinatario: '',
@@ -98,7 +109,7 @@ export function direccionInicial(centro) {
     codigo_postal: centro?.codigo_postal ?? '',
     localidad: centro?.localidad ?? '',
     provincia: '',
-    telefono_contacto: centro?.telefono ?? '',
+    telefono_contacto: normalizarTelefono(centro?.telefono),
     indicaciones: '',
   };
 }
