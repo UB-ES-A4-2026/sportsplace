@@ -227,7 +227,7 @@ Como responsable de un centro que participa en un pedido (como comprador o como 
 
 *Comportamiento*
 - CA4. La pantalla muestra «Cargando…» mientras carga y «No se ha podido cargar. » + «Reintentar» si falla.
-- CA5. Frase de situación según estado y papel: pendiente/comprador «Esperando la respuesta de <vendedor>.»; pendiente/vendedor «<comprador> te ha pedido este material. Acepta o rechaza el pedido.»; aceptado «Pedido aceptado. Acordad la entrega y el pago.»; rechazado «<vendedor> ha rechazado el pedido.»; cancelado «Pedido cancelado por <centro>.»; recibido «Material recibido. Pedido cerrado.»
+- CA5. Frase de situación según estado y papel: pendiente/comprador «Esperando la respuesta de <vendedor>.»; pendiente/vendedor «<comprador> te ha pedido este material. Acepta o rechaza el pedido.»; aceptado «Pedido aceptado. Acordad la entrega y el pago.» (en una donación, «Pedido aceptado. Acordad la entrega.»); rechazado «<vendedor> ha rechazado el pedido.»; cancelado «Pedido cancelado por <centro>.»; recibido «Material recibido.»
 - CA6. Importes con formato «1.234,50 €»; fechas «dd/mm/aaaa hh:mm» hora de Madrid.
 - CA7. El email y el teléfono del otro centro se muestran solo en `aceptado` y `recibido`; en otro estado la sección muestra solo nombre y localidad.
 - CA8. Si el anuncio está `retirado`, el título se muestra sin enlace con «(anuncio retirado)».
