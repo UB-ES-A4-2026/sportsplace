@@ -300,7 +300,7 @@ Como responsable del centro comprador, quiero confirmar que he recibido el mater
 
 **Pantallas para el boceto**
 - `/pedidos/:id`, al final de la sección «Entrega»: botón principal «He recibido el material» (solo comprador).
-- Diálogo: título «¿Confirmas que has recibido el material?», texto «Confirmas que has recibido {n} unidades de «{titulo}». El pedido quedará cerrado y no se podrá deshacer.», botones «Sí, lo he recibido» y «Cancelar».
+- Diálogo: título «¿Confirmas que has recibido el material?», texto «Confirmas que has recibido {n} unidades de «{titulo}».», botones «Sí, lo he recibido» y «Cancelar».
 - Tras confirmar: etiqueta de estado «Recibido» y línea «Recibido el {dd/mm/aaaa hh:mm}.» en la sección «Entrega».
 
 **Criterios de aceptación**
