@@ -1,6 +1,6 @@
 import { ApiError } from '../errors.js';
 import { esIdDeAnuncio } from '../repositories/anuncios.js';
-import { MENSAJE_DATOS_INVALIDOS } from './anuncios.js';
+import { MENSAJE_DATOS_INVALIDOS, validarPaginacion } from './anuncios.js';
 
 const METODOS_PAGO = ['transferencia', 'efectivo_recogida'];
 
@@ -46,4 +46,16 @@ export function validarMetodoPago(pedido, modalidad) {
     error = 'Elige una forma de pago.';
   }
   throw new ApiError(400, 'DATOS_INVALIDOS', MENSAJE_DATOS_INVALIDOS, { metodo_pago: error });
+}
+
+// US-109 CA11: `rol` es obligatorio y `pagina` (por defecto 1) un entero mayor
+// que 0. Siempre se sirven 20 por página; `por_pagina` no se admite.
+export const ROLES_LISTA = ['recibidos', 'realizados'];
+
+export function validarListaPedidos(query) {
+  if (!ROLES_LISTA.includes(query.rol)) {
+    throw new ApiError(400, 'DATOS_INVALIDOS', MENSAJE_DATOS_INVALIDOS, { rol: 'Indica recibidos o realizados.' });
+  }
+  const { pagina } = validarPaginacion({ pagina: query.pagina });
+  return { rol: query.rol, pagina };
 }

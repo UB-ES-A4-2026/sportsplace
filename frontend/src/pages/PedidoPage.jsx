@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import AccionesCierrePedido from '../components/AccionesCierrePedido.jsx';
+import AccionesPedidoVendedor from '../components/AccionesPedidoVendedor.jsx';
 import Aviso from '../components/Aviso.jsx';
 import EtiquetaPagado from '../components/EtiquetaPagado.jsx';
+import SeccionMotivo from '../components/SeccionMotivo.jsx';
 import { obtenerPedido } from '../pedidos/api.js';
 import { lineaRecibido } from '../pedidos/cierre.js';
 import {
@@ -22,9 +24,9 @@ import '../pedidos/pedido.css';
 
 // E06 US-108 (T32-5): /pedidos/:id · «Pedido de <título>». Privada (CA1, la protege RutaPrivada).
 // Secciones en el orden del boceto: volver, estado, frase, anuncio, datos, otro centro, entrega (US-40), historial.
-// US-80 y US-42 (AccionesCierrePedido): «Marcar como cobrado» en la barra de acciones y «He recibido el material»
-// al final de la sección «Entrega», con «Recibido el …» (US-42). La etiqueta «Pagado» es EtiquetaPagado.
-// La sección «Motivo» y Aceptar/Rechazar (US-33, US-79) se montan al integrar US-33.
+// US-79: sección «Motivo» (SeccionMotivo) tras el otro centro. Barra de acciones al final (punto 9): US-33 y US-79
+// (AccionesPedidoVendedor) y «Marcar como cobrado» de US-80 (AccionesCierrePedido). «He recibido el material» (US-42)
+// va al final de la sección «Entrega», con «Recibido el …». La etiqueta «Pagado» es EtiquetaPagado.
 // El aviso verde «Pedido enviado. El vendedor lo revisará.» llega en `location.state.aviso` desde «Pedir» (US-32 CA14).
 export default function PedidoPage() {
   const { id } = useParams();
@@ -74,8 +76,8 @@ export default function PedidoPage() {
     );
   }
 
-  // Tras una acción, la pantalla se actualiza con el pedido que devuelve la API (US-80 CA2, US-42 CA4). Ante un 409,
-  // aviso rojo con el `message` y se recarga el pedido para ver su estado real.
+  // Tras una acción, la pantalla se actualiza con el pedido que devuelve la API (US-33 CA4, US-79 CA4, US-80 CA2,
+  // US-42 CA4). Ante un 409, aviso rojo con el `message` y se recarga el pedido para ver su estado real (US-33 CA9, CA11).
   const actualizar = (pedido) => setResultado({ clave, pedido });
   function mostrarFallo(fallo) {
     if (fallo.noEncontrado) {
@@ -150,6 +152,8 @@ function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
         {otro.lineas.map((linea) => <p key={linea}>{linea}</p>)}
       </section>
 
+      <SeccionMotivo pedido={pedido} />
+
       <section className="pedido-seccion" aria-labelledby="titulo-historial">
         <h2 id="titulo-historial">Historial</h2>
         <ul className="pedido-historial">
@@ -158,6 +162,7 @@ function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
       </section>
 
       <div className="pedido-acciones">
+        <AccionesPedidoVendedor pedido={pedido} {...acciones} />
         <AccionesCierrePedido pedido={pedido} solo="marcar_pagado" {...acciones} />
       </div>
     </section>

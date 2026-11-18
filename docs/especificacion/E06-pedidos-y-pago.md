@@ -227,7 +227,7 @@ Como responsable de un centro que participa en un pedido (como comprador o como 
 
 *Comportamiento*
 - CA4. La pantalla muestra «Cargando…» mientras carga y «No se ha podido cargar. » + «Reintentar» si falla.
-- CA5. Frase de situación según estado y papel: pendiente/comprador «Esperando la respuesta de <vendedor>.»; pendiente/vendedor «<comprador> te ha pedido este material. Acepta o rechaza el pedido.»; aceptado «Pedido aceptado. Acordad la entrega y el pago.»; rechazado «<vendedor> ha rechazado el pedido.»; cancelado «Pedido cancelado por <centro>.»; recibido «Material recibido. Pedido cerrado.»
+- CA5. Frase de situación según estado y papel: pendiente/comprador «Esperando la respuesta de <vendedor>.»; pendiente/vendedor «<comprador> te ha pedido este material. Acepta o rechaza el pedido.»; aceptado «Pedido aceptado. Acordad la entrega y el pago.» (en una donación, «Pedido aceptado. Acordad la entrega.»); rechazado «<vendedor> ha rechazado el pedido.»; cancelado «Pedido cancelado por <centro>.»; recibido «Material recibido.»
 - CA6. Importes con formato «1.234,50 €»; fechas «dd/mm/aaaa hh:mm» hora de Madrid.
 - CA7. El email y el teléfono del otro centro se muestran solo en `aceptado` y `recibido`; en otro estado la sección muestra solo nombre y localidad.
 - CA8. Si el anuncio está `retirado`, el título se muestra sin enlace con «(anuncio retirado)».
@@ -288,7 +288,7 @@ Como responsable de un centro, quiero una pantalla con los pedidos que me hacen 
 - CA14. Sin token `401`; email sin confirmar `403 EMAIL_NO_CONFIRMADO`.
 
 **Flujos e2e**
-- E2E-1. Con el pedido de 4 balones pendiente, Les Corts ve «Pedidos ①» en la cabecera, entra, pestaña «Recibidos (1 pendientes)»: fila «Balones de baloncesto talla 7 · Escola de Bàsquet Gràcia · 4 · 34,00 € · Pendiente».
+- E2E-1. Con el pedido de 4 balones pendiente, Les Corts ve «Pedidos ①» en la cabecera, entra, pestaña «Recibidos (1 pendiente)»: fila «Balones de baloncesto talla 7 · Escola de Bàsquet Gràcia · 4 · 34,00 € · Pendiente».
 - E2E-2. Gràcia entra en «Realizados»: ve el pedido de A1 y el de A2 («Donación»), pendientes primero.
 - E2E-3. Sabadell: ambas pestañas con los textos vacíos de CA7.
 - E2E-4. Con 21 pedidos recibidos sembrados: página 1 con 20, «Siguiente» muestra 1.
@@ -299,7 +299,7 @@ Como responsable de un centro, quiero una pantalla con los pedidos que me hacen 
 - T109-3 · QA: automatizar E2E-1…4 y los CA.
 
 **Decisiones pendientes**
-- Pluralización «(1 pendientes)». Propuesta: «(1 pendiente)» / «(n pendientes)».
+- ~~Pluralización «(1 pendientes)»~~. Decidido (QA, 15/11): «(1 pendiente)» / «(n pendientes)».
 
 ---
 
