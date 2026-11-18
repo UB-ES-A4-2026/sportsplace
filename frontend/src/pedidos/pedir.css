@@ -1,8 +1,8 @@
-/* T32-4: /anuncios/:id/pedir. Usa las variables del diseño S2 (#250) con los colores actuales de la app como valor
-   de reserva: esta rama aún no tiene diseno/tokens.css; cuando llegue, la pantalla pasa al teal sin tocar nada.
+/* T32-4: /anuncios/:id/pedir con el diseño S2 (#250): solo variables de diseno/tokens.css.
    Los selectores llevan dos clases porque styles.css se carga después y sus reglas generales ganarían. */
+@import '../diseno/tokens.css';
 
-.pagina.pagina-pedir { width: 100%; max-width: 720px; padding-top: 40px; color: var(--s2-tinta, #19372f); }
+.pagina.pagina-pedir { width: 100%; max-width: 720px; padding-top: 40px; color: var(--s2-tinta); }
 .pagina-pedir h1 {
   margin: 0 0 20px; font-size: clamp(30px, 4vw, 38px); font-weight: 780; line-height: 1.1; letter-spacing: -0.035em;
 }
@@ -11,95 +11,95 @@
 /* (1) Tarjeta resumen. */
 .pagina-pedir .pedir-resumen {
   display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px;
-  border: 1px solid var(--s2-linea, #dfe7df); border-radius: var(--s2-radio-l, 20px); background: var(--s2-superficie, #fff);
-  box-shadow: var(--s2-sombra-2, 0 2px 4px rgb(15 29 34 / 4%), 0 8px 24px -6px rgb(15 29 34 / 10%));
+  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
+  box-shadow: var(--s2-sombra-2);
 }
 .pedir-resumen-foto {
-  display: grid; place-items: center; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--s2-radio, 12px);
-  color: var(--s2-gris, #587068); font-size: 13px; font-weight: 600;
-  background: linear-gradient(135deg, var(--s2-teal-50, #eef4ef), var(--s2-teal-100, #dfe7df));
+  display: grid; place-items: center; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--s2-radio);
+  color: var(--s2-gris); font-size: 13px; font-weight: 600;
+  background: linear-gradient(135deg, var(--s2-teal-50), var(--s2-teal-100));
 }
 .pedir-resumen-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .pedir-resumen-datos { display: grid; gap: 3px; min-width: 0; }
 .pedir-resumen-datos p { margin: 0; }
 .pedir-resumen-titulo { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
-.pedir-resumen-centro { overflow: hidden; color: var(--s2-gris, #587068); font-size: 14px; white-space: nowrap; text-overflow: ellipsis; }
-.pedir-resumen-modalidad { color: var(--s2-teal-800, #174f46); font-weight: 650; }
-.pedir-resumen-disponibles { color: var(--s2-tinta-2, #34474e); font-size: 14px; }
+.pedir-resumen-centro { overflow: hidden; color: var(--s2-gris); font-size: 14px; white-space: nowrap; text-overflow: ellipsis; }
+.pedir-resumen-modalidad { color: var(--s2-teal-800); font-weight: 650; }
+.pedir-resumen-disponibles { color: var(--s2-tinta-2); font-size: 14px; }
 
 /* Formulario. */
 .pedir-formulario { display: grid; gap: 22px; margin-top: 26px; }
 .pedir-campo { display: grid; gap: 6px; }
-.pedir-campo label, .pedir-grupo legend { color: var(--s2-tinta, #19372f); font-size: 14px; font-weight: 650; }
+.pedir-campo label, .pedir-grupo legend { color: var(--s2-tinta); font-size: 14px; font-weight: 650; }
 .pedir-formulario input:not([type="radio"]), .pedir-formulario select, .pedir-formulario textarea {
-  width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--s2-linea, #cdd9d0); border-radius: var(--s2-radio, 8px);
-  color: var(--s2-tinta, #19372f); background: var(--s2-superficie, #fff); font: inherit; font-size: 15px;
-  box-shadow: var(--s2-sombra-1, none); transition: border-color 160ms, box-shadow 160ms;
+  width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio);
+  color: var(--s2-tinta); background: var(--s2-superficie); font: inherit; font-size: 15px;
+  box-shadow: var(--s2-sombra-1); transition: border-color 160ms, box-shadow 160ms;
 }
 .pedir-formulario textarea { padding: 10px 12px; resize: vertical; line-height: 1.5; }
 .pedir-formulario input:focus-visible, .pedir-formulario select:focus-visible, .pedir-formulario textarea:focus-visible {
-  outline: 0; border-color: var(--s2-teal-500, #174f46); box-shadow: var(--s2-foco, 0 0 0 3px #b1d9c0);
+  outline: 0; border-color: var(--s2-teal-500); box-shadow: var(--s2-foco);
 }
-.pedir-formulario [aria-invalid="true"] { border-color: var(--s2-peligro, #a13e33); }
-.pedir-error { margin: 0; color: var(--s2-peligro, #a13e33); font-size: 14px; font-weight: 550; }
-.pedir-ayuda { margin: 0; color: var(--s2-gris, #587068); font-size: 13.5px; line-height: 1.5; }
-.pedir-contador { margin: 0; color: var(--s2-gris, #587068); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.pedir-formulario [aria-invalid="true"] { border-color: var(--s2-peligro); }
+.pedir-error { margin: 0; color: var(--s2-peligro); font-size: 14px; font-weight: 550; }
+.pedir-ayuda { margin: 0; color: var(--s2-gris); font-size: 13.5px; line-height: 1.5; }
+.pedir-contador { margin: 0; color: var(--s2-gris); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* (2) Unidades con − y +. */
 .pedir-unidades { display: flex; gap: 8px; align-items: stretch; max-width: 220px; }
 .pedir-unidades input { text-align: center; font-variant-numeric: tabular-nums; }
 .pagina-pedir .pedir-paso {
-  flex: none; width: 44px; min-height: 42px; padding: 0; border: 1px solid var(--s2-linea, #cdd9d0); border-radius: var(--s2-radio, 8px);
-  color: var(--s2-teal-800, #174f46); background: var(--s2-superficie, #fff); font-size: 20px; font-weight: 600; line-height: 1;
+  flex: none; width: 44px; min-height: 42px; padding: 0; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio);
+  color: var(--s2-teal-800); background: var(--s2-superficie); font-size: 20px; font-weight: 600; line-height: 1;
 }
-.pagina-pedir .pedir-paso:hover:not(:disabled) { background: var(--s2-teal-50, #eef4ef); }
-.pagina-pedir .pedir-paso:disabled { color: var(--s2-gris, #7a8b81); background: var(--s2-linea-2, #f5f8f4); cursor: not-allowed; opacity: 1; }
-.pagina-pedir .pedir-paso:focus-visible { outline: 0; box-shadow: var(--s2-foco, 0 0 0 3px #b1d9c0); }
+.pagina-pedir .pedir-paso:hover:not(:disabled) { background: var(--s2-teal-50); }
+.pagina-pedir .pedir-paso:disabled { color: var(--s2-gris); background: var(--s2-linea-2); cursor: not-allowed; opacity: 1; }
+.pagina-pedir .pedir-paso:focus-visible { outline: 0; box-shadow: var(--s2-foco); }
 
 /* (3) y (4): grupos de radio como opciones seleccionables. */
 .pedir-grupo { display: grid; gap: 10px; margin: 0; padding: 0; border: 0; min-width: 0; }
 .pedir-grupo legend { margin-bottom: 8px; padding: 0; }
 .pedir-opcion {
   display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 12px 14px;
-  border: 1px solid var(--s2-linea, #dfe7df); border-radius: var(--s2-radio, 12px); background: var(--s2-superficie, #fff);
+  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); background: var(--s2-superficie);
   transition: border-color 160ms, background-color 160ms;
 }
-.pedir-opcion.elegida { border-color: var(--s2-teal-100, #b1d9c0); background: var(--s2-teal-50, #eef4ef); }
-.pedir-opcion input { width: 18px; height: 18px; margin: 0; accent-color: var(--s2-teal-700, #174f46); }
+.pedir-opcion.elegida { border-color: var(--s2-teal-100); background: var(--s2-teal-50); }
+.pedir-opcion input { width: 18px; height: 18px; margin: 0; accent-color: var(--s2-teal-700); }
 .pedir-opcion label { font-weight: 600; cursor: pointer; }
 .pedir-opcion .pedir-ayuda { grid-column: 2; }
 .pedir-advertencia {
-  margin: 0; padding: 10px 14px; border-radius: var(--s2-radio, 12px); color: var(--s2-aviso, #7c661f);
-  background: var(--s2-aviso-50, #fff7e8); font-size: 14px; font-weight: 550;
+  margin: 0; padding: 10px 14px; border-radius: var(--s2-radio); color: var(--s2-aviso);
+  background: var(--s2-aviso-50); font-size: 14px; font-weight: 550;
 }
 .pedir-direccion { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin-top: 6px; }
 .pedir-campo-destinatario, .pedir-campo-calle_numero, .pedir-campo-indicaciones { grid-column: 1 / -1; }
 
 /* (6) Total. */
 .pagina-pedir .pedir-total {
-  display: grid; gap: 6px; padding: 16px 18px; border: 1px solid var(--s2-teal-100, #dfe7df); border-radius: var(--s2-radio-l, 20px);
-  background: var(--s2-teal-50, #f5f8f4);
+  display: grid; gap: 6px; padding: 16px 18px; border: 1px solid var(--s2-teal-100); border-radius: var(--s2-radio-l);
+  background: var(--s2-teal-50);
 }
 .pedir-total p { margin: 0; }
-.pedir-total-importe { color: var(--s2-teal-800, #174f46); font-size: 22px; font-weight: 760; font-variant-numeric: tabular-nums; }
+.pedir-total-importe { color: var(--s2-teal-800); font-size: 22px; font-weight: 760; font-variant-numeric: tabular-nums; }
 
 /* (8) Botones. */
 .pedir-botones { display: flex; flex-wrap: wrap; gap: 10px; }
 .pagina-pedir .pedir-boton {
-  min-height: 44px; padding: 0 20px; border: 0; border-radius: var(--s2-radio, 8px); color: #fff; font-size: 15px; font-weight: 650;
-  background: var(--s2-teal-700, #174f46);
+  min-height: 44px; padding: 0 20px; border: 0; border-radius: var(--s2-radio); color: #fff; font-size: 15px; font-weight: 650;
+  background: var(--s2-teal-700);
 }
-.pagina-pedir .pedir-boton:hover:not(:disabled) { background: var(--s2-teal-800, #256455); }
-.pagina-pedir .pedir-boton:focus-visible { outline: 0; box-shadow: var(--s2-foco, 0 0 0 3px #b1d9c0); }
+.pagina-pedir .pedir-boton:hover:not(:disabled) { background: var(--s2-teal-800); }
+.pagina-pedir .pedir-boton:focus-visible { outline: 0; box-shadow: var(--s2-foco); }
 .pagina-pedir .pedir-boton-secundario {
-  color: var(--s2-teal-800, #174f46); background: var(--s2-superficie, #fff); box-shadow: inset 0 0 0 1px var(--s2-linea, #cdd9d0);
+  color: var(--s2-teal-800); background: var(--s2-superficie); box-shadow: inset 0 0 0 1px var(--s2-linea);
 }
-.pagina-pedir .pedir-boton-secundario:hover:not(:disabled) { background: var(--s2-teal-50, #eef4ef); }
+.pagina-pedir .pedir-boton-secundario:hover:not(:disabled) { background: var(--s2-teal-50); }
 
 /* CA5: anuncio que no se puede pedir. */
 .pedir-no-disponible {
-  display: grid; justify-items: start; gap: 10px; padding: 22px 24px; border: 1px solid var(--s2-linea, #dfe7df);
-  border-radius: var(--s2-radio-l, 20px); background: var(--s2-superficie, #fff);
+  display: grid; justify-items: start; gap: 10px; padding: 22px 24px; border: 1px solid var(--s2-linea);
+  border-radius: var(--s2-radio-l); background: var(--s2-superficie);
 }
 .pedir-no-disponible p { margin: 0; }
 
