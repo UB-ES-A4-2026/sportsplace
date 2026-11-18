@@ -35,6 +35,15 @@ La configuración se escribe en `.e2e/runtime.env` (fuera de Git): `DATABASE_URL
 Son credenciales sintéticas locales: no copiarlas a GitHub Secrets ni incluir
 `.e2e/` en capturas, logs, commits o artefactos. T12-7 las carga para los e2e.
 
+## Pruebas SQL
+
+Con el entorno levantado, `npm --prefix tools run test-env:sql` ejecuta todos los
+archivos de `supabase/tests/*.sql` en el contenedor propio de este checkout
+(`psql -v ON_ERROR_STOP=1` como `postgres`). Cada archivo termina en `ROLLBACK`, así
+que no altera la semilla de los e2e. Si alguno falla, se muestra solo el error de
+psql y su contexto, sin conexiones ni claves. El CI lo ejecuta en el job E2E,
+justo después de `test-env:up` (CA21 de US-21: índices del catálogo).
+
 ## Semilla y repetición
 
 - Centro A: «Club Natació Exemple», email confirmado.

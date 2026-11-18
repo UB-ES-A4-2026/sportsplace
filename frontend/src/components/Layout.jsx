@@ -6,7 +6,7 @@ import MenuCentro from './MenuCentro.jsx';
 import '../pedidos/pedidos.css';
 
 export default function Layout() {
-  const { usuario } = useAuth();
+  const { usuario, cargando } = useAuth();
   const { pathname } = useLocation();
   // US-109 CA9: el contador se refresca al cargar cualquier pantalla privada (cada cambio de ruta).
   const contador = textoContador(useContadorPedidos(Boolean(usuario), pathname));
@@ -14,13 +14,17 @@ export default function Layout() {
   return (
     <div className="page">
       <header className="cabecera">
-        <Link to="/" className="brand">
+        {/* US-96 CA1: con sesión, el logo lleva al catálogo. Mientras se comprueba la sesión guardada (al recargar o
+            entrar por una URL) ya apunta a /catalogo; si la sesión no vale, la ruta privada lleva a /entrar. */}
+        <Link to={usuario || cargando ? '/catalogo' : '/'} className="brand">
           <span className="brand-mark" aria-hidden="true">S</span>
           <span>Sportsplace</span>
         </Link>
         <nav className="menu" aria-label="Principal">
           {usuario ? (
             <>
+              {/* US-96 CA1: «Catálogo», marcado como activo (aria-current) en /catalogo. */}
+              <NavLink to="/catalogo">Catálogo</NavLink>
               {/* US-18 CA1: «Mis anuncios», subrayado en cualquier ruta que empiece por /mis-anuncios. */}
               <NavLink to="/mis-anuncios">Mis anuncios</NavLink>
               {/* US-109 CA1 y CA9: «Pedidos» → /pedidos?pestana=recibidos, con el número de recibidos pendientes. */}

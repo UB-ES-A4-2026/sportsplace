@@ -127,7 +127,7 @@ const urlFoto = (ruta) => `https://proyecto.supabase.co/storage/v1/object/public
 const filaRecibida = {
   id: resumen.id, anuncio_id: 'a1', titulo_anuncio: 'Balones de baloncesto talla 7', unidades: 4,
   modalidad: 'venta', total_centimos: '3400', estado: 'pendiente', creado_en: new Date('2026-10-21T08:30:00Z'),
-  pagado_en: null, otro_id: GRACIA, otro_nombre: 'Escola de Bàsquet Gràcia', ruta_foto: 'c/a1/1.jpg',
+  pagado_en: null, metodo_entrega: 'recogida', otro_id: GRACIA, otro_nombre: 'Escola de Bàsquet Gràcia', ruta_foto: 'c/a1/1.jpg',
 };
 
 test('repositorio CA3, CA10 y CA13: Recibidos filtra por el vendedor del token y el otro centro es el comprador', async () => {
@@ -138,7 +138,7 @@ test('repositorio CA3, CA10 y CA13: Recibidos filtra por el vendedor del token y
       id: resumen.id,
       anuncio: { id: 'a1', titulo: 'Balones de baloncesto talla 7', foto_principal_url: urlFoto('c/a1/1.jpg') },
       otro_centro: { id: GRACIA, nombre: 'Escola de Bàsquet Gràcia' },
-      unidades: 4, modalidad: 'venta', total_centimos: 3400, estado: 'pendiente', pagado_en: null,
+      unidades: 4, modalidad: 'venta', total_centimos: 3400, estado: 'pendiente', metodo_entrega: 'recogida', pagado_en: null,
       creado_en: '2026-10-21T08:30:00.000Z',
     }],
     pagina: 2, total: 21, por_pagina: 20,

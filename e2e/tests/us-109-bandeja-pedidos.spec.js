@@ -227,7 +227,8 @@ test('US-109 · CA10 · forma de la respuesta y orden', async ({ request, cuenta
   const cuerpo = await res.json();
   expect(cuerpo).toMatchObject({ pagina: 1, por_pagina: 20 });
   expect(Object.keys(cuerpo.pedidos[0]).sort()).toEqual([
-    'anuncio', 'creado_en', 'estado', 'id', 'modalidad', 'otro_centro', 'pagado_en', 'total_centimos', 'unidades',
+    // `metodo_entrega` lo añade US-40 CA18 («Recogida» o «Envío» en cada fila).
+    'anuncio', 'creado_en', 'estado', 'id', 'metodo_entrega', 'modalidad', 'otro_centro', 'pagado_en', 'total_centimos', 'unidades',
   ]);
   const resumen = cuerpo.pedidos.find((p) => p.id === id);
   expect(resumen).toMatchObject({

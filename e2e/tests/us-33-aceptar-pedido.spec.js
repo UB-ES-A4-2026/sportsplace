@@ -106,7 +106,8 @@ test('US-33 · E2E-1 · el vendedor acepta y los dos ven el contacto', async ({ 
   await alPedido(page, cuentas, id, cuentas.centroB);
   await expect(main.getByText('Aceptado', { exact: true }).first()).toBeVisible();
   await expect(main.getByText('Pedido aceptado. Acordad la entrega y el pago.')).toBeVisible();
-  await expect(main.getByText(cuentas.centroA)).toBeVisible();
+  // Privacidad (#331): A tampoco tiene email de contacto en la semilla; su email de acceso no sale nunca.
+  await expect(main.getByText(cuentas.centroA)).toHaveCount(0);
   const telefonoA = await telefonoDe(db, centros.a.id);
   if (telefonoA) await expect(main.getByText(telefonoA)).toBeVisible();
 });

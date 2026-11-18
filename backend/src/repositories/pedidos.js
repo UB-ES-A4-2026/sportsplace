@@ -104,6 +104,7 @@ function aResumen(fila, urlFoto) {
     modalidad: fila.modalidad,
     total_centimos: Number(fila.total_centimos),
     estado: fila.estado,
+    metodo_entrega: fila.metodo_entrega ?? null, // US-40 CA18
     pagado_en: fila.pagado_en ? new Date(fila.pagado_en).toISOString() : null,
     creado_en: new Date(fila.creado_en).toISOString(),
   };
@@ -230,7 +231,7 @@ export function createPedidosRepository(database, { urlFoto = () => null } = {})
       );
       const { rows } = await consultar(
         `SELECT p.id, p.anuncio_id, p.titulo_anuncio, p.unidades, p.modalidad, p.total_centimos,
-                p.estado, p.creado_en, to_jsonb(p) ->> 'pagado_en' AS pagado_en,
+                p.estado, p.metodo_entrega, p.creado_en, to_jsonb(p) ->> 'pagado_en' AS pagado_en,
                 o.id AS otro_id, o.nombre AS otro_nombre,
                 (SELECT f.ruta FROM public.anuncio_fotos f
                   WHERE f.anuncio_id = p.anuncio_id ORDER BY f.es_principal DESC, f.orden LIMIT 1) AS ruta_foto

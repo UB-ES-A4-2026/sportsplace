@@ -66,7 +66,8 @@ export default function DialogoRechazo({ abierto, comprador, enviando = false, e
         <p id={`${id}-texto`}>{comprador} verá el motivo.</p>
 
         <div className="campo">
-          <label htmlFor={`${id}-motivo`}>Motivo<span aria-hidden="true"> *</span></label>
+          {/* El «*» va por CSS para que el nombre accesible del desplegable sea exactamente «Motivo». */}
+          <label htmlFor={`${id}-motivo`} className="etiqueta-obligatoria">Motivo</label>
           <select id={`${id}-motivo`} value={valores.motivoCodigo} disabled={enviando}
             aria-invalid={errores.motivo_codigo ? 'true' : undefined}
             aria-describedby={errores.motivo_codigo ? `${id}-motivo-error` : undefined}

@@ -150,3 +150,4 @@ footer { padding-top: 28px; color: #7a8b81; font-size: 12px; }
 .pedido-motivo { margin-top: 20px; }
 .pedido-motivo p { margin: 6px 0; white-space: pre-line; }
 .pedido-motivo-codigo { font-weight: 600; }
+.dialogo-rechazo .etiqueta-obligatoria::after { content: " *"; }

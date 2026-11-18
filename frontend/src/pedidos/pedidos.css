@@ -54,3 +54,6 @@
     content: attr(data-columna) ': '; color: #587068; font-size: 13px; font-weight: 600;
   }
 }
+
+/* US-40 CA18: «Recogida» o «Envío» bajo el título */
+.pedidos-entrega { display: block; margin-top: 2px; color: #587068; font-size: 13px; }

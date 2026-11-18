@@ -179,6 +179,20 @@ export async function hayPantallaPedido(page, pedidoId) {
     .waitFor({ timeout: 5_000 }).then(() => true, () => false);
 }
 
+// T32-5: tras «Enviar pedido», la web lleva a `/pedidos/:id`. Sin esa pantalla en la rama, el aviso verde y el
+// detalle no se pueden comprobar y el caso se omite (sin salir de la página, que el aviso viaja en el estado).
+export async function estaEnPantallaPedido(page) {
+  return page.getByRole('heading', { level: 1, name: /^Pedido de / })
+    .waitFor({ timeout: 5_000 }).then(() => true, () => false);
+}
+
+// Cambiar de cuenta: con una sesión abierta, /entrar redirige al panel y no hay formulario. Se cierra antes.
+export async function cambiarDeCuenta(page, entrar, email, password) {
+  await page.context().clearCookies();
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await entrar(page, email, password);
+}
+
 export function campoUnidades(page) {
   return page.getByRole('spinbutton', { name: 'Unidades' }).or(page.getByLabel('Unidades', { exact: true })).first();
 }
