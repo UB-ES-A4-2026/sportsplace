@@ -1,6 +1,8 @@
+import { useCallback, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
   TEXTOS,
+  accionDePedir,
   botonesDelDetalle,
   destinoDeVolver,
   enlaceAlCentro,
@@ -10,6 +12,7 @@ import {
 } from '../anuncios/detalleOtroCentro.js';
 import { formatearFecha } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
+import Aviso from './Aviso.jsx';
 import BotonEscribirAlCentro from './BotonEscribirAlCentro.jsx';
 import GaleriaDetalle from './GaleriaDetalle.jsx';
 
@@ -18,11 +21,16 @@ import GaleriaDetalle from './GaleriaDetalle.jsx';
 export default function DetalleOtroCentro({ anuncio }) {
   const location = useLocation();
   const reservado = anuncio.estado === 'reservado';
-  // CA10: hasta que exista US-32 (pedidos), «Pedir material» va deshabilitado. US-28 ya activa «Escribir al centro».
+  // CA10: «Pedir» es de US-32 y US-28 activa «Escribir al centro».
   const botones = botonesDelDetalle(anuncio, { mensajes: true });
   const distancia = textoDistancia(anuncio.distancia_km);
+  // US-32 CA20: al volver de /anuncios/:id/pedir porque el anuncio ya no está disponible, aviso rojo.
+  const [aviso, setAviso] = useState(() => location.state?.aviso ?? null);
+  const cerrarAviso = useCallback(() => setAviso(null), []);
 
   return (
+    <>
+    <Aviso aviso={aviso} onCerrar={cerrarAviso} />
     <section className="pagina pagina-anuncio detalle-otro-centro" aria-labelledby="titulo-pagina">
       {/* CA1 (T24-3): vuelve a la URL del catálogo de la que se vino; si se entró por el enlace, a /catalogo. */}
       <Link to={destinoDeVolver(location.state)} className="enlace-volver">{TEXTOS.volver}</Link>
@@ -49,9 +57,9 @@ export default function DetalleOtroCentro({ anuncio }) {
             </dl>
           </section>
 
-          {/* CA3, CA4 y CA10: «Pedir material» [US-32] principal y «Escribir al centro» [US-28] secundario. */}
+          {/* CA3, CA4 y CA10: «Pedir» [US-32] principal y «Escribir al centro» [US-28] secundario. */}
           <div className="detalle-botones">
-            <BotonDependiente id="pedir" texto={TEXTOS.pedir} estado={botones.pedir} principal />
+            <BloquePedir accion={accionDePedir(anuncio)} />
             {/* US-28 CA1-CA2: esta vista solo se pinta para anuncios activos o reservados de otro centro. */}
             {botones.escribir.habilitado && <BotonEscribirAlCentro anuncioId={anuncio.id} />}
           </div>
@@ -78,22 +86,33 @@ export default function DetalleOtroCentro({ anuncio }) {
         <p>{anuncio.descripcion}</p>
       </section>
     </section>
+    </>
   );
 }
 
-function BotonDependiente({ id, texto, estado, principal = false }) {
-  const idAyuda = estado.ayuda ? `ayuda-${id}` : undefined;
+// US-32 CA1-CA4 (T32-3): «Pedir» (enlace a /anuncios/:id/pedir), deshabilitado con «No disponible» si está reservado,
+// o el aviso de pedido pendiente con «Ver mi pedido».
+function BloquePedir({ accion }) {
+  if (!accion) return null;
+  if (accion.tipo === 'pendiente') {
+    return (
+      <div className="detalle-boton detalle-pedido-pendiente">
+        <p>{TEXTOS.pedidoPendiente}</p>
+        <Link to={accion.ruta}>{TEXTOS.verMiPedido}</Link>
+      </div>
+    );
+  }
+  if (accion.tipo === 'reservado') {
+    return (
+      <div className="detalle-boton">
+        <button type="button" disabled aria-describedby="ayuda-pedir">{TEXTOS.pedir}</button>
+        <p id="ayuda-pedir" className="detalle-ayuda">{TEXTOS.noDisponibleParaPedir}</p>
+      </div>
+    );
+  }
   return (
     <div className="detalle-boton">
-      <button
-        type="button"
-        className={principal ? undefined : 'boton-secundario'}
-        disabled={!estado.habilitado}
-        aria-describedby={idAyuda}
-      >
-        {texto}
-      </button>
-      {estado.ayuda && <p id={idAyuda} className="detalle-ayuda">{estado.ayuda}</p>}
+      <Link to={accion.ruta} className="boton-enlace">{TEXTOS.pedir}</Link>
     </div>
   );
 }

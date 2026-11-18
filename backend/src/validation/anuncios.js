@@ -20,7 +20,7 @@ export const MODALIDADES = ['venta', 'donacion'];
 
 // Claves numéricas que la API solo acepta como entero JSON: `3.0` o `1e3`
 // llegan a JavaScript como 3 y 1000, así que se marcan al leer el JSON.
-const CAMPOS_ENTEROS = new Set(['unidades_disponibles', 'precio_unitario_centimos']);
+const CAMPOS_ENTEROS = new Set(['unidades_disponibles', 'precio_unitario_centimos', 'unidades']);
 
 // `reviver` de express.json: un número de esas claves escrito con decimales
 // o exponente se convierte en NaN, que la validación rechaza.

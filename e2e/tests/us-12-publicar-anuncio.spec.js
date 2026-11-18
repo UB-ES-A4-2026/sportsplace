@@ -233,7 +233,8 @@ test('US-12 · E2E-5 · anuncio de otro centro y API directa', async ({ page, re
   await page.goto(`/anuncios/${anuncio.id}`);
   await expect(page.getByRole('heading', { level: 1, name: VALIDO_API.titulo })).toBeVisible();
   await expect(page.getByRole('link', { name: '← Volver al catálogo' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Pedir material' })).toBeDisabled();
+  // Desde US-32 (T32-3), en el anuncio activo de otro centro «Pedir» es un enlace al formulario de pedido.
+  await expect(page.getByRole('link', { name: 'Pedir', exact: true })).toHaveAttribute('href', `/anuncios/${anuncio.id}/pedir`);
   await expect(page.getByRole('link', { name: 'Editar', exact: true })).toHaveCount(0);
   await page.goto('/anuncios/00000000-0000-4000-8000-000000000000');
   await expect(page.getByText('Anuncio no encontrado')).toBeVisible();

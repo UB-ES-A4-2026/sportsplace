@@ -39,7 +39,8 @@ export function anunciosRouter() {
   // US-12: ficha propia del anuncio (CA20, CA24).
   router.get('/:id', async (request, response) => {
     const anuncio = await getAnuncios(request).obtener(request.usuario.id, request.params.id);
-    response.json({ anuncio });
+    // Esta ficha solo devuelve anuncios propios; el propietario no puede pedírselos.
+    response.json({ anuncio: { ...anuncio, mi_pedido_pendiente_id: null } });
   });
 
   // US-15: modificar un anuncio publicado (CA5, CA7-CA17, CA20) con el mismo

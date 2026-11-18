@@ -40,7 +40,7 @@ test('US-24 CA12/CA15: DTO explícito, fotos públicas principal primero y descr
     estado: 'activo', publicado_en: '2026-11-08T10:00:00.000Z',
     fotos: [2, 1, 3].map((orden) => ({ url: urlFoto(foto(orden).ruta), orden, es_principal: orden === 2 })),
     centro: { id: 'centro-a', nombre: 'CE Montjuïc', localidad: 'Barcelona' },
-    distancia_km: 12.4, es_favorito: false, es_propio: false,
+    distancia_km: 12.4, es_favorito: false, es_propio: false, mi_pedido_pendiente_id: null,
   });
   assert.deepEqual(database.consultas[1].values, [[id]]);
 });
