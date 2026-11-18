@@ -49,13 +49,16 @@ export function fraseDeSituacion(pedido) {
       ? `${comprador.nombre} te ha pedido este material. Acepta o rechaza el pedido.`
       : `Esperando la respuesta de ${vendedor.nombre}.`;
   }
-  if (estado === 'aceptado') return 'Pedido aceptado. Acordad la entrega y el pago.';
+  // T32-7 (decisión de la PO, 17/11): en una donación no hay pago que acordar.
+  if (estado === 'aceptado') {
+    return pedido.modalidad === 'donacion' ? 'Pedido aceptado. Acordad la entrega.' : 'Pedido aceptado. Acordad la entrega y el pago.';
+  }
   if (estado === 'rechazado') return `${vendedor.nombre} ha rechazado el pedido.`;
   if (estado === 'cancelado') {
     const quien = pedido.cerrado_por === 'vendedor' ? vendedor.nombre : comprador.nombre;
     return `Pedido cancelado por ${quien}.`;
   }
-  if (estado === 'recibido') return 'Material recibido. Pedido cerrado.';
+  if (estado === 'recibido') return 'Material recibido.'; // T32-7
   return null;
 }
 
