@@ -444,11 +444,13 @@ test('US-40 · CA18 · la lista de pedidos marca «Recogida» o «Envío»', asy
   await nuevoPedido({ metodo_entrega: 'recogida' });
   await nuevoPedido(envio());
   await entrar(page, cuentas.centroB, cuentas.password);
-  await page.goto('/pedidos');
+  // B es el comprador: sus pedidos están en «Realizados» (/pedidos abre «Recibidos», US-109 CA1).
+  await page.goto('/pedidos?pestana=realizados');
   const lista = page.getByRole('heading', { level: 1, name: 'Pedidos' });
   test.skip(!(await lista.waitFor({ timeout: 5_000 }).then(() => true, () => false)),
     'La lista /pedidos (US-109, en la story de US-33) aún no está en esta rama.');
-  const filas = page.getByRole('main').getByRole('listitem').filter({ hasText: A1.titulo });
+  // La bandeja de US-109 es una tabla: cada pedido es una fila (role row).
+  const filas = page.getByRole('main').getByRole('row').filter({ hasText: A1.titulo });
   await expect(filas.filter({ hasText: 'Recogida' }).first()).toBeVisible();
   await expect(filas.filter({ hasText: 'Envío' }).first()).toBeVisible();
 });

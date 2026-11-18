@@ -16,3 +16,5 @@
 .etiqueta-amarilla { color: #6b4a00; background: #fff4cc; }
 .etiqueta-roja { color: #8a2b22; background: #fbe3e0; }
 .etiqueta-pagado { color: #fff; background: #1d5c33; }
+.pedido-acciones { margin-top: 24px; }
+.pedido-acciones:empty { display: none; }

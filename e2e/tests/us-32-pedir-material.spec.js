@@ -450,7 +450,11 @@ test('US-32 · CA13, CA22 y CA28 · pendientes a la vez, duplicado y volver a pe
 
   // CA28: rechazado o cancelado no impide pedir otra vez.
   for (const estado of ['rechazado', 'cancelado']) {
-    await db.query("UPDATE public.pedidos SET estado = $2 WHERE anuncio_id = $1 AND comprador_centro_id = $3 AND estado = 'pendiente'", [a1, estado, centros.b.id]);
+    // Con la migración de US-79, un pedido rechazado o cancelado necesita motivo (pedidos_motivo_al_cerrar).
+    const motivo = columnas.has('motivo_codigo')
+      ? `, motivo_codigo = '${estado === 'rechazado' ? 'sin_unidades' : 'ya_no_necesario'}', cerrado_por = '${estado === 'rechazado' ? 'vendedor' : 'comprador'}'`
+      : '';
+    await db.query(`UPDATE public.pedidos SET estado = $2${motivo} WHERE anuncio_id = $1 AND comprador_centro_id = $3 AND estado = 'pendiente'`, [a1, estado, centros.b.id]);
     expect((await postPedido(request, token, cuerpoPedido(a1, { columnas }))).status(), estado).toBe(201);
   }
 });
@@ -487,6 +491,7 @@ test('US-32 · CA24 · checks e índice único de la tabla pedidos', async () =>
   // Índice único parcial: un solo pendiente por anuncio y comprador…
   await falla({});
   // …pero no cuenta para los que ya no están pendientes.
-  await insertarPedido(db, { ...base, estado: 'cancelado' });
+  // insertarPedido descarta las columnas que aún no existen; con US-79, cancelado necesita motivo.
+  await insertarPedido(db, { ...base, estado: 'cancelado', motivo_codigo: 'ya_no_necesario', cerrado_por: 'comprador' });
   expect((await pedidosDe(db, a1)).map((p) => p.estado).sort()).toEqual(['cancelado', 'pendiente']);
 });

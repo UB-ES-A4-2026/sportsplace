@@ -17,8 +17,8 @@ import { marcarEnterosConDecimales } from './validation/anuncios.js';
 // `conversaciones`, el repositorio de conversaciones y mensajes (US-28).
 // Cualquiera puede ser null si falta su configuración.
 export function createApp({
-  auth = null, centros = null, anuncios = null, pedidos = null, fotos = null, conversaciones = null,
-  webRoot = null, renderGitCommit = null,
+  auth = null, centros = null, anuncios = null, pedidos = null, fotos = null, conversaciones = null, webRoot = null,
+  renderGitCommit = null,
 } = {}) {
   const app = express();
   app.disable('x-powered-by');

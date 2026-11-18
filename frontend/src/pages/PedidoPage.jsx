@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
+import AccionesPedidoVendedor from '../components/AccionesPedidoVendedor.jsx';
 import Aviso from '../components/Aviso.jsx';
+import SeccionMotivo from '../components/SeccionMotivo.jsx';
 import { obtenerPedido } from '../pedidos/api.js';
 import {
   anuncioRetirado,
@@ -19,8 +21,8 @@ import '../pedidos/pedido.css';
 
 // E06 US-108 (T32-5): /pedidos/:id · «Pedido de <título>». Privada (CA1, la protege RutaPrivada).
 // Secciones en el orden del boceto: volver, estado, frase, anuncio, datos, otro centro, entrega (US-40), historial.
-// La sección «Motivo» (US-79) y la barra de acciones (US-33, US-79, US-80, US-42) llegan con sus historias:
-// SeccionMotivo, AccionesPedidoVendedor y AccionesCierrePedido se montan aquí al integrar US-33 y US-42.
+// US-79: sección «Motivo» (SeccionMotivo) tras el otro centro. Barra de acciones al final (punto 9): US-33 y US-79
+// (AccionesPedidoVendedor); US-80 y US-42 (AccionesCierrePedido) se montan al integrar US-42.
 // El aviso verde «Pedido enviado. El vendedor lo revisará.» llega en `location.state.aviso` desde «Pedir» (US-32 CA14).
 export default function PedidoPage() {
   const { id } = useParams();
@@ -70,15 +72,27 @@ export default function PedidoPage() {
     );
   }
 
+  // Tras una acción, la pantalla se actualiza con el pedido que devuelve la API (US-33 CA4, US-79 CA4). Ante un 409,
+  // aviso rojo con el `message` y se recarga el pedido para ver su estado real (US-33 CA9, CA11).
+  const actualizar = (pedido) => setResultado({ clave, pedido });
+  function mostrarFallo(fallo) {
+    if (fallo.noEncontrado) {
+      setResultado({ clave, noEncontrado: true });
+      return;
+    }
+    setAviso({ tipo: 'error', texto: fallo.mensaje });
+    if (fallo.recargar) setIntento((n) => n + 1);
+  }
+
   return (
     <>
       <Aviso aviso={aviso} onCerrar={cerrarAviso} />
-      <DetallePedido pedido={actual.pedido} />
+      <DetallePedido pedido={actual.pedido} onActualizado={actualizar} onAviso={setAviso} onFallo={mostrarFallo} />
     </>
   );
 }
 
-function DetallePedido({ pedido }) {
+function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
   const estado = etiquetaDelEstado(pedido.estado);
   const otro = datosDelOtroCentro(pedido);
   const entrega = datosDeEntrega(pedido);
@@ -131,12 +145,18 @@ function DetallePedido({ pedido }) {
         {otro.lineas.map((linea) => <p key={linea}>{linea}</p>)}
       </section>
 
+      <SeccionMotivo pedido={pedido} />
+
       <section className="pedido-seccion" aria-labelledby="titulo-historial">
         <h2 id="titulo-historial">Historial</h2>
         <ul className="pedido-historial">
           {historial(pedido).map((linea) => <li key={linea}>{linea}</li>)}
         </ul>
       </section>
+
+      <div className="pedido-acciones">
+        <AccionesPedidoVendedor pedido={pedido} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+      </div>
     </section>
   );
 }
