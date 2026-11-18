@@ -16,6 +16,7 @@ import NoEncontradaPage from './pages/NoEncontradaPage.jsx';
 import PedidoPage from './pages/PedidoPage.jsx';
 import PedirPage from './pages/PedirPage.jsx';
 import PanelPage from './pages/PanelPage.jsx';
+import PedidosPage from './pages/PedidosPage.jsx';
 import PerfilPage from './pages/PerfilPage.jsx';
 import PublicarAnuncioPage from './pages/PublicarAnuncioPage.jsx';
 import RecuperarContrasenaPage from './pages/RecuperarContrasenaPage.jsx';
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="anuncios/nuevo" element={<PublicarAnuncioPage />} />
           <Route path="anuncios/:id" element={<DetalleAnuncioPage />} />
           <Route path="anuncios/:id/editar" element={<EditarAnuncioPage />} />
+          <Route path="pedidos" element={<PedidosPage />} />
           {/* US-32 CA4: privada; sin sesión lleva a /entrar y, al entrar, vuelve aquí. */}
           <Route path="anuncios/:id/pedir" element={<PedirPage />} />
           <Route path="pedidos/:id" element={<PedidoPage />} />

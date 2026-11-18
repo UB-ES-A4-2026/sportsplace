@@ -68,10 +68,12 @@ describe('fraseDeSituacion (CA5)', () => {
 
   test('resto de estados', () => {
     assert.equal(fraseDeSituacion({ ...PEDIDO, estado: 'aceptado' }), 'Pedido aceptado. Acordad la entrega y el pago.');
+    // T32-7: una donación aceptada no tiene pago que acordar.
+    assert.equal(fraseDeSituacion({ ...PEDIDO, estado: 'aceptado', modalidad: 'donacion' }), 'Pedido aceptado. Acordad la entrega.');
     assert.equal(fraseDeSituacion({ ...PEDIDO, estado: 'rechazado' }), 'Club Esportiu Les Corts ha rechazado el pedido.');
     assert.equal(fraseDeSituacion({ ...PEDIDO, estado: 'cancelado', cerrado_por: 'comprador' }), 'Pedido cancelado por Escola de Bàsquet Gràcia.');
     assert.equal(fraseDeSituacion({ ...PEDIDO, estado: 'cancelado', cerrado_por: 'vendedor' }), 'Pedido cancelado por Club Esportiu Les Corts.');
-    assert.equal(fraseDeSituacion({ ...PEDIDO, estado: 'recibido' }), 'Material recibido. Pedido cerrado.');
+    assert.equal(fraseDeSituacion({ ...PEDIDO, estado: 'recibido' }), 'Material recibido.'); // T32-7
   });
 });
 

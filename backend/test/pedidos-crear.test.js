@@ -186,10 +186,10 @@ test('US-40 CA19: método obligatorio y error de código postal con su clave de 
   assert.equal(consultas.length, 0);
 });
 
-test('La colección de pedidos rechaza métodos distintos de POST mientras no se añada la bandeja', async (t) => {
+test('La colección de pedidos admite GET (bandeja, US-109) y POST; otros métodos → 405', async (t) => {
   const { url, consultas } = await escenario(t);
-  const respuesta = await fetch(url, { headers: cabecera });
+  const respuesta = await fetch(url, { method: 'PUT', headers: cabecera });
   await comprobarError(respuesta, 405, 'METODO_NO_PERMITIDO');
-  assert.equal(respuesta.headers.get('allow'), 'POST');
+  assert.equal(respuesta.headers.get('allow'), 'GET, POST');
   assert.equal(consultas.length, 0);
 });

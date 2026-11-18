@@ -192,6 +192,30 @@ test('US-40 · E2E-1 · envío con la dirección del centro prerrellenada', asyn
   for (const linea of lineas) await expect(main.getByText(linea).first()).toBeVisible();
 });
 
+// T32-8: el perfil admite el teléfono con +34 y espacios; al prerrellenar el envío se copia con 9 cifras.
+test('US-40 · CA3 · el teléfono del perfil con +34 y espacios se copia normalizado', async ({ page, request, cuentas }) => {
+  await conApi(request, cuentas);
+  await ponerUbicacion(centros.b.id, { ...DATOS_B, telefono: '+34 612 34 56 78' });
+  const a1 = await nuevoAnuncio();
+  await alFormulario(page, cuentas, a1);
+
+  await campoUnidades(page).fill('4');
+  await elegirPago(page);
+  await opcionEnvio(page).check();
+  await expect(campo(page, 'Teléfono de contacto')).toHaveValue('612345678');
+
+  await campo(page, 'Persona de contacto').fill('Marta Puig');
+  await campo(page, 'Provincia').selectOption('Barcelona');
+  await boton(page, 'Enviar pedido').click();
+  await expect(page.getByText('Introduce un teléfono español de 9 cifras.')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/pedidos\/[0-9a-f-]{36}$/);
+  const [pedido] = await pedidosDe(db, a1);
+  expect(pedido.direccion_envio).toMatchObject({ telefono_contacto: '612345678' });
+  // El perfil del centro conserva el teléfono tal como estaba.
+  const { rows: [perfil] } = await db.query('SELECT telefono FROM public.centros WHERE id = $1', [centros.b.id]);
+  expect(perfil.telefono).toBe('+34 612 34 56 78');
+});
+
 test('US-40 · E2E-2 · recogida: la dirección del vendedor sale al aceptar', async ({ page, request, cuentas }) => {
   await conApi(request, cuentas);
   const a1 = await nuevoAnuncio();
@@ -445,11 +469,13 @@ test('US-40 · CA18 · la lista de pedidos marca «Recogida» o «Envío»', asy
   await nuevoPedido({ metodo_entrega: 'recogida' });
   await nuevoPedido(envio());
   await entrar(page, cuentas.centroB, cuentas.password);
-  await page.goto('/pedidos');
+  // B es el comprador: sus pedidos están en «Realizados» (/pedidos abre «Recibidos», US-109 CA1).
+  await page.goto('/pedidos?pestana=realizados');
   const lista = page.getByRole('heading', { level: 1, name: 'Pedidos' });
   test.skip(!(await lista.waitFor({ timeout: 5_000 }).then(() => true, () => false)),
     'La lista /pedidos (US-109, en la story de US-33) aún no está en esta rama.');
-  const filas = page.getByRole('main').getByRole('listitem').filter({ hasText: A1.titulo });
+  // La bandeja de US-109 es una tabla: cada pedido es una fila (role row).
+  const filas = page.getByRole('main').getByRole('row').filter({ hasText: A1.titulo });
   await expect(filas.filter({ hasText: 'Recogida' }).first()).toBeVisible();
   await expect(filas.filter({ hasText: 'Envío' }).first()).toBeVisible();
 });
