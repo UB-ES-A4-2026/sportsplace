@@ -88,9 +88,9 @@ button:disabled { opacity: 0.65; cursor: wait; }
 .boton-texto-peligro { margin-top: 0; padding: 8px 0; color: var(--s2-peligro); background: none; }
 .boton-texto-peligro:hover { color: var(--s2-peligro); background: none; text-decoration: underline; }
 .dialogo { width: min(440px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: var(--s2-radio-l); color: inherit; background: var(--s2-superficie); box-shadow: var(--s2-sombra-3); }
-.dialogo::backdrop { background: rgb(15 29 34 / 45%); }
-.dialogo-contenido { padding: 24px; }
-.dialogo h2 { margin: 0; font-size: 19px; }
+.dialogo::backdrop { background: rgb(15 29 34 / 45%); backdrop-filter: blur(4px); }
+.dialogo-contenido { padding: 26px; }
+.dialogo h2 { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; }
 .dialogo p { margin: 10px 0 0; color: var(--s2-gris); font-size: 15px; line-height: 1.6; }
 .dialogo-botones { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .dialogo-botones button { margin-top: 0; }
