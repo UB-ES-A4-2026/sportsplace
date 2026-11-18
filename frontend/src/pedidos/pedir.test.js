@@ -107,6 +107,22 @@ describe('direccionInicial (US-40 CA3)', () => {
     });
   });
 
+  test('copia el teléfono del perfil normalizado (T32-8)', () => {
+    for (const telefono of ['+34 612 34 56 78', '+34612345678', '612 345 678', '612345678']) {
+      assert.equal(direccionInicial({ telefono }).telefono_contacto, '612345678');
+    }
+  });
+
+  test('el teléfono copiado pasa la validación del envío (T32-8)', () => {
+    const direccion = {
+      ...direccionInicial({ direccion: 'Carrer de Verdi 12', codigo_postal: '08012', localidad: 'Barcelona', telefono: '+34 612 34 56 78' }),
+      destinatario: 'Marta Puig', provincia: 'Barcelona',
+    };
+    const { errores, cuerpo } = validarPedido(A1, venta({ metodoEntrega: 'envio', direccion }));
+    assert.equal(errores, undefined);
+    assert.equal(cuerpo.direccion_envio.telefono_contacto, '612345678');
+  });
+
   test('sin datos del centro, todo vacío', () => {
     assert.deepEqual(Object.values(direccionInicial({ direccion: null, codigo_postal: null, localidad: null, telefono: null })), Array(8).fill(''));
   });

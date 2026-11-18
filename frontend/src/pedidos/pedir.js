@@ -100,6 +100,7 @@ export function normalizarTelefono(telefono) {
 }
 
 // US-40 CA3: al elegir envío la primera vez se rellena con los datos del centro; persona y provincia, vacías.
+// T32-8: el teléfono se copia normalizado para que pase la validación del envío.
 export function direccionInicial(centro) {
   return {
     destinatario: '',
@@ -108,7 +109,7 @@ export function direccionInicial(centro) {
     codigo_postal: centro?.codigo_postal ?? '',
     localidad: centro?.localidad ?? '',
     provincia: '',
-    telefono_contacto: centro?.telefono ?? '',
+    telefono_contacto: normalizarTelefono(centro?.telefono),
     indicaciones: '',
   };
 }
