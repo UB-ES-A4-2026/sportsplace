@@ -162,9 +162,11 @@ test('US-108 · CA4 · cargando y reintentar', async ({ page, cuentas }) => {
 test('US-108 · CA5, CA7 y CA8 · frase, contacto y anuncio retirado según el estado', async ({ page, cuentas }) => {
   const casos = [
     [{ estado: 'aceptado', respondido_en: new Date().toISOString() }, 'Pedido aceptado. Acordad la entrega y el pago.', true],
+    // T32-7: en una donación aceptada no hay pago que acordar.
+    [{ estado: 'aceptado', respondido_en: new Date().toISOString(), unidades: 10 }, 'Pedido aceptado. Acordad la entrega.', true, A2],
     [{ estado: 'rechazado', respondido_en: new Date().toISOString(), cerrado_por: 'vendedor', motivo_codigo: 'sin_unidades' }, `${centros.a.nombre} ha rechazado el pedido.`, false],
     [{ estado: 'cancelado', cancelado_en: new Date().toISOString(), cerrado_por: 'comprador', motivo_codigo: 'ya_no_necesario' }, `Pedido cancelado por ${centros.b.nombre}.`, false],
-    [{ estado: 'recibido' }, 'Material recibido. Pedido cerrado.', true],
+    [{ estado: 'recibido', respondido_en: new Date().toISOString(), recibido_en: new Date().toISOString() }, 'Material recibido.', true],
   ];
   // Privacidad: solo se enseña el email de contacto de A, y solo aceptado o recibido; el de acceso, nunca.
   const contactoA = 'material-a@sportsplace-qa.test';
@@ -172,8 +174,8 @@ test('US-108 · CA5, CA7 y CA8 · frase, contacto y anuncio retirado según el e
   await db.query('UPDATE public.centros SET email_contacto = $2 WHERE id = $1', [centros.a.id, contactoA]);
   try {
     let primero = true;
-    for (const [cambios, frase, conContacto] of casos) {
-      const { id } = await nuevoPedido(cambios);
+    for (const [cambios, frase, conContacto, anuncio] of casos) {
+      const { id } = await nuevoPedido(cambios, { anuncio });
       if (primero) await alPedido(page, cuentas, id);
       primero = false;
       await page.goto(`/pedidos/${id}`);
