@@ -1,11 +1,13 @@
 import { ApiError, errorInterno } from '../errors.js';
 import { transicionNoPermitida } from '../services/transiciones-anuncio.js';
+import { POR_PAGINA_CATALOGO } from '../validation/catalogo.js';
 import { fotosNoPertenecen } from '../validation/fotos.js';
 import { databaseUnavailable } from './centros.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export const esIdDeAnuncio = (id) => typeof id === 'string' && UUID.test(id);
+export const esUuid = (id) => typeof id === 'string' && UUID.test(id);
+export const esIdDeAnuncio = esUuid;
 
 // «Propiedad»: un anuncio que no existe, es de otro centro o está retirado
 // responde exactamente igual (404), para no revelar si existe.
@@ -63,6 +65,27 @@ export function aResumen(fila) {
     foto_principal_url: fila.foto_principal_url ?? null,
     publicado_en: fecha(fila.publicado_en),
     actualizado_en: fecha(fila.actualizado_en),
+  };
+}
+
+// Fila de la consulta del catálogo → tarjeta de `GET /api/catalogo` (E04 US-96 CA16).
+// Solo lo que muestra la tarjeta: nunca la descripción ni los datos de contacto o
+// la dirección del centro (CA21). `distancia_km` lo calculará US-23 y
+// `es_favorito`, US-25; hasta entonces, null y false.
+export function aTarjetaCatalogo(fila) {
+  return {
+    id: fila.id,
+    titulo: fila.titulo,
+    modalidad: fila.modalidad,
+    precio_unitario_centimos: fila.precio_unitario_centimos,
+    estado: fila.estado,
+    estado_material: fila.estado_material,
+    unidades_disponibles: fila.unidades_disponibles,
+    foto_principal_url: fila.foto_principal_url ?? null,
+    publicado_en: fecha(fila.publicado_en),
+    centro: { id: fila.centro_id, nombre: fila.centro_nombre, localidad: fila.centro_localidad },
+    distancia_km: null,
+    es_favorito: false,
   };
 }
 
@@ -404,6 +427,100 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
         total,
         pagina: paginaServida,
         por_pagina: porPagina,
+      };
+    },
+
+    // E04 US-96: catálogo de anuncios de otros centros (CA4-CA7, CA16-CA20, CA24).
+    // Solo `activo` y `reservado` con unidades, nunca los del centro de la sesión.
+    // Orden: publicado_en descendente y, a igual fecha, id ascendente, para que
+    // las páginas no se solapen (CA5); lo sirve el índice de T21-1 (CA22).
+    // Una página mayor que la última responde vacía con el total real (CA18).
+    // Filtros de US-22, US-73 y US-74: distintos se combinan con Y y los
+    // estados de material, con O. Las donaciones cuentan como 0 € (US-73 CA7).
+    async listarCatalogo(usuarioId, {
+      pagina, q, categoria, deporte, estado_material: estadosMaterial, precio_min: precioMin,
+      precio_max: precioMax, modalidad,
+    }) {
+      const filtros = [
+        "a.estado IN ('activo', 'reservado') AND a.unidades_disponibles > 0",
+        'a.centro_id IS DISTINCT FROM (SELECT c.id FROM public.centros c WHERE c.usuario_id = $1)',
+      ];
+      const valores = [usuarioId];
+      const ligar = (valor) => {
+        valores.push(valor);
+        return `$${valores.length}`;
+      };
+      if (categoria) filtros.push(`a.categoria = ${ligar(categoria)}`);
+      if (deporte) filtros.push(`a.deporte = ${ligar(deporte)}`);
+      if (estadosMaterial) filtros.push(`a.estado_material = ANY(${ligar(estadosMaterial)}::text[])`);
+      const precio = 'COALESCE(a.precio_unitario_centimos, 0)';
+      if (precioMin !== undefined) filtros.push(`${precio} >= ${ligar(precioMin * 100)}`);
+      if (precioMax !== undefined) filtros.push(`${precio} <= ${ligar(precioMax * 100)}`);
+      if (modalidad) filtros.push(`a.modalidad = ${ligar(modalidad)}`);
+      for (const palabra of q ? q.split(' ') : []) {
+        valores.push(palabra);
+        const termino = `NULLIF(public.normalizar_busqueda_catalogo($${valores.length}), '')`;
+        // Escapar después de transliterar. Con ! como escape, la barra inversa
+        // se busca literalmente igual que %, _ y el propio signo !.
+        const literal = `replace(replace(replace(${termino}, '!', '!!'), '%', '!%'), '_', '!_')`;
+        filtros.push(`a.busqueda_catalogo LIKE ('%' || ${literal} || '%') ESCAPE '!'`);
+      }
+      const visibles = filtros.join('\n           AND ');
+      const { rows: [{ total }] } = await consultar(
+        `SELECT count(*)::integer AS total
+         FROM public.anuncios a
+         WHERE ${visibles}`,
+        valores,
+      );
+
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.modalidad, a.precio_unitario_centimos, a.estado,
+                a.estado_material, a.unidades_disponibles, a.publicado_en,
+                a.centro_id, cv.nombre AS centro_nombre, cv.localidad AS centro_localidad
+         FROM public.anuncios a
+         JOIN public.centros cv ON cv.id = a.centro_id
+         WHERE ${visibles}
+         ORDER BY a.publicado_en DESC, a.id ASC
+         LIMIT $${valores.length + 1} OFFSET $${valores.length + 2}`,
+        [...valores, POR_PAGINA_CATALOGO, (pagina - 1) * POR_PAGINA_CATALOGO],
+      );
+      const fotos = await fotosDe(rows.map((fila) => fila.id));
+      const principal = (id) => fotos.get(id).find((foto) => foto.es_principal)?.url ?? null;
+      return {
+        anuncios: rows.map((fila) => aTarjetaCatalogo({ ...fila, foto_principal_url: principal(fila.id) })),
+        pagina,
+        por_pagina: POR_PAGINA_CATALOGO,
+        total,
+        total_paginas: Math.ceil(total / POR_PAGINA_CATALOGO),
+      };
+    },
+
+    // US-10 (CA6, CA12, CA15, CA17): anuncios visibles en el perfil de un
+    // centro, solo `activo` y `reservado`, del último publicado al más antiguo
+    // (a igualdad, id descendente). Una página sin resultados devuelve la
+    // lista vacía con la página pedida. Nunca pausados, entregados ni
+    // retirados, tampoco al consultar el propio centro.
+    async listarDeCentro(centroId, { pagina, porPagina }) {
+      const visibles = `a.centro_id = $1 AND a.estado IN ('activo', 'reservado')`;
+      const { rows: [{ total }] } = await consultar(
+        `SELECT count(*)::integer AS total FROM public.anuncios a WHERE ${visibles}`,
+        [centroId],
+      );
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.categoria, a.deporte, a.unidades_disponibles,
+                a.modalidad, a.precio_unitario_centimos, a.estado, a.publicado_en, a.actualizado_en
+         FROM public.anuncios a
+         WHERE ${visibles}
+         ORDER BY a.publicado_en DESC NULLS LAST, a.id DESC
+         LIMIT $2 OFFSET $3`,
+        [centroId, porPagina, (pagina - 1) * porPagina],
+      );
+      const fotos = await fotosDe(rows.map((fila) => fila.id));
+      const principal = (id) => fotos.get(id).find((foto) => foto.es_principal)?.url ?? null;
+      return {
+        anuncios: rows.map((fila) => aResumen({ ...fila, foto_principal_url: principal(fila.id) })),
+        pagina,
+        total,
       };
     },
   };

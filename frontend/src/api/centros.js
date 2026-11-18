@@ -19,3 +19,15 @@ export async function guardarUbicacion(ubicacion, llamarApi = api) {
   const datos = await llamarApi('/centros/mio/ubicacion', { method: 'PUT', body: ubicacion });
   return datos.centro;
 }
+
+// US-10 CA11: GET /api/centros/:id, el perfil público de un centro. Responde 200 { centro } con `es_mio`;
+// 404 NO_ENCONTRADO si no existe, el id no es un UUID o el centro está eliminado.
+export async function obtenerCentro(id, { signal } = {}, llamarApi = api) {
+  const datos = await llamarApi(`/centros/${encodeURIComponent(id)}`, { signal });
+  return datos.centro;
+}
+
+// US-10 CA12: GET /api/centros/:id/anuncios?pagina=n. Responde 200 { anuncios, pagina, total }.
+export async function listarAnunciosDelCentro(id, { pagina = 1, signal } = {}, llamarApi = api) {
+  return llamarApi(`/centros/${encodeURIComponent(id)}/anuncios?pagina=${encodeURIComponent(pagina)}`, { signal });
+}

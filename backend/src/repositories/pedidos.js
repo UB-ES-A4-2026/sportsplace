@@ -17,9 +17,10 @@ export function pedidoNoEncontrado() {
 
 // La fila se lee con to_jsonb(p): las columnas que añaden US-33, US-79, US-80…
 // en sus propias migraciones aparecen solas, y mientras no existan salen null.
+// Privacidad: solo el email de contacto; si el centro no tiene, null. Nunca el de acceso.
 const CENTRO = (alias) => `jsonb_build_object(
   'id', ${alias}.id, 'nombre', ${alias}.nombre, 'localidad', ${alias}.localidad,
-  'email', COALESCE(${alias}.email_contacto, ${alias}.email), 'telefono', ${alias}.telefono)`;
+  'email', ${alias}.email_contacto, 'telefono', ${alias}.telefono)`;
 
 const SELECT_DETALLE = `SELECT to_jsonb(p) AS fila,
        jsonb_build_object('id', a.id, 'estado', a.estado,

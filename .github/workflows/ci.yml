@@ -109,6 +109,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Preparar Supabase local aislado, migraciones y semilla (T12-8)
         run: npm --prefix tools run test-env:up
+      - name: Pruebas SQL de supabase/tests contra la base de pruebas
+        run: npm --prefix tools run test-env:sql
       - name: Probar web y API contra la base de pruebas
         run: npm --prefix e2e test
       - name: Guardar informe y evidencia de fallos
