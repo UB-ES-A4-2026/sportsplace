@@ -1,4 +1,4 @@
-/* US-109 (T33-4): /pedidos y contador de la cabecera. */
+/* US-109 (T33-4): /pedidos. El contador de la cabecera está en diseno/cabecera.css. */
 .pedidos-pestanas { display: flex; gap: 4px; margin: 8px 0 20px; border-bottom: 1px solid #d7e2dc; }
 .pedidos-pestana {
   margin: 0 0 -1px; padding: 10px 16px; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
@@ -28,12 +28,6 @@
 .etiqueta-pedido-gris { color: #4a5651; background: #e6ebe8; }
 .etiqueta-pedido-azul { color: #1d3f72; background: #e0eafa; }
 .etiqueta-pedido-pagado { color: #fff; background: #1d5c33; }
-
-/* CA9: contador de la cabecera (círculo). */
-.contador-pedidos {
-  display: inline-block; min-width: 20px; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
-  color: #fff; background: #b3261e; font-size: 12px; line-height: 18px; text-align: center;
-}
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
