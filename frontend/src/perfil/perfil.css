@@ -9,8 +9,8 @@
 .perfil-banda p { margin: 0; font-size: 14px; font-weight: 600; }
 .perfil-banda .boton-enlace { margin-top: 0; }
 .perfil-ubicacion { margin: 0 0 4px; color: var(--s2-tinta-2); overflow-wrap: anywhere; }
-.pagina .boton-enlace-secundario { margin-top: 10px; color: var(--s2-teal-800); background: var(--s2-superficie); box-shadow: inset 0 0 0 1px var(--s2-linea), var(--s2-sombra-1); }
-.pagina .boton-enlace-secundario:hover { color: var(--s2-teal-900); background: var(--s2-teal-50); }
+/* «Editar ubicación» bajo la dirección (los colores del botón secundario están en anuncios.css). */
+.perfil-bloque .boton-enlace-secundario { margin-top: 12px; }
 
 /* /perfil */
 .perfil-nombre { margin: 18px 0 0; font-size: 24px; overflow-wrap: anywhere; }
@@ -29,8 +29,8 @@
 }
 
 /* US-10 CA4: «Editar perfil» y «Ver cómo ven mi perfil» en la misma fila */
-.perfil-acciones { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.perfil-acciones .boton-enlace-secundario { margin-top: 0; }
+.perfil-acciones { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 20px; }
+.perfil-acciones .boton-enlace { margin-top: 0; }
 
 /* US-10 T10-2: perfil de otro centro en /centros/:id */
 .centro-antetitulo { margin: 0 0 4px; color: var(--s2-gris); font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }

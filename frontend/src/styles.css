@@ -33,7 +33,7 @@ h2 { margin: 0 0 22px; font-size: 21px; letter-spacing: -0.4px; }
 .error { color: var(--s2-peligro); }
 .card-text { margin: 10px 0 0; color: var(--s2-gris); font-size: 14px; line-height: 1.6; }
 /* Botón general (diseño S2): degradado teal; los botones con clase propia (secundario, texto, iconos) lo sustituyen. */
-button { margin-top: 22px; padding: 12px 18px; border: 0; border-radius: var(--s2-radio); color: #fff; background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); font-size: 14px; font-weight: 650; cursor: pointer; transition: background 150ms; }
+button { margin-top: 22px; padding: 13px 18px; border: 0; border-radius: var(--s2-radio); color: #fff; line-height: 18px; background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); font-size: 14px; font-weight: 650; cursor: pointer; transition: background 150ms; }
 button:hover { background: linear-gradient(180deg, var(--s2-teal-700), var(--s2-teal-800)); }
 button:focus-visible { outline: 3px solid rgb(21 151 168 / 45%); outline-offset: 2px; }
 button:disabled { opacity: 0.65; cursor: wait; }

@@ -47,7 +47,8 @@
 .ficha-fechas { margin: 24px 0 0; color: var(--s2-gris); font-size: 13px; }
 .ficha-acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .ficha-acciones:empty { display: none; }
-.boton-enlace { display: inline-block; margin-top: 22px; padding: 12px 18px; border-radius: var(--s2-radio); color: #fff; background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); font-size: 14px; font-weight: 650; text-decoration: none; }
+/* Enlace con forma de botón: misma altura que un botón (44 px; 34 px en las filas) para que queden alineados. */
+.boton-enlace { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 22px; padding: 13px 18px; line-height: 18px; border-radius: var(--s2-radio); color: #fff; background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); font-size: 14px; font-weight: 650; text-decoration: none; }
 .pagina .boton-enlace { color: #fff; }
 .boton-enlace:hover { background: linear-gradient(180deg, var(--s2-teal-700), var(--s2-teal-800)); }
 .boton-enlace:focus-visible { outline: 3px solid rgb(21 151 168 / 45%); outline-offset: 2px; }
