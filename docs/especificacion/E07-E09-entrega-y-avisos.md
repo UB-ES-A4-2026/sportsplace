@@ -312,7 +312,7 @@ Como responsable del centro comprador, quiero confirmar que he recibido el mater
 - CA6. La transición es irreversible: en `recibido` no existe ninguna acción para volver a `aceptado`.
 - CA7. Las unidades ya se restaron al aceptar (US-34); confirmar no cambia `unidades_disponibles`. El paso del anuncio a `entregado` cuando no quedan unidades ni pedidos aceptados lo resuelve [Depende de US-34].
 - CA8. Se genera el aviso `pedido_recibido` para el vendedor [Depende de US-83].
-- CA9. En `/pedidos` el pedido aparece con la etiqueta «Recibido» (gris) para los dos centros.
+- CA9. En `/pedidos` el pedido aparece con la etiqueta «Recibido» (azul, como en E06) para los dos centros.
 - CA10. Desde `recibido` el comprador puede abrir una incidencia durante 7 días (US-43).
 - CA11. API `POST /api/pedidos/:id/recibir` (sin cuerpo) → `200 { pedido: { id, estado: 'recibido', recibido_en } }`.
 - CA12. Errores: `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `404 NO_ENCONTRADO` (ajeno), `403 SIN_PERMISO` (lo llama el vendedor), `409 TRANSICION_NO_PERMITIDA` (estado distinto de `aceptado`, incluido ya `recibido`), `409 INCIDENCIA_ABIERTA` («Cierra la incidencia antes de confirmar la recepción.»).
