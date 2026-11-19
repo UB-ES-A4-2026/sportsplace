@@ -85,19 +85,69 @@ Si una PR baja la cobertura de esos umbrales, el job falla y no se puede fusiona
 Los umbrales quedan unos puntos por debajo del valor actual para no bloquear
 refactorizaciones; se suben cuando la cifra real se mantenga por encima.
 
-## Prioridad por riesgo
+## Prioridad por riesgo: informe de QA y matriz de riesgo del Sprint 2
 
-Más pruebas donde un fallo hace más daño. Versión inicial; se completa con el
-informe de QA y la matriz de riesgo de Lucía.
+Más pruebas donde un fallo hace más daño. Informe de QA de Lucía; las cifras de
+tests y cobertura son las de las métricas de arriba (`dev` 9a8bd04, 18/11).
+### 1. Qué ha hecho QA en el S2
 
-| Área | Impacto si falla | Probabilidad | Cómo se cubre |
-|---|---|---|---|
-| Pedidos: reserva de unidades, aceptar/rechazar (US-32, US-33, US-34, US-79) | Alto: material reservado dos veces o perdido | Media: concurrencia y estados | Unitarios de transiciones, SQL de `pedidos`, E2E de cada CA |
-| Datos personales en pedidos y perfil (US-40, US-108) | Alto: privacidad | Media | Unitarios de lo que devuelve la API a cada centro, E2E; #331 |
-| Registro, sesión y recuperación (US-01–US-04) | Alto: nadie entra | Baja: estable desde el S1 | Unitarios de auth, E2E, smoke |
-| Publicar y editar anuncios (US-12–US-18) | Medio | Baja | Validación en backend y frontend, E2E |
-| Búsqueda y filtros (US-21, US-22, US-73, US-74) | Medio: rendimiento | Media con muchos anuncios | SQL de índices, unitarios de filtros, E2E |
-| Mensajes (US-28) | Medio | Baja | Unitarios de conversaciones, E2E |
+| Tipo | Trabajo |
+|---|---|
+| QA de historia (E2E y API) | US-24 (#283, 13 casos) · US-10 (#291, 9 casos) · US-42 y US-80 (T42-3, 19 casos, en curso; ver #249) |
+| Validación para entrar en `dev` | US-10 (#294) · US-32 (#329); revisión de las integraciones #288, #290, #305, #307 y #308 |
+| Revisión de los tests de otros | #277 y #300 (US-28) · #322 (US-21) · #326 (US-32) · #327 y #328 (US-33) |
+| Eficiencia del CI | #285: `vite preview` en lugar de `vite dev` y unos 75 casos duplicados fuera sin perder ningún CA. Paso de E2E de 173 s a 102 s (−41 %) |
+| Robustez | #316 y #321: US-21 y US-28 dejan de omitir E2E por detección de pieza |
+
+Regla de QA para quitar un caso E2E: solo si su CA queda cubierto en otro test (#285).
+
+### 2. Hallazgos de QA
+
+| # | Hallazgo | Estado |
+|---|---|---|
+| 1 | US-10 CA1 sin implementar (el nombre del centro no enlazaba al perfil) | Resuelto (#293) |
+| 2 | Las omisiones por detección de pieza (`test.skip`) esconden fallos: con una pieza rota el caso se omite y el CI queda en verde | Quitadas en US-21 y US-28. **Siguen en el código** de US-32, 33, 34, 35, 40, 79, 108 y 109: hoy se ejecutan porque las piezas ya están en `dev`, pero no fallarían si la pieza se rompe |
+| 3 | E2E-4 «limpiar» de US-21 intermitente | Test arreglado (#322). Queda una condición de carrera en la app (`corregirPagina`), para el S3 |
+| 4 | Privacidad: en un pedido aceptado o recibido se mostraba el **email de acceso** si el centro no tenía email de contacto | Resuelto (#331) |
+| 5 | Teléfono con +34: el perfil lo admite y el pedido lo rechazaba | Resuelto (#346) |
+| 6 | US-42 CA9: «Recibido» en gris (E07) frente a azul (E06 y código) | Abierto, decide la PO |
+| 7 | US-79: el 409 de la rama defensiva de `rechazar` devuelve un `estado_actual` desactualizado | Abierto, no bloquea |
+| 8 | US-24 CA5: «Volver a mis anuncios» en la pantalla «no disponible» | Pendiente de decisión |
+| 9 | El 403 `EMAIL_NO_CONFIRMADO` no se prueba de punta a punta (el centro sin confirmar no obtiene token en el entorno E2E) | Deuda del entorno, DevOps en el S3 |
+
+### 3. Matriz de riesgo
+
+**Impacto:** A = dinero, privacidad o seguridad · M = flujo principal · B = cosmético o validación.
+**Probabilidad de regresión en el S3:** cuánto código del siguiente sprint toca esa zona.
+
+| Zona | Impacto | Prob. | Riesgo | Cómo se cubre y qué falta |
+|---|---|---|---|---|
+| Pedidos: US-32, 33, 34, 35, 40, 42, 79, 80, 108, 109 | A | A | 🔴 Crítico | Todo se mantiene: unitarios de transiciones, SQL, E2E de cada CA. Falta quitar las omisiones por detección (hallazgo 2) y cobrar/recibir con concurrencia forzada en E2E (T42-3) |
+| Datos personales en pedidos y perfil | A | M | 🔴 Crítico | Unitarios de lo que devuelve la API a cada centro y E2E (hallazgo 4 resuelto). Falta la comprobación del 403 sin confirmar de punta a punta |
+| Conversaciones: US-28 y US-77 (privacidad) | A | A | 🔴 Crítico | Mantener todo; E2E de concurrencia con choque forzado (#328) |
+| Estados del anuncio: US-16, 17, 70 | M-A | A | 🔴 Crítico | Mantener los E2E (transiciones, 409 y concurrencia) |
+| Catálogo y detalle: US-21, 24, 10 | M | A | 🟠 Alto | E2E y API de visibilidad y privacidad; arreglar `corregirPagina` |
+| Infraestructura y `api-fotos-storage` | A | B | 🟠 Alto (barato) | Smoke y E2E |
+| Publicar, editar y mis anuncios: US-12, 13, 15, 18 | M | M | 🟡 Medio | E2E-1 y casos de otro centro; validaciones 400 en backend |
+| Recuperar contraseña: US-04 | A | B | 🟡 Medio | Estable desde el S1; mantener E2E-1, E2E-3, E2E-5, CA14 y CA23. US-04 CA10 es un `test.fixme` |
+| Perfil, ubicación y modalidad: US-07, 14, 68 | B-M | B | 🟢 Bajo | Validaciones en backend; E2E solo del flujo principal y de la privacidad (US-68 CA14) |
+
+### 4. Qué se ha hecho del plan de CI del 12/11 y qué queda
+
+| Medida | Estado |
+|---|---|
+| Servir el build (`vite preview`) en Playwright | Hecho (#285) |
+| Quitar los E2E duplicados de validaciones (400) | Hecho en los casos con CA cubierto en backend (#285) |
+| E2E selectivo en las PR de tarea (solo la spec de la US) | Por confirmar con DevOps |
+| Login por API con `storageState` | Pendiente |
+| `workers: 2` con datos aislados | Descartado hasta el S3 (límite de 30 mensajes/min y semilla compartida: riesgo de intermitentes) |
+
+### 5. Para el S3 (QA)
+
+1. 0 omitidos en el job E2E de `dev` (quitar los `test.skip` por detección y cerrar la deuda del 403 sin confirmar).
+2. Cada CA nuevo con un test que lo nombre; lista de CA sin test revisada en cada validación de QA.
+3. Los CA que dependen de otras historias (US-39, 41, 43, 83, 115) se marcan al entrar esas historias; `Closes #n` no debe cerrar una historia con CA sin marcar.
+4. Casos que solo pasan al reintentar: cada uno, una issue.
 
 ## Objetivos medibles del Sprint 3
 
