@@ -1,3 +1,4 @@
+import { CalendarDays, MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { listarAnunciosDelCentro, obtenerCentro } from '../api/centros.js';
@@ -91,42 +92,55 @@ function PerfilDeCentro({ centro, lista, pagina, alCambiarDePagina }) {
         </div>
       )}
 
-      <p className="centro-antetitulo">{TEXTOS.titulo}</p>
-      <h1 id="titulo-pagina">{centro.nombre}</h1>
-      {zona && <p className="perfil-ubicacion">{zona}</p>}
-      <p className="perfil-desde">{textoAntiguedad(centro.creado_en)}</p>
+      {/* Diseño S2 (Figma 04): portada con degradado y avatar decorativo. */}
+      <div className="perfil-portada">
+        <div className="perfil-portada-banda" aria-hidden="true" />
+        <div className="perfil-portada-datos">
+          <span className="perfil-avatar" aria-hidden="true" />
+          <div className="perfil-portada-texto">
+            <p className="centro-antetitulo">{TEXTOS.titulo}</p>
+            <h1 id="titulo-pagina">{centro.nombre}</h1>
+            <div className="perfil-meta">
+              {zona && <p className="perfil-ubicacion"><MapPin size={16} aria-hidden="true" />{zona}</p>}
+              <p className="perfil-desde"><CalendarDays size={16} aria-hidden="true" />{textoAntiguedad(centro.creado_en)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
       {/* [Depende de US-45] hueco para la puntuación del centro. */}
 
-      <section className="perfil-bloque" aria-labelledby="titulo-sobre-nosotros">
-        <h2 id="titulo-sobre-nosotros">{TEXTOS.sobreNosotros}</h2>
-        {/* CA18: React escapa el texto (el HTML o un enlace se ven tal cual) y el CSS respeta los saltos de línea. */}
-        {centro.descripcion
-          ? <p className="perfil-descripcion">{centro.descripcion}</p>
-          : <p className="perfil-vacio">{TEXTOS_PERFIL.sinDato}</p>}
-      </section>
+      <div className="perfil-rejilla">
+        <section className="perfil-bloque" aria-labelledby="titulo-sobre-nosotros">
+          <h2 id="titulo-sobre-nosotros">{TEXTOS.sobreNosotros}</h2>
+          {/* CA18: React escapa el texto (el HTML o un enlace se ven tal cual) y el CSS respeta los saltos de línea. */}
+          {centro.descripcion
+            ? <p className="perfil-descripcion">{centro.descripcion}</p>
+            : <p className="perfil-vacio">{TEXTOS_PERFIL.sinDato}</p>}
+        </section>
 
-      <section className="perfil-bloque" aria-labelledby="titulo-contacto">
-        <h2 id="titulo-contacto">{TEXTOS.contacto}</h2>
-        {contacto.length === 0 ? (
-          <p className="perfil-vacio">{TEXTOS.sinContacto}</p>
-        ) : (
-          <ul className="centro-contacto">
-            {contacto.map((enlace) => (
-              <li key={enlace.tipo}>
-                {/* CA8: la web en pestaña nueva con rel="noopener noreferrer"; email con mailto: y teléfono con tel:. */}
-                <a
-                  href={enlace.href}
-                  {...(enlace.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                >
-                  {enlace.texto}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <section className="perfil-bloque" aria-labelledby="titulo-contacto">
+          <h2 id="titulo-contacto">{TEXTOS.contacto}</h2>
+          {contacto.length === 0 ? (
+            <p className="perfil-vacio">{TEXTOS.sinContacto}</p>
+          ) : (
+            <ul className="centro-contacto">
+              {contacto.map((enlace) => (
+                <li key={enlace.tipo}>
+                  {/* CA8: la web en pestaña nueva con rel="noopener noreferrer"; email con mailto: y teléfono con tel:. */}
+                  <a
+                    href={enlace.href}
+                    {...(enlace.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  >
+                    {enlace.texto}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
 
-      <section className="perfil-bloque" aria-labelledby="titulo-anuncios">
+      <section className="perfil-bloque perfil-bloque-anuncios" aria-labelledby="titulo-anuncios">
         <h2 id="titulo-anuncios">{tituloDeAnuncios(total)}</h2>
         {anuncios.length === 0 ? (
           <p className="perfil-vacio">{TEXTOS.sinAnuncios}</p>
