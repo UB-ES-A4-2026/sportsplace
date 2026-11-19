@@ -42,10 +42,11 @@ export default function MenuCentro() {
 
   return (
     <div className="menu-centro" ref={contenedor}>
-      {/* Mientras carga el centro (o si falla), el botón muestra «Mi centro». */}
-      <button ref={boton} type="button" className="enlace menu-centro-boton" aria-expanded={abierto}
+      {/* Mientras carga el centro (o si falla), el botón muestra «Mi centro». Diseño S2: el avatar es decorativo. */}
+      <button ref={boton} type="button" className="menu-centro-boton" aria-expanded={abierto}
         aria-controls={idOpciones} onClick={() => setAbierto((valor) => !valor)}>
-        {centro?.nombre ?? 'Mi centro'} ▾
+        <span className="menu-centro-avatar" aria-hidden="true" />
+        <span className="menu-centro-nombre">{centro?.nombre ?? 'Mi centro'}</span> ▾
       </button>
       <div id={idOpciones} className="menu-centro-opciones" hidden={!abierto}>
         <Link to="/perfil">Mi perfil</Link>

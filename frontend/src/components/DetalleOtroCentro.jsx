@@ -1,3 +1,4 @@
+import { ShoppingBag } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
@@ -44,7 +45,7 @@ export default function DetalleOtroCentro({ anuncio }) {
           <h1 id="titulo-pagina">{anuncio.titulo}</h1>
           <p className="detalle-precio">{precioDelDetalle(anuncio)}</p>
 
-          <section aria-labelledby="titulo-detalles">
+          <section className="detalle-tarjeta" aria-labelledby="titulo-detalles">
             <h2 id="titulo-detalles" className="detalle-subtitulo">{TEXTOS.detalles}</h2>
             <dl className="detalle-lista">
               <div><dt>Categoría</dt><dd>{etiquetaDe(CATEGORIAS, anuncio.categoria)}</dd></div>
@@ -64,23 +65,27 @@ export default function DetalleOtroCentro({ anuncio }) {
             {botones.escribir.habilitado && <BotonEscribirAlCentro anuncioId={anuncio.id} />}
           </div>
 
-          <section className="detalle-centro" aria-labelledby="titulo-centro">
-            <h2 id="titulo-centro" className="detalle-subtitulo">{TEXTOS.ofrecidoPor}</h2>
-            {/* US-10 CA1: el nombre del centro enlaza a su perfil. */}
-            <p className="detalle-centro-nombre">
-              {enlaceAlCentro(anuncio.centro)
-                ? <Link to={enlaceAlCentro(anuncio.centro)}>{anuncio.centro.nombre}</Link>
-                : anuncio.centro?.nombre}
-            </p>
-            <p className="detalle-centro-datos">
-              {anuncio.centro?.localidad}
-              {distancia && <> · {distancia}</>}
-            </p>
+          <section className="detalle-centro detalle-tarjeta" aria-labelledby="titulo-centro">
+            {/* Diseño S2: avatar decorativo del centro. */}
+            <span className="detalle-centro-avatar" aria-hidden="true" />
+            <div>
+              <h2 id="titulo-centro" className="detalle-subtitulo">{TEXTOS.ofrecidoPor}</h2>
+              {/* US-10 CA1: el nombre del centro enlaza a su perfil. */}
+              <p className="detalle-centro-nombre">
+                {enlaceAlCentro(anuncio.centro)
+                  ? <Link to={enlaceAlCentro(anuncio.centro)}>{anuncio.centro.nombre}</Link>
+                  : anuncio.centro?.nombre}
+              </p>
+              <p className="detalle-centro-datos">
+                {anuncio.centro?.localidad}
+                {distancia && <> · {distancia}</>}
+              </p>
+            </div>
           </section>
         </div>
       </div>
 
-      <section className="ficha-descripcion detalle-descripcion" aria-labelledby="titulo-descripcion">
+      <section className="ficha-descripcion detalle-descripcion detalle-tarjeta" aria-labelledby="titulo-descripcion">
         <h2 id="titulo-descripcion">{TEXTOS.descripcion}</h2>
         {/* CA8: React escapa el texto (un <script> se ve tal cual) y el CSS respeta los saltos de línea. */}
         <p>{anuncio.descripcion}</p>
@@ -105,14 +110,14 @@ function BloquePedir({ accion }) {
   if (accion.tipo === 'reservado') {
     return (
       <div className="detalle-boton">
-        <button type="button" disabled aria-describedby="ayuda-pedir">{TEXTOS.pedir}</button>
+        <button type="button" disabled aria-describedby="ayuda-pedir"><ShoppingBag size={18} aria-hidden="true" />{TEXTOS.pedir}</button>
         <p id="ayuda-pedir" className="detalle-ayuda">{TEXTOS.noDisponibleParaPedir}</p>
       </div>
     );
   }
   return (
     <div className="detalle-boton">
-      <Link to={accion.ruta} className="boton-enlace">{TEXTOS.pedir}</Link>
+      <Link to={accion.ruta} className="boton-enlace"><ShoppingBag size={18} aria-hidden="true" />{TEXTOS.pedir}</Link>
     </div>
   );
 }

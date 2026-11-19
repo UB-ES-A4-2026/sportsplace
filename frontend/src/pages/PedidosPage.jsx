@@ -1,3 +1,4 @@
+import { Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { listarPedidos } from '../api/pedidos.js';
@@ -55,24 +56,27 @@ export default function PedidosPage() {
 
   return (
     <section className="pedidos-pagina">
-      <h1>{TEXTOS.titulo}</h1>
+      {/* Diseño S2: el título y las pestañas segmentadas van en la misma fila. */}
+      <div className="pedidos-cabecera">
+        <h1>{TEXTOS.titulo}</h1>
 
-      <div className="pedidos-pestanas" role="tablist" aria-label={TEXTOS.titulo} onKeyDown={teclaEnPestanas}>
-        {PESTANAS.map((valor) => (
-          <button
-            key={valor}
-            id={`pestana-${valor}`}
-            type="button"
-            role="tab"
-            aria-selected={valor === pestana}
-            aria-controls="panel-pedidos"
-            tabIndex={valor === pestana ? 0 : -1}
-            className="pedidos-pestana"
-            onClick={() => cambiarPestana(valor)}
-          >
-            {valor === 'recibidos' ? textoPestanaRecibidos(pendientes) : TEXTOS.realizados}
-          </button>
-        ))}
+        <div className="pedidos-pestanas" role="tablist" aria-label={TEXTOS.titulo} onKeyDown={teclaEnPestanas}>
+          {PESTANAS.map((valor) => (
+            <button
+              key={valor}
+              id={`pestana-${valor}`}
+              type="button"
+              role="tab"
+              aria-selected={valor === pestana}
+              aria-controls="panel-pedidos"
+              tabIndex={valor === pestana ? 0 : -1}
+              className="pedidos-pestana"
+              onClick={() => cambiarPestana(valor)}
+            >
+              {valor === 'recibidos' ? textoPestanaRecibidos(pendientes) : TEXTOS.realizados}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div id="panel-pedidos" role="tabpanel" aria-labelledby={`pestana-${pestana}`}>
@@ -135,7 +139,7 @@ function Bandeja({ lista, pestana, pagina, irAPagina }) {
               <td className="pedidos-foto">
                 {fila.foto
                   ? <img src={fila.foto} alt="" width="56" height="56" loading="lazy" />
-                  : <span className="pedidos-sin-foto" aria-hidden="true" />}
+                  : <span className="pedidos-sin-foto" aria-hidden="true"><Package size={22} strokeWidth={1.8} /></span>}
               </td>
               <td className="pedidos-anuncio" data-columna={anuncio}>
                 <Link to={fila.ruta} onClick={(evento) => evento.stopPropagation()}>{fila.anuncio}</Link>
