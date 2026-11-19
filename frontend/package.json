@@ -11,7 +11,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --experimental-test-module-mocks --import ./pruebas/jsx.js --test \"src/**/*.test.js\" \"src/**/*.test.jsx\""
+    "test": "node --experimental-test-module-mocks --import ./pruebas/jsx.js --test \"src/**/*.test.js\" \"src/**/*.test.jsx\"",
+    "test:cobertura": "node --experimental-test-module-mocks --import ./pruebas/jsx.js --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=90 --test-coverage-functions=95 --test-coverage-exclude=\"src/**/*.test.js\" --test-coverage-exclude=\"src/**/*.test.jsx\" --test-coverage-exclude=\"pruebas/**\" --test \"src/**/*.test.js\" \"src/**/*.test.jsx\""
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.2.5",
