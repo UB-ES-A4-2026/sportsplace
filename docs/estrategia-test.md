@@ -38,9 +38,9 @@ Lint con ESLint en backend, frontend, herramientas y e2e (`npm run lint` en cada
 | Métrica | Valor | Cómo se obtiene |
 |---|---|---|
 | Tests unitarios + integración backend | 545, 0 fallos, 19 s | `npm --prefix backend test` |
-| Cobertura backend (líneas / ramas / funciones) | 99,3 % / 95,5 % / 97,3 % | `cd backend && npm test -- --experimental-test-coverage` |
+| Cobertura backend (líneas / ramas / funciones) | 99,3 % / 95,5 % / 97,3 % | `npm --prefix backend run test:cobertura` |
 | Tests frontend | 463, 0 fallos, 4 s | `npm --prefix frontend test` |
-| Cobertura frontend de la lógica (41 de 112 archivos) | 97,9 % / 95,4 % / 98,4 % | `cd frontend && npm test -- --experimental-test-coverage` |
+| Cobertura frontend de la lógica (41 de 112 archivos) | 97,9 % / 95,4 % / 98,4 % | `npm --prefix frontend run test:cobertura` |
 | Tests de migraciones | 23, 0 fallos (cobertura 49,8 % de líneas) | `npm --prefix tools test` |
 | Pruebas SQL | 10 archivos, todas con `ROLLBACK` | `npm --prefix tools run test-env:sql` |
 | E2E de los CA | 297 en verde, 6 omitidos, 0 fallos (≈5 min) | Job E2E del CI |
@@ -63,12 +63,12 @@ Lint con ESLint en backend, frontend, herramientas y e2e (`npm run lint` en cada
 
 ## Umbral de cobertura en el CI
 
-Desde esta tarea, los jobs Backend y Frontend ejecutan los tests con:
-
-```bash
-npm test -- --experimental-test-coverage --test-coverage-lines=95 \
-  --test-coverage-branches=90 --test-coverage-functions=95
-```
+Desde esta tarea, los jobs Backend y Frontend ejecutan los tests con
+`npm run test:cobertura`, que añade a `node` las opciones
+`--experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=90
+--test-coverage-functions=95` antes de `--test`. No sirve `npm test -- <opciones>`:
+en el frontend npm las pone detrás de los archivos y Node no las aplica (los tests
+pasan, pero no se mide la cobertura ni se comprueba el umbral).
 
 Si una PR baja la cobertura de esos umbrales, el job falla y no se puede fusionar.
 Los umbrales quedan unos puntos por debajo del valor actual para no bloquear

@@ -25,7 +25,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - name: Tests con umbral de cobertura (docs/estrategia-test.md)
-        run: npm test -- --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=90 --test-coverage-functions=95
+        run: npm run test:cobertura
 
   frontend:
     name: Frontend (lint y build)
@@ -43,7 +43,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - name: Tests con umbral de cobertura (docs/estrategia-test.md)
-        run: npm test -- --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=90 --test-coverage-functions=95
+        run: npm run test:cobertura
       - run: npm run build
 
   tools:
