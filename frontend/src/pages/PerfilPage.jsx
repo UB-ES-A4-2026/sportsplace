@@ -1,3 +1,4 @@
+import { MapPin } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { formatearFecha } from '../anuncios/ficha.js';
@@ -45,8 +46,17 @@ export default function PerfilPage() {
 function DatosDelCentro({ centro }) {
   return (
     <>
-      <h2 className="perfil-nombre">{centro.nombre}</h2>
-      <p className="perfil-localidad">{centro.localidad}</p>
+      {/* Diseño S2 (Figma 04): portada con degradado y avatar decorativo. */}
+      <div className="perfil-portada">
+        <div className="perfil-portada-banda" aria-hidden="true" />
+        <div className="perfil-portada-datos">
+          <span className="perfil-avatar" aria-hidden="true" />
+          <div className="perfil-portada-texto">
+            <h2 className="perfil-nombre">{centro.nombre}</h2>
+            <p className="perfil-localidad"><MapPin size={16} aria-hidden="true" />{centro.localidad}</p>
+          </div>
+        </div>
+      </div>
 
       {/* US-68 CA10: los centros sin código postal (Sprint 0) ven la banda amarilla hasta indicarlo. */}
       {faltaCodigoPostal(centro) && (
@@ -56,39 +66,41 @@ function DatosDelCentro({ centro }) {
         </div>
       )}
 
-      <section className="perfil-bloque" aria-labelledby="titulo-sobre-nosotros">
-        <h3 id="titulo-sobre-nosotros">Sobre nosotros</h3>
-        {/* CA15: React escapa el texto (<b>hola</b> se ve literal); los saltos de línea se respetan con CSS. */}
-        {centro.descripcion
-          ? <p className="perfil-descripcion">{centro.descripcion}</p>
-          : <p className="perfil-vacio">{TEXTOS_PERFIL.sinDescripcion}</p>}
-      </section>
-
-      <section className="perfil-bloque" aria-labelledby="titulo-contacto">
-        <h3 id="titulo-contacto">Contacto</h3>
-        <dl className="perfil-contacto">
-          <dt>Teléfono</dt>
-          <dd>{centro.telefono ?? TEXTOS_PERFIL.sinDato}</dd>
-          <dt>Email de contacto</dt>
-          <dd>{centro.email_contacto ?? TEXTOS_PERFIL.sinDato}</dd>
-          <dt>Web</dt>
-          <dd>
-            {centro.web
-              ? <a href={centro.web} target="_blank" rel="noopener noreferrer">{centro.web}</a>
-              : TEXTOS_PERFIL.sinDato}
-          </dd>
-        </dl>
-      </section>
-
-      {/* US-68: zona (localidad y provincia) y dirección completa, que solo ve el propio centro (CA14). */}
-      {!faltaCodigoPostal(centro) && (
-        <section className="perfil-bloque" aria-labelledby="titulo-ubicacion">
-          <h3 id="titulo-ubicacion">Ubicación</h3>
-          <p className="perfil-ubicacion">{textoZona(centro)}</p>
-          <p className="perfil-ubicacion">{textoDireccion(centro)}</p>
-          <Link to="/perfil/ubicacion" className="boton-enlace boton-enlace-secundario">{TEXTOS_UBICACION.editar}</Link>
+      <div className="perfil-rejilla">
+        <section className="perfil-bloque" aria-labelledby="titulo-sobre-nosotros">
+          <h3 id="titulo-sobre-nosotros">Sobre nosotros</h3>
+          {/* CA15: React escapa el texto (<b>hola</b> se ve literal); los saltos de línea se respetan con CSS. */}
+          {centro.descripcion
+            ? <p className="perfil-descripcion">{centro.descripcion}</p>
+            : <p className="perfil-vacio">{TEXTOS_PERFIL.sinDescripcion}</p>}
         </section>
-      )}
+
+        <section className="perfil-bloque" aria-labelledby="titulo-contacto">
+          <h3 id="titulo-contacto">Contacto</h3>
+          <dl className="perfil-contacto">
+            <dt>Teléfono</dt>
+            <dd>{centro.telefono ?? TEXTOS_PERFIL.sinDato}</dd>
+            <dt>Email de contacto</dt>
+            <dd>{centro.email_contacto ?? TEXTOS_PERFIL.sinDato}</dd>
+            <dt>Web</dt>
+            <dd>
+              {centro.web
+                ? <a href={centro.web} target="_blank" rel="noopener noreferrer">{centro.web}</a>
+                : TEXTOS_PERFIL.sinDato}
+            </dd>
+          </dl>
+        </section>
+
+        {/* US-68: zona (localidad y provincia) y dirección completa, que solo ve el propio centro (CA14). */}
+        {!faltaCodigoPostal(centro) && (
+          <section className="perfil-bloque" aria-labelledby="titulo-ubicacion">
+            <h3 id="titulo-ubicacion">Ubicación</h3>
+            <p className="perfil-ubicacion">{textoZona(centro)}</p>
+            <p className="perfil-ubicacion">{textoDireccion(centro)}</p>
+            <Link to="/perfil/ubicacion" className="boton-enlace boton-enlace-secundario">{TEXTOS_UBICACION.editar}</Link>
+          </section>
+        )}
+      </div>
 
       <p className="perfil-desde">En Sportsplace desde {formatearFecha(centro.creado_en)}</p>
       <div className="perfil-acciones">
