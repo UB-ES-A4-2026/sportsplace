@@ -104,7 +104,7 @@ function Ficha({ anuncio, onActualizado, onAviso, onFallo }) {
       {/* E03: título → galería (US-13) → precio (US-14) → tabla */}
       <GaleriaAnuncio titulo={anuncio.titulo} fotos={anuncio.fotos} />
 
-      {/* CA6 y CA7 (US-14): «8,50 € / unidad» o «Donación · Gratis». */}
+      {/* CA6 y CA7 (US-14): «8,50 € / unidad» o «Gratis · Donación». */}
       <p className="ficha-precio"><PrecioAnuncio anuncio={anuncio} grande /></p>
 
       <table className="ficha-datos">

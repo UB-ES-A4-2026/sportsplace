@@ -143,10 +143,10 @@ test('US-18 · E2E-1 · lista con estados', async ({ page, cuentas }) => {
   // Con 4 anuncios no hay paginación (CA5).
   await expect(page.getByRole('button', { name: 'Siguiente' })).toHaveCount(0);
 
-  // US-14 CA6 y CA7 (T14-4, #193, #201): precio de la venta y «Donación · Gratis» en la fila (la plantilla es donación).
+  // US-14 CA6 y CA7 (T14-4, #193, #201): precio de la venta y «Gratis · Donación» en la fila (la plantilla es donación).
   await expect(activa.getByText('8,50 € / unidad')).toBeVisible();
-  await expect(activa.getByText('Donación · Gratis')).toHaveCount(0);
-  await expect(fila(page, 'Anuncio pausado de B').getByText('Donación · Gratis')).toBeVisible();
+  await expect(activa.getByText('Gratis · Donación')).toHaveCount(0);
+  await expect(fila(page, 'Anuncio pausado de B').getByText('Gratis · Donación')).toBeVisible();
   // US-15 CA6: botón «Editar» en la fila según el estado (sí en activo, no en entregado).
   const editar = (titulo) => fila(page, titulo).getByRole('button', { name: 'Editar' })
     .or(fila(page, titulo).getByRole('link', { name: 'Editar' }));
