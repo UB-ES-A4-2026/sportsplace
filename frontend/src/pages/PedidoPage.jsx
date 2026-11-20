@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
+import AccionesCierrePedido from '../components/AccionesCierrePedido.jsx';
 import AccionesPedidoVendedor from '../components/AccionesPedidoVendedor.jsx';
 import Aviso from '../components/Aviso.jsx';
+import EtiquetaPagado from '../components/EtiquetaPagado.jsx';
 import SeccionMotivo from '../components/SeccionMotivo.jsx';
 import { obtenerPedido } from '../pedidos/api.js';
+import { lineaRecibido } from '../pedidos/cierre.js';
 import {
   anuncioRetirado,
   datosDeEntrega,
@@ -22,7 +25,8 @@ import '../pedidos/pedido.css';
 // E06 US-108 (T32-5): /pedidos/:id · «Pedido de <título>». Privada (CA1, la protege RutaPrivada).
 // Secciones en el orden del boceto: volver, estado, frase, anuncio, datos, otro centro, entrega (US-40), historial.
 // US-79: sección «Motivo» (SeccionMotivo) tras el otro centro. Barra de acciones al final (punto 9): US-33 y US-79
-// (AccionesPedidoVendedor); US-80 y US-42 (AccionesCierrePedido) se montan al integrar US-42.
+// (AccionesPedidoVendedor) y «Marcar como cobrado» de US-80 (AccionesCierrePedido). «He recibido el material» (US-42)
+// va al final de la sección «Entrega», con «Recibido el …». La etiqueta «Pagado» es EtiquetaPagado.
 // El aviso verde «Pedido enviado. El vendedor lo revisará.» llega en `location.state.aviso` desde «Pedir» (US-32 CA14).
 export default function PedidoPage() {
   const { id } = useParams();
@@ -72,8 +76,8 @@ export default function PedidoPage() {
     );
   }
 
-  // Tras una acción, la pantalla se actualiza con el pedido que devuelve la API (US-33 CA4, US-79 CA4). Ante un 409,
-  // aviso rojo con el `message` y se recarga el pedido para ver su estado real (US-33 CA9, CA11).
+  // Tras una acción, la pantalla se actualiza con el pedido que devuelve la API (US-33 CA4, US-79 CA4, US-80 CA2,
+  // US-42 CA4). Ante un 409, aviso rojo con el `message` y se recarga el pedido para ver su estado real (US-33 CA9, CA11).
   const actualizar = (pedido) => setResultado({ clave, pedido });
   function mostrarFallo(fallo) {
     if (fallo.noEncontrado) {
@@ -93,6 +97,7 @@ export default function PedidoPage() {
 }
 
 function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
+  const acciones = { onActualizado, onAviso, onFallo };
   const estado = etiquetaDelEstado(pedido.estado);
   const otro = datosDelOtroCentro(pedido);
   const entrega = datosDeEntrega(pedido);
@@ -105,7 +110,7 @@ function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
       <h1 id="titulo-pedido">Pedido de {pedido.anuncio.titulo}</h1>
       <p className="pedido-estado">
         <span className={`etiqueta-estado ${estado.clase}`}>{estado.texto}</span>
-        {pedido.pagado_en && <span className="etiqueta-estado etiqueta-pagado">Pagado</span>}
+        <EtiquetaPagado pedido={pedido} />
       </p>
       <p className="pedido-frase">{fraseDeSituacion(pedido)}</p>
 
@@ -137,6 +142,8 @@ function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
           {entrega.escribir && (
             <Link to={`/mensajes/nueva?anuncio=${encodeURIComponent(pedido.anuncio.id)}`}>{TEXTOS.escribirVendedor}</Link>
           )}
+          {lineaRecibido(pedido) && <p>{lineaRecibido(pedido)}</p>}
+          <AccionesCierrePedido pedido={pedido} solo="recibir" {...acciones} />
         </section>
       )}
 
@@ -155,7 +162,8 @@ function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
       </section>
 
       <div className="pedido-acciones">
-        <AccionesPedidoVendedor pedido={pedido} onActualizado={onActualizado} onAviso={onAviso} onFallo={onFallo} />
+        <AccionesPedidoVendedor pedido={pedido} {...acciones} />
+        <AccionesCierrePedido pedido={pedido} solo="marcar_pagado" {...acciones} />
       </div>
     </section>
   );
