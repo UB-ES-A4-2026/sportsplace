@@ -6,7 +6,7 @@ import {
 import '../catalogo/catalogo.css';
 
 // US-96 (T21-4): tarjeta de anuncio del catálogo con el diseño S2 (#250). Todo el bloque es un enlace a la ficha
-// (CA3). De arriba abajo, como en la especificación: foto 4:3 (o «Sin foto») con «No disponible» si está reservado,
+// (CA3). De arriba abajo, como en la especificación: foto 4:3 (o «Sin foto») con «Reservado» si está reservado,
 // título, precio, estado del material y unidades, centro y localidad, y fecha de publicación.
 export default function TarjetaAnuncio({ anuncio }) {
   const origen = textoOrigen(anuncio.centro);

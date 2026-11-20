@@ -125,7 +125,6 @@ export default function ConversacionPage() {
     return (
       <section className="pagina pagina-mensajes" aria-labelledby="titulo-pagina">
         <h1 id="titulo-pagina" className="mensajes-titulo">{TEXTOS.noExiste}</h1>
-        <p><Link to="/mensajes">{TEXTOS.irAMensajes}</Link></p>
       </section>
     );
   }
@@ -140,7 +139,6 @@ export default function ConversacionPage() {
       <Aviso aviso={aviso} onCerrar={cerrarAviso} />
       <section className="pagina pagina-mensajes pagina-conversacion" aria-labelledby="titulo-pagina"
         aria-busy={!actual || undefined}>
-        <Link to="/mensajes" className="enlace-volver">{TEXTOS.volverMensajes}</Link>
         {/* Pantalla «Conversación»: el título se ve desde el primer momento, también mientras carga. */}
         <h1 id="titulo-pagina" className="mensajes-titulo">{TEXTOS.conversacion}</h1>
 
