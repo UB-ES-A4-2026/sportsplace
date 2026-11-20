@@ -4,7 +4,7 @@
 // mientras no estén en la rama la tabla `pedidos` (T32-1), `POST /api/pedidos/:id/aceptar` (T33-2, que usa
 // la transacción de T33-3), `GET /api/pedidos/:id` (T32-3) o la pantalla `/pedidos/:id` (T32-5 y T33-5).
 // Fuera de este sprint: devolver unidades al cancelar (CA6 y E2E-4, US-39), editar el anuncio (CA10, la
-// validación de US-15 ya está en dev) y la recepción (CA12, US-42). El «No disponible» del catálogo (E2E-3)
+// validación de US-15 ya está en dev) y la recepción (CA12, US-42). El «Reservado» del catálogo (E2E-3)
 // lo comprueban los E2E de US-96 (T21-7); aquí se comprueba el estado `reservado` que lo provoca.
 import { test, expect, entrar } from '../fixtures.js';
 import { createDatabase } from '../../backend/src/database.js';

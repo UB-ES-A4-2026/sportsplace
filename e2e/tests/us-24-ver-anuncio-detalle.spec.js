@@ -27,7 +27,7 @@ const BALONES = {
 
 const TEXTOS = {
   volver: '← Volver al catálogo',
-  reservado: 'No disponible: este material está reservado.',
+  reservado: 'Reservado',
   noDisponible: 'Este anuncio no existe o ya no está disponible.',
   irAlCatalogo: 'Ir al catálogo',
   proximamente: 'Disponible próximamente',
@@ -219,12 +219,14 @@ test('US-24 · E2E-2 · anuncio reservado', async ({ page, request, cuentas }) =
   await page.goto(`/anuncios/${id}`);
   const main = page.getByRole('main');
   await expect(main.getByRole('heading', { level: 1, name: BALONES.titulo })).toBeVisible();
-  // CA4 (y US-32 CA2): etiqueta antes del título y «Pedir» deshabilitado con «No disponible».
-  await expect(main.getByText(TEXTOS.reservado, { exact: true })).toBeVisible();
+  // CA4 (y US-32 CA2): etiqueta «Reservado» antes del título y «Pedir» deshabilitado con «Reservado».
+  // El texto sale dos veces: la etiqueta naranja y la ayuda de «Pedir».
+  await expect(main.getByText(TEXTOS.reservado, { exact: true })).toHaveCount(2);
+  await expect(main.locator('.etiqueta-estado', { hasText: TEXTOS.reservado })).toBeVisible();
   const texto = await main.innerText();
   expect(texto.indexOf(TEXTOS.reservado)).toBeLessThan(texto.indexOf(BALONES.titulo));
   await expect(boton(page, 'Pedir')).toBeDisabled();
-  await expect(main.getByText('No disponible', { exact: true })).toBeVisible();
+  await expect(boton(page, 'Pedir')).toHaveAccessibleDescription(TEXTOS.reservado);
   // CA4 y US-28 CA1: con el anuncio reservado se sigue pudiendo escribir al centro.
   await expect(boton(page, 'Escribir al centro')).toBeEnabled();
 

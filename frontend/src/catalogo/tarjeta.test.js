@@ -67,8 +67,9 @@ describe('textoPublicado', () => {
 });
 
 describe('estaNoDisponible (CA6)', () => {
-  test('solo los reservados llevan «No disponible»', () => {
+  test('solo los reservados llevan «Reservado»', () => {
     assert.equal(estaNoDisponible({ estado: 'reservado' }), true);
     assert.equal(estaNoDisponible({ estado: 'activo' }), false);
+    assert.equal(TEXTOS.noDisponible, 'Reservado');
   });
 });

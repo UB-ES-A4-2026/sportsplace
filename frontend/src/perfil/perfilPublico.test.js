@@ -75,8 +75,8 @@ describe('paginación de sus anuncios (CA3, CA12, CA17)', () => {
     assert.equal(tituloDeAnuncios(undefined), 'Anuncios activos (0)');
   });
 
-  test('CA6: reservado como «No disponible»; activo sin etiqueta', () => {
-    assert.equal(etiquetaDeAnuncio({ estado: 'reservado' }), 'No disponible');
+  test('CA6: reservado como «Reservado»; activo sin etiqueta', () => {
+    assert.equal(etiquetaDeAnuncio({ estado: 'reservado' }), 'Reservado');
     assert.equal(etiquetaDeAnuncio({ estado: 'activo' }), null);
   });
 });
