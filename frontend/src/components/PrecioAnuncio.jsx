@@ -1,6 +1,6 @@
 import { precioDelAnuncio } from '../anuncios/precio.js';
 
-// Precio de un anuncio (US-14, CA6 y CA7): «8,50 € / unidad» o la etiqueta verde «Donación · Gratis».
+// Precio de un anuncio (US-14, CA6 y CA7): «8,50 € / unidad» o la etiqueta verde «Gratis · Donación».
 // En la ficha va bajo el título y en grande (`grande`); en la fila de «Mis anuncios», sin `grande`.
 // Uso: <PrecioAnuncio anuncio={anuncio} grande /> o <PrecioAnuncio anuncio={resumen} />
 export default function PrecioAnuncio({ anuncio, grande = false }) {

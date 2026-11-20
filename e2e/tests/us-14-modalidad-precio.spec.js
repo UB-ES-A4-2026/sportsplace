@@ -3,7 +3,7 @@
 //
 // La migración (T14-1), la validación (T14-2) y el formulario (T14-3) ya están en la base, así que
 // los casos comprueban el cuerpo que envía la web (petición interceptada) y lo que guarda la API.
-// Los textos de la ficha («8,50 € / unidad», «Donación · Gratis») los añade T14-4 (#64).
+// Los textos de la ficha («8,50 € / unidad», «Gratis · Donación») los añade T14-4 (#64).
 // Los ayudantes están copiados de us-12-publicar-anuncio.spec.js: importarlos registraría sus tests otra vez.
 //
 // Desde US-13 publicar exige al menos una foto y POST /api/anuncios es multipart (`datos` + `fotos`):
@@ -146,7 +146,7 @@ test.describe('US-14 · Modalidad y precio', () => {
     const { cuerpo, id } = await publicar(page);
     expect(cuerpo.modalidad).toBe('donacion');
     expect(cuerpo).not.toHaveProperty('precio_unitario_centimos');
-    await expect(page.getByText('Donación · Gratis', { exact: true })).toBeVisible(); // CA7 en la ficha (T14-4, #64)
+    await expect(page.getByText('Gratis · Donación', { exact: true })).toBeVisible(); // CA7 en la ficha (T14-4, #64)
 
     const token = await tokenDe(request, cuentas.centroA, cuentas.password);
     const anuncio = await leerAnuncio(request, token, id);

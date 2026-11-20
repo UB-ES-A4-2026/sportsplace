@@ -12,10 +12,10 @@ test('una venta muestra el precio por unidad con formato español (CA6)', () => 
   assert.equal(precioDelAnuncio({ modalidad: 'venta', precio_unitario_centimos: 1 }).texto, '0,01 € / unidad');
 });
 
-test('una donación muestra «Donación · Gratis» (CA7)', () => {
+test('una donación muestra «Gratis · Donación» (CA7, T14-6)', () => {
   assert.deepEqual(precioDelAnuncio({ modalidad: 'donacion', precio_unitario_centimos: null }), {
     donacion: true,
-    texto: 'Donación · Gratis',
+    texto: 'Gratis · Donación',
   });
 });
 
