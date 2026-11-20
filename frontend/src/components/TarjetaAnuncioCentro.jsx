@@ -3,7 +3,7 @@ import { precioDelAnuncio } from '../anuncios/precio.js';
 import { etiquetaDeAnuncio } from '../perfil/perfilPublico.js';
 
 // Tarjeta de un anuncio en «Anuncios activos» del perfil de un centro (US-10 CA3 y CA6). Sigue la tarjeta del catálogo
-// de US-96 (foto principal, título, precio y «No disponible» si está reservado). Toda la tarjeta lleva a /anuncios/:id.
+// de US-96 (foto principal, título, precio y «Reservado» si está reservado). Toda la tarjeta lleva a /anuncios/:id.
 export default function TarjetaAnuncioCentro({ anuncio }) {
   const etiqueta = etiquetaDeAnuncio(anuncio);
   return (

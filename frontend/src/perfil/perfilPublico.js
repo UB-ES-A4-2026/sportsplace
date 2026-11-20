@@ -20,7 +20,7 @@ export const TEXTOS = {
   verComoMeVen: 'Ver cómo ven mi perfil',
   anterior: 'Anterior',
   siguiente: 'Siguiente',
-  noDisponible: 'No disponible',
+  noDisponible: 'Reservado',
 };
 
 // Pantalla: «En Sportsplace desde dd/mm/aaaa» a partir de `creado_en` (CA5).
@@ -65,7 +65,7 @@ export function tituloDeAnuncios(total) {
   return `Anuncios activos (${total ?? 0})`;
 }
 
-// CA6: un anuncio reservado aparece como «No disponible».
+// CA6: un anuncio reservado aparece como «Reservado».
 export function etiquetaDeAnuncio(anuncio) {
   return anuncio?.estado === 'reservado' ? TEXTOS.noDisponible : null;
 }

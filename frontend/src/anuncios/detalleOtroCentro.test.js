@@ -127,9 +127,11 @@ describe('accionDePedir (US-32 CA1-CA3)', () => {
     assert.equal(TEXTOS.pedir, 'Pedir');
   });
 
-  test('reservado: deshabilitado con «No disponible»', () => {
+  test('reservado: deshabilitado con «Reservado»', () => {
     assert.deepEqual(accionDePedir({ id: 'a1', estado: 'reservado', mi_pedido_pendiente_id: null }), { tipo: 'reservado' });
-    assert.equal(TEXTOS.noDisponibleParaPedir, 'No disponible');
+    assert.equal(TEXTOS.noDisponibleParaPedir, 'Reservado');
+    // US-24 CA4: la etiqueta naranja del anuncio reservado.
+    assert.equal(TEXTOS.reservado, 'Reservado');
   });
 
   test('con un pedido pendiente propio: «Ver mi pedido» lleva a ese pedido', () => {
