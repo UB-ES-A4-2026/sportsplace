@@ -263,8 +263,13 @@ test('US-13 CA16: una petición multipart de más de 40 MB → 413 PETICION_DEMA
 
 test('US-13 CA16: 8 fotos de 5 MB (40 MB de archivos más las cabeceras) superan el total', async () => {
   const foto = { contenido: Buffer.concat([fotoJpg, Buffer.alloc(MB5 - fotoJpg.length)]) };
-  const response = await publicar({ datos, fotos: Array(8).fill(foto) });
-  assert.equal(response.status, 413);
+  // El servidor responde 413 y cierra la conexión: si la cierra antes de que
+  // fetch termine de enviar los 40 MB, fetch falla con EPIPE o ECONNRESET (#364).
+  const response = await publicar({ datos, fotos: Array(8).fill(foto) }).catch((error) => {
+    if (['EPIPE', 'ECONNRESET'].includes(error.cause?.code)) return null;
+    throw error;
+  });
+  if (response) assert.equal(response.status, 413);
   sinCambios();
 });
 
