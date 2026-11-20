@@ -95,7 +95,7 @@ export default function DetalleOtroCentro({ anuncio }) {
   );
 }
 
-// US-32 CA1-CA4 (T32-3): «Pedir» (enlace a /anuncios/:id/pedir), deshabilitado con «No disponible» si está reservado,
+// US-32 CA1-CA4 (T32-3): «Pedir» (enlace a /anuncios/:id/pedir), deshabilitado con «Reservado» si está reservado,
 // o el aviso de pedido pendiente con «Ver mi pedido».
 function BloquePedir({ accion }) {
   if (!accion) return null;

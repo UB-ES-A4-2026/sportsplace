@@ -106,6 +106,8 @@ test('US-28 · E2E-1 · camino feliz', async ({ page, request, cuentas }) => {
   await expect(main.getByText(PREGUNTA, { exact: true })).toBeVisible();
   await expect(main.getByText(FECHA).last()).toBeVisible();
   expect(await lado(page, PREGUNTA)).toBe('derecha');
+  // La bandeja /mensajes es de US-65 (S3): la conversación no enlaza a ella.
+  await expect(page.locator('a[href="/mensajes"]')).toHaveCount(0);
 
   // BD: una conversación (A1, B, A) y un mensaje de B.
   expect(await conversacionesDe(db, a1)).toEqual([
@@ -225,7 +227,8 @@ test('US-28 · E2E-5 · tercer centro', async ({ page, request, cuentas }) => {
   await page.goto(`/mensajes/${ajena}`);
   const main = page.getByRole('main');
   await expect(main.getByText('Esta conversación no existe.')).toBeVisible();
-  await expect(main.getByRole('link', { name: 'Ir a mensajes' })).toHaveAttribute('href', '/mensajes');
+  // La bandeja /mensajes es de US-65 (S3): la página no enlaza a ella.
+  await expect(page.locator('a[href="/mensajes"]')).toHaveCount(0);
   await expect(main.getByText(PREGUNTA)).toHaveCount(0);
 });
 

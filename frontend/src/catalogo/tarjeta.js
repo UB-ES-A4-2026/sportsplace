@@ -5,7 +5,7 @@ import { formatearEuros } from '../utilidades/euros.js';
 
 export const TEXTOS = {
   sinFoto: 'Sin foto',
-  noDisponible: 'No disponible',
+  noDisponible: 'Reservado',
   donacion: 'Gratis · Donación',
 };
 
@@ -41,7 +41,7 @@ export function textoPublicado(fecha) {
   return `Publicado el ${FECHA.format(new Date(fecha))}`;
 }
 
-// CA6: los reservados siguen en su sitio, con la etiqueta naranja «No disponible».
+// CA6: los reservados siguen en su sitio, con la etiqueta naranja «Reservado».
 export function estaNoDisponible({ estado }) {
   return estado === 'reservado';
 }
