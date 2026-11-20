@@ -135,7 +135,7 @@ Como responsable de material de un centro deportivo con la sesión iniciada, qui
 **Pantallas para el boceto**
 - Cabecera de la zona privada: se añade el botón «Publicar anuncio» (botón primario, a la derecha, antes del menú del centro).
 - `/anuncios/nuevo` · «Publicar anuncio». En este orden: título de página «Publicar anuncio»; texto «Los campos marcados con * son obligatorios.»; campo «Título *» (contador «0/80» a la derecha, bajo el campo); «Descripción *» (área de texto de 6 líneas, contador «0/1000»); «Categoría *» (desplegable); «Deporte *» (desplegable); «Unidades disponibles *» (numérico); «Estado del material *» (desplegable); [sección «Fotos» de US-13]; [sección «Modalidad y precio» de US-14]; al pie, botón secundario «Cancelar» a la izquierda y botón primario «Publicar» a la derecha.
-- `/anuncios/:id` · Ficha propia del anuncio. En este orden: enlace «← Mis anuncios»; título del anuncio (h1) y a su derecha la etiqueta de estado; [galería de US-13]; [precio o «Donación · Gratis» de US-14]; tabla de datos: «Categoría», «Deporte», «Unidades disponibles», «Estado del material»; bloque «Descripción» con el texto respetando saltos de línea; línea «Publicado el dd/mm/aaaa · Última modificación dd/mm/aaaa hh:mm»; zona «Acciones» con los botones que añaden US-15, US-16, US-17, US-70 y US-19.
+- `/anuncios/:id` · Ficha propia del anuncio. En este orden: enlace «← Mis anuncios»; título del anuncio (h1) y a su derecha la etiqueta de estado; [galería de US-13]; [precio o «Gratis · Donación» de US-14]; tabla de datos: «Categoría», «Deporte», «Unidades disponibles», «Estado del material»; bloque «Descripción» con el texto respetando saltos de línea; línea «Publicado el dd/mm/aaaa · Última modificación dd/mm/aaaa hh:mm»; zona «Acciones» con los botones que añaden US-15, US-16, US-17, US-70 y US-19.
 - Diálogo «¿Salir sin publicar?» (ver CA9).
 
 **Criterios de aceptación**
@@ -339,11 +339,11 @@ Como responsable de material de un centro, quiero indicar si vendo el material y
 1. En `/anuncios/nuevo`, en la sección «Modalidad y precio», marco «Venta».
 2. Aparece «Precio por unidad (€) *»; escribo «8,50».
 3. Pulso «Publicar» y en la ficha veo «8,50 € / unidad».
-4. En otro anuncio marco «Donación»: no aparece el precio y en la ficha veo «Donación · Gratis».
+4. En otro anuncio marco «Donación»: no aparece el precio y en la ficha veo «Gratis · Donación».
 
 **Pantallas para el boceto**
 - Sección «Modalidad y precio» de `/anuncios/nuevo` (después de «Fotos», antes de los botones): etiqueta «Modalidad *»; dos opciones en fila «Venta» y «Donación» (radio, sin marcar); si «Venta» está marcada, debajo el campo «Precio por unidad (€) *» (texto, ancho 160 px, marcador «0,00», sufijo «€» fuera del campo) y el texto de ayuda «Precio de cada unidad, IVA incluido si lo aplicas.»; si «Donación» está marcada, el texto «El material se cederá gratis.».
-- Ficha `/anuncios/:id`: bajo el título, en grande, «8,50 € / unidad» o la etiqueta verde «Donación · Gratis».
+- Ficha `/anuncios/:id`: bajo el título, en grande, «8,50 € / unidad» o la etiqueta verde «Gratis · Donación».
 
 **Criterios de aceptación**
 
@@ -356,7 +356,7 @@ Como responsable de material de un centro, quiero indicar si vendo el material y
 *Comportamiento*
 - CA5. Cambiar de «Venta» a «Donación» oculta el precio, borra su error y no envía `precio_unitario_centimos`. Volver a «Venta» muestra el campo con el valor que tenía escrito.
 - CA6. El precio se muestra con formato español: 850 → «8,50 € / unidad»; 123450 → «1.234,50 € / unidad»; 9999999 → «99.999,99 € / unidad».
-- CA7. Una donación se muestra con la etiqueta «Donación · Gratis» en la ficha y en «Mis anuncios».
+- CA7. Una donación se muestra con la etiqueta «Gratis · Donación» en la ficha y en «Mis anuncios».
 
 *API*
 - CA8. `datos` de `POST /api/anuncios` (y de `PATCH` en US-15) incluye `modalidad` (obligatoria) y `precio_unitario_centimos` (entero, obligatorio si `venta`).
@@ -378,7 +378,7 @@ E2E-1 · Venta
 
 E2E-2 · Donación
 1. Formulario válido + «Donación» → no hay campo de precio → «Publicar».
-2. Ficha: «Donación · Gratis». BD: `modalidad='donacion'`, `precio_unitario_centimos IS NULL`.
+2. Ficha: «Gratis · Donación». BD: `modalidad='donacion'`, `precio_unitario_centimos IS NULL`.
 
 E2E-3 · Venta sin precio y límites
 1. «Venta», precio vacío → «Publicar» → «Indica el precio por unidad.».
@@ -395,7 +395,7 @@ E2E-5 · API incoherente
 - T14-1 · Base de datos: migración de `modalidad` y `precio_unitario_centimos` con su `CHECK`.
 - T14-2 · Backend: validación de modalidad y precio en el módulo compartido; tests CA9.
 - T14-3 · Frontend: sección «Modalidad y precio», conversión a céntimos y utilidad `formatearEuros(centimos)` reutilizable.
-- T14-4 · Frontend: precio o «Donación · Gratis» en ficha (y en la fila de US-18).
+- T14-4 · Frontend: precio o «Gratis · Donación» en ficha (y en la fila de US-18).
 - T14-5 · QA: automatizar E2E-1..5 y tabla de valores de CA3-CA4.
 
 **Decisiones pendientes**
@@ -691,7 +691,7 @@ Como responsable de material de un centro, quiero ver todos mis anuncios con su 
 
 **Pantallas para el boceto**
 - Cabecera: enlace «Mis anuncios» (subrayado cuando la ruta empieza por `/mis-anuncios`).
-- `/mis-anuncios` · «Mis anuncios»: título h1 «Mis anuncios» y a la derecha el botón «Publicar anuncio»; texto «n anuncios» (o «1 anuncio»); [filtros de US-71]; lista con una fila por anuncio: miniatura 64×64 de la principal (o un recuadro gris «Sin foto» en borradores), título (enlace a `/anuncios/:id`), «Balones · Fútbol», «12 unidades» (o «1 unidad»), precio «8,50 € / unidad» o «Donación · Gratis», etiqueta de estado, «Modificado el dd/mm/aaaa»; a la derecha, los botones de acción: el principal visible («Editar» / «Completar y publicar») y el resto en un menú «Más ▾»; paginación «Anterior» · «Página x de y» · «Siguiente».
+- `/mis-anuncios` · «Mis anuncios»: título h1 «Mis anuncios» y a la derecha el botón «Publicar anuncio»; texto «n anuncios» (o «1 anuncio»); [filtros de US-71]; lista con una fila por anuncio: miniatura 64×64 de la principal (o un recuadro gris «Sin foto» en borradores), título (enlace a `/anuncios/:id`), «Balones · Fútbol», «12 unidades» (o «1 unidad»), precio «8,50 € / unidad» o «Gratis · Donación», etiqueta de estado, «Modificado el dd/mm/aaaa»; a la derecha, los botones de acción: el principal visible («Editar» / «Completar y publicar») y el resto en un menú «Más ▾»; paginación «Anterior» · «Página x de y» · «Siguiente».
 
 **Criterios de aceptación**
 
