@@ -48,12 +48,11 @@ Como responsable de un centro comprador, quiero escribir al centro que ofrece un
   4. Área de texto (5 líneas), placeholder «Escribe tu mensaje…», contador «0/2000».
   5. Botón principal «Enviar».
 - `/mensajes/:id`: «Conversación» (la usan también US-77, US-65, US-30, US-78 y US-102).
-  1. Enlace «← Mensajes» (→ `/mensajes`).
-  2. Cabecera: nombre del otro centro (enlace a `/centros/:id`, o «Centro eliminado» sin enlace), y la misma cabecera de anuncio que arriba.
-  3. Banda de estado, solo si aplica (ver CA de casos límite).
-  4. Hilo de mensajes en orden cronológico ascendente. Los míos alineados a la derecha con fondo de color; los del otro centro a la izquierda con fondo gris. Cada mensaje: texto (saltos de línea respetados, sin HTML) y debajo la fecha y hora «dd/mm/aaaa hh:mm».
-  5. Si hay más de 50 mensajes, arriba del hilo botón «Ver mensajes anteriores».
-  6. Pie fijo: área de texto (3 líneas) «Escribe tu mensaje…», contador «n/2000» y botón «Enviar».
+  1. Cabecera: nombre del otro centro (enlace a `/centros/:id`, o «Centro eliminado» sin enlace), y la misma cabecera de anuncio que arriba. Sin enlace a la bandeja `/mensajes`, que es de US-65 (S3).
+  2. Banda de estado, solo si aplica (ver CA de casos límite).
+  3. Hilo de mensajes en orden cronológico ascendente. Los míos alineados a la derecha con fondo de color; los del otro centro a la izquierda con fondo gris. Cada mensaje: texto (saltos de línea respetados, sin HTML) y debajo la fecha y hora «dd/mm/aaaa hh:mm».
+  4. Si hay más de 50 mensajes, arriba del hilo botón «Ver mensajes anteriores».
+  5. Pie fijo: área de texto (3 líneas) «Escribe tu mensaje…», contador «n/2000» y botón «Enviar».
 
 **Criterios de aceptación**
 
@@ -114,7 +113,7 @@ Como responsable de un centro comprador, quiero escribir al centro que ofrece un
 - E2E-2 (conversación existente). 1) Tras E2E-1, CEG vuelve a `/anuncios/A1` y pulsa «Escribir al centro». 2) Llega directamente a `/mensajes/<C1>` con el hilo anterior. 3) En BD sigue habiendo 1 conversación.
 - E2E-3 (anuncio propio). 1) CNS abre `/anuncios/A1`: no ve «Escribir al centro». 2) Una llamada directa `POST /api/conversaciones` con A1 responde `409 ANUNCIO_PROPIO`.
 - E2E-4 (validación). 1) CEG abre `/mensajes/nueva?anuncio=A2` y deja el texto vacío: «Enviar» deshabilitado. 2) Pega 2001 caracteres: solo quedan 2000 y el contador muestra «2000/2000» en rojo. 3) Envía 2000: se crea.
-- E2E-5 (tercer centro). 1) EET pide `GET /api/conversaciones/<C1>` → `404 NO_ENCONTRADO`. 2) Abre `/mensajes/<C1>` → «Esta conversación no existe.» y enlace «Ir a mensajes».
+- E2E-5 (tercer centro). 1) EET pide `GET /api/conversaciones/<C1>` → `404 NO_ENCONTRADO`. 2) Abre `/mensajes/<C1>` → «Esta conversación no existe.», sin enlace a la bandeja (US-65, S3).
 - E2E-6 (anuncio pausado). 1) CNS pausa A1 [Depende de US-15]. 2) EET intenta escribir: `409 ANUNCIO_NO_DISPONIBLE`, aviso «Este anuncio ya no está disponible.». 3) CEG abre `/mensajes/<C1>`, ve la banda «Este anuncio ya no está disponible en el catálogo.» y envía «¿Lo volveréis a activar?» correctamente.
 
 **Tareas**
