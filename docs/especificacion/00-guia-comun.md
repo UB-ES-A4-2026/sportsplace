@@ -115,7 +115,7 @@ Cualquier campo nuevo del centro se añade con una migración nueva, dentro de l
 |---|---|---|
 | `activo` | Sí | → `pausado`, `reservado` o `entregado` |
 | `pausado` | No | → `activo` |
-| `reservado` | Sí, como «No disponible» | → `activo` o `entregado` |
+| `reservado` | Sí, como «Reservado» | → `activo` o `entregado` |
 | `entregado` | No | Final |
 | `retirado` | No; para nadie | Retirada lógica |
 
