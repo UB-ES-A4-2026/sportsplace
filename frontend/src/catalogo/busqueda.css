@@ -1,4 +1,4 @@
-/* Zona de búsqueda de /catalogo (US-21, T21-5). Diseño con vida (#361): dentro de la franja de campo, cuadro blanco
+/* Zona de búsqueda de /catalogo (US-21, T21-5). Diseño con vida (#361): dentro de la tarjeta de la portada, cuadro
    grande con la lupa y «Buscar» naranja. Las reglas de botón llevan una clase porque styles.css define `button`. */
 @import '../diseno/tokens.css';
 
@@ -6,7 +6,7 @@
 .busqueda-fila { display: flex; gap: 10px; align-items: stretch; }
 .busqueda-cuadro {
   position: relative; display: flex; flex: 1; align-items: center; min-width: 0; min-height: 56px;
-  border: 1px solid transparent; border-radius: var(--s2-radio); background: var(--s2-superficie);
+  border: var(--s2-campo-grosor) solid var(--s2-campo-borde); border-radius: var(--s2-radio); background: var(--s2-superficie);
   transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
 }
 .busqueda-cuadro:focus-within { border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
@@ -30,11 +30,7 @@
   font-size: 17px; font-weight: 800; background: var(--s2-naranja-600); transition: background-color 160ms var(--s2-curva);
 }
 .busqueda-catalogo .busqueda-boton:hover { background: var(--s2-naranja-700); }
-/* El error va sobre la franja verde: rótulo blanco con el texto rojo dentro, para que se lea (≥ 4,5:1). */
-.busqueda-error {
-  justify-self: start; margin: 0; padding: 6px 10px; border-radius: var(--s2-radio-s); color: var(--s2-peligro);
-  background: var(--s2-superficie); font-size: 14px; font-weight: 800;
-}
+.busqueda-error { margin: 0; color: var(--s2-peligro); font-size: 14px; font-weight: 800; }
 
 /* US-21 CA18: sin resultados con búsqueda, como los demás estados vacíos del catálogo. */
 .busqueda-sin-resultados {

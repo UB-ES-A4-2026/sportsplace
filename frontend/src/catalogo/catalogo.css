@@ -9,13 +9,21 @@
 .pagina-catalogo a.s2-boton { color: #fff; text-decoration: none; }
 .pagina-catalogo a.s2-boton-secundario { color: var(--s2-teal-700); }
 
-/* Franja de campo: sale de la columna hasta los bordes de la ventana; el contenido vuelve a la columna. */
+/* Portada: foto a todo el ancho de la ventana (sale de la columna) y una tarjeta blanca a la izquierda con el título y
+   la búsqueda. Foto de Omar Ramadan en Unsplash (Licencia Unsplash), servida desde la app: sin peticiones a terceros.
+   La foto es decorativa (fondo CSS); un velo verde suave a la izquierda la integra con la tarjeta. */
 .catalogo-portada {
-  margin: -8px calc(50% - 50vw) 0; padding: 36px calc(50vw - 50%) 32px;
+  display: flex; align-items: center; min-height: 440px; margin: -8px calc(50% - 50vw) 0; padding: 48px calc(50vw - 50%);
+  background:
+    linear-gradient(90deg, rgb(11 61 31 / 55%) 0%, rgb(11 61 31 / 20%) 42%, rgb(11 61 31 / 0%) 70%),
+    url('../assets/portada-catalogo.webp') 62% 58% / cover no-repeat var(--s2-teal-900);
 }
-.catalogo-portada-contenido { position: relative; display: grid; gap: 18px; }
+.catalogo-portada-tarjeta {
+  display: grid; gap: 18px; width: min(560px, 100%); padding: 30px 30px 28px; border-radius: var(--s2-radio-l);
+  background: var(--s2-superficie); box-shadow: var(--s2-sombra-3);
+}
 .pagina-catalogo .catalogo-portada h1 {
-  margin: 0; color: #fff; font-size: clamp(32px, 3.6vw, 44px); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
+  margin: 0; color: var(--s2-tinta); font-size: clamp(32px, 3.4vw, 42px); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
 }
 
 /* Línea de resultados: total a la izquierda y «Ordenar por» a la derecha. */
@@ -119,8 +127,16 @@
 .catalogo-paginacion .s2-boton { min-height: var(--s2-toque); padding: 0 16px; font-size: 15px; }
 .catalogo-pagina-actual { color: var(--s2-tinta); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
+/* Móvil: la foto arriba (más ligera) y la tarjeta debajo, montada un poco sobre la foto. */
+@media (max-width: 720px) {
+  .catalogo-portada { display: block; min-height: 0; padding: 0 calc(50vw - 50%); background: none; }
+  .catalogo-portada::before {
+    content: ''; display: block; height: 210px; margin: 0 calc(50% - 50vw);
+    background: url('../assets/portada-catalogo-movil.webp') 62% 55% / cover no-repeat var(--s2-teal-900);
+  }
+  .catalogo-portada-tarjeta { position: relative; width: 100%; margin-top: -44px; padding: 20px 18px; box-shadow: var(--s2-sombra-2); }
+}
 @media (max-width: 599px) {
-  .catalogo-portada { padding-top: 24px; padding-bottom: 22px; }
   .catalogo-paginacion { gap: 10px; }
   .catalogo-paginacion .s2-boton { padding: 0 12px; }
 }
