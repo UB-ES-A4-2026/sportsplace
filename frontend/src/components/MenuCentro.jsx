@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useCentro } from '../centro/useCentro.js';
+import { inicialesDe } from '../utilidades/iniciales.js';
 import BotonCerrarSesion from './BotonCerrarSesion.jsx';
 
 // Menú del centro en la cabecera privada (US-07 CA1): «nombre del centro ▾» con «Mi perfil» y «Cerrar sesión» (US-67).
@@ -42,10 +43,10 @@ export default function MenuCentro() {
 
   return (
     <div className="menu-centro" ref={contenedor}>
-      {/* Mientras carga el centro (o si falla), el botón muestra «Mi centro». Diseño S2: el avatar es decorativo. */}
+      {/* Mientras carga el centro (o si falla), el botón muestra «Mi centro». El avatar con las iniciales es decorativo. */}
       <button ref={boton} type="button" className="menu-centro-boton" aria-expanded={abierto}
         aria-controls={idOpciones} onClick={() => setAbierto((valor) => !valor)}>
-        <span className="menu-centro-avatar" aria-hidden="true" />
+        <span className="menu-centro-avatar" aria-hidden="true">{inicialesDe(centro?.nombre)}</span>
         <span className="menu-centro-nombre">{centro?.nombre ?? 'Mi centro'}</span> ▾
       </button>
       <div id={idOpciones} className="menu-centro-opciones" hidden={!abierto}>
