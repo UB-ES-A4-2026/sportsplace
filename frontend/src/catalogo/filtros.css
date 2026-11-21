@@ -75,7 +75,8 @@
 .filtros .filtro-modalidad button + button { border-left: 1px solid var(--s2-linea); }
 .filtros .filtro-modalidad button:hover { background: var(--s2-fondo-2); }
 .filtros .filtro-modalidad button[aria-pressed="true"] { color: #fff; background: var(--s2-tinta); font-weight: 800; }
-.filtros .filtro-modalidad button:focus-visible { position: relative; z-index: 1; outline-offset: -3px; box-shadow: none; }
+/* El grupo recorta lo que sale por fuera: el anillo oscuro y el halo amarillo van por dentro del botón. */
+.filtros .filtro-modalidad button:focus-visible { position: relative; z-index: 1; outline-offset: -3px; box-shadow: inset 0 0 0 7px var(--s2-amarillo); }
 
 .filtros .filtros-limpiar {
   --pisada: 0 0 transparent;
