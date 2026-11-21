@@ -47,6 +47,7 @@
   --s2-estado-rechazado-fondo: #fee2e2;  --s2-estado-rechazado-texto: #991b1b;  --s2-estado-rechazado-punto: #dc2626;
   --s2-estado-cancelado-fondo: #eef1ee;  --s2-estado-cancelado-texto: #3f4b43;  --s2-estado-cancelado-punto: #6b7a6f;
   --s2-estado-recibido-fondo: #dbeafe;   --s2-estado-recibido-texto: #1e3a8a;   --s2-estado-recibido-punto: #1d4ed8;
+  --s2-estado-borrador-texto: #6b21a8; /* anuncio en borrador (E03) */
 
   /* Formas: esquinas moderadas y sombras suaves solo donde algo flota (menús, diálogos, hover). */
   --s2-radio-s: 6px;

@@ -50,6 +50,10 @@ button:disabled { opacity: 0.65; cursor: wait; }
 
 .pagina { max-width: 780px; padding: 48px 0 42px; }
 .pagina a { color: var(--s2-teal-700); }
+/* Los enlaces con forma de botón conservan su color dentro de .pagina. */
+.pagina a.s2-boton, .pagina a.s2-boton:hover { color: #fff; }
+.pagina a.s2-boton-secundario { color: var(--s2-teal-700); }
+.pagina a.s2-boton-secundario:hover { color: var(--s2-teal-800); }
 
 .formulario { display: grid; gap: 18px; max-width: 560px; margin-top: 36px; }
 .campo { display: grid; gap: 6px; }
