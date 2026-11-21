@@ -86,7 +86,9 @@
 /* Mis anuncios (US-18 T18-2), al ancho de la cabecera */
 .pagina.pagina-mis-anuncios { max-width: none; }
 .mis-anuncios-cabecera { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; }
-.mis-anuncios-cabecera .boton-enlace { margin-top: 0; }
+/* «Publicar anuncio» es la acción principal: naranja, como en la cabecera. */
+.mis-anuncios-cabecera .boton-enlace { --pisada: var(--s2-pisada-naranja); margin-top: 0; background: var(--s2-naranja-600); }
+.mis-anuncios-cabecera .boton-enlace:hover { background: var(--s2-naranja-700); }
 .mis-anuncios-total { margin: 14px 0 0; color: var(--s2-gris); font-size: 15px; font-weight: 700; }
 .mis-anuncios-vacio { margin-top: 24px; }
 /* La lista no va en tarjeta: una línea fina arriba y otra entre anuncios. */
