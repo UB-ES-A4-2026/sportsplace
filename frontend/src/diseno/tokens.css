@@ -97,17 +97,22 @@
 }
 .s2-boton-secundario:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); filter: none; }
 .s2-boton-secundario:active { box-shadow: inset 0 0 0 3px var(--s2-teal-700); }
+/* Cada variante conserva su borde o su pisada con el foco (si no, heredaría la pisada naranja de .s2-boton). */
+.s2-boton-secundario:focus-visible { box-shadow: inset 0 0 0 3px var(--s2-teal-700), 0 0 0 7px var(--s2-amarillo); }
 .s2-boton-secundario:disabled { color: var(--s2-gris); background: var(--s2-linea-2); box-shadow: none; }
 
 /* Confirmar (Aceptar, Sí, lo he cobrado…): verde con pisada. */
 .s2-boton-verde { background: var(--s2-teal-700); box-shadow: inset 0 -4px 0 var(--s2-teal-800); }
 .s2-boton-verde:hover { background: var(--s2-teal-700); }
 .s2-boton-verde:active { box-shadow: inset 0 -2px 0 var(--s2-teal-800); }
+.s2-boton-verde:focus-visible { box-shadow: inset 0 -4px 0 var(--s2-teal-800), 0 0 0 7px var(--s2-amarillo); }
 
 /* Acción destructiva (Rechazar): borde rojo; en el diálogo, relleno rojo con .s2-boton-peligro-lleno. */
 .s2-boton-peligro { color: var(--s2-peligro); background: var(--s2-superficie); box-shadow: inset 0 0 0 3px var(--s2-peligro); }
 .s2-boton-peligro:hover { background: var(--s2-peligro-50); filter: none; }
 .s2-boton-peligro-lleno { color: #fff; background: var(--s2-peligro); box-shadow: none; }
+.s2-boton-peligro:focus-visible { box-shadow: inset 0 0 0 3px var(--s2-peligro), 0 0 0 7px var(--s2-amarillo); }
+.s2-boton-peligro-lleno:focus-visible { box-shadow: 0 0 0 7px var(--s2-amarillo); }
 
 /* Etiqueta de estado de pedido: <span class="s2-estado s2-estado--pendiente">Pendiente</span>. */
 .s2-estado {
