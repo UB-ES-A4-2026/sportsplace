@@ -20,7 +20,7 @@
   --s2-naranja-500: #f97316; /* solo decoración o con texto oscuro */
   --s2-naranja-100: #ffedd5;
 
-  /* Amarillo de los pasos numerados y del foco. */
+  /* Amarillo de los pasos numerados y del halo del foco. */
   --s2-amarillo: #facc15;
   --s2-amarillo-50: #fffbeb;
 
@@ -51,7 +51,8 @@
   --s2-sombra-1: 0 2px 0 rgb(20 38 26 / 8%);
   --s2-sombra-2: 0 4px 0 #cfe2d3;
   --s2-sombra-3: 0 8px 0 #cfe2d3;
-  --s2-foco: 0 0 0 4px var(--s2-amarillo);
+  /* Foco: anillo oscuro + halo amarillo. Solo amarillo sobre el fondo claro daba 1,4:1 (WCAG 2.4.11 pide 3:1). */
+  --s2-foco: 0 0 0 3px var(--s2-tinta), 0 0 0 7px var(--s2-amarillo);
   --s2-curva: cubic-bezier(0.16, 1, 0.3, 1);
   --s2-letra: 'Nunito Variable', Nunito, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
@@ -65,8 +66,10 @@
 
 ::selection { color: var(--s2-tinta); background: var(--s2-teal-100); }
 
-/* Foco siempre visible y amarillo en toda la app. */
-:where(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 4px solid var(--s2-amarillo); outline-offset: 3px; }
+/* Foco siempre visible en toda la app: anillo oscuro y halo amarillo, que se ven sobre cualquier fondo. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--s2-tinta); outline-offset: 2px; box-shadow: 0 0 0 7px var(--s2-amarillo);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
@@ -82,7 +85,10 @@
 }
 .s2-boton:hover { background: var(--s2-naranja-600); filter: brightness(0.94); }
 .s2-boton:active { transform: translateY(1px); box-shadow: inset 0 -2px 0 var(--s2-naranja-700); }
-.s2-boton:focus-visible { outline: 4px solid var(--s2-amarillo); outline-offset: 3px; box-shadow: inset 0 -4px 0 var(--s2-naranja-700); }
+.s2-boton:focus-visible {
+  outline: 3px solid var(--s2-tinta); outline-offset: 2px;
+  box-shadow: inset 0 -4px 0 var(--s2-naranja-700), 0 0 0 7px var(--s2-amarillo);
+}
 .s2-boton:disabled { color: #fff; background: #5c6b60; box-shadow: none; filter: none; cursor: not-allowed; transform: none; opacity: 1; }
 
 /* Botón secundario: borde verde. */
