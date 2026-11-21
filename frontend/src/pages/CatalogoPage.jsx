@@ -63,12 +63,21 @@ export default function CatalogoPage() {
 
   return (
     <section className="pagina pagina-catalogo" aria-labelledby="titulo-pagina" aria-busy={cargando || undefined}>
-      <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
-      <CuadroBusqueda q={q} alBuscar={buscar} alQuitar={quitar} />
+      {/* Diseño con vida (#361): franja de campo a todo el ancho con el título y la búsqueda. Las líneas son decorativas. */}
+      <div className="catalogo-portada s2-campo">
+        <span className="s2-campo-linea" aria-hidden="true" />
+        <span className="s2-campo-circulo" aria-hidden="true" />
+        <span className="s2-campo-area s2-campo-area--izq" aria-hidden="true" />
+        <span className="s2-campo-area s2-campo-area--der" aria-hidden="true" />
+        <div className="catalogo-portada-contenido">
+          <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
+          <CuadroBusqueda q={q} alBuscar={buscar} alQuitar={quitar} />
+        </div>
+      </div>
       <BarraFiltros parametros={parametros} filtros={filtros} onCambiar={cambiar} />
       <div ref={inicioResultados} />
 
-      {/* CA13: «Cargando…» en lugar de la rejilla, con esqueletos de tarjeta (boceto de #250). */}
+      {/* CA13: «Cargando…» en lugar de la rejilla, con esqueletos de tarjeta. */}
       {cargando && (
         <>
           <p className="catalogo-cargando" role="status">{TEXTOS.cargando}</p>

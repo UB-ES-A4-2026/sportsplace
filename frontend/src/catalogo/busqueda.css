@@ -1,61 +1,55 @@
-/* Zona de búsqueda de /catalogo (US-21, T21-5): debajo del título, a todo el ancho, con el diseño S2 (#250).
-   Las reglas de botón llevan una clase porque styles.css define `button` con el verde antiguo. */
+/* Zona de búsqueda de /catalogo (US-21, T21-5). Diseño con vida (#361): dentro de la franja de campo, cuadro blanco
+   grande con la lupa y «Buscar» naranja. Las reglas de botón llevan una clase porque styles.css define `button`. */
 @import '../diseno/tokens.css';
 
-.busqueda-catalogo { display: grid; gap: 6px; margin: 0; color: var(--s2-tinta); }
+.busqueda-catalogo { display: grid; gap: 8px; margin: 0; color: var(--s2-tinta); }
 .busqueda-fila { display: flex; gap: 10px; align-items: stretch; }
 .busqueda-cuadro {
-  position: relative; display: flex; flex: 1; align-items: center; min-width: 0; min-height: 52px;
-  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); background: var(--s2-superficie);
-  box-shadow: var(--s2-sombra-1); transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
+  position: relative; display: flex; flex: 1; align-items: center; min-width: 0; min-height: 56px;
+  border: 1px solid transparent; border-radius: var(--s2-radio); background: var(--s2-superficie);
+  transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
 }
-.busqueda-cuadro:hover { border-color: var(--s2-teal-100); }
-.busqueda-cuadro:focus-within { border-color: var(--s2-teal-500); outline: 0; box-shadow: var(--s2-foco), var(--s2-sombra-1); }
-.busqueda-cuadro-error, .busqueda-cuadro-error:hover { border-color: var(--s2-peligro); }
-.busqueda-lupa { flex: none; margin-left: 16px; color: var(--s2-gris); }
+.busqueda-cuadro:focus-within { border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
+.busqueda-cuadro-error { border-color: var(--s2-peligro); }
+.busqueda-lupa { flex: none; width: 20px; height: 20px; margin-left: 16px; color: var(--s2-gris); }
 .busqueda-cuadro input {
   flex: 1; min-width: 0; margin: 0; padding: 14px 12px; border: 0; border-radius: var(--s2-radio);
-  color: var(--s2-tinta); background: transparent; font: inherit; font-size: 16px; outline: none;
+  color: var(--s2-tinta); background: transparent; font: inherit; font-size: 18px; font-weight: 700; outline: none;
 }
-.busqueda-cuadro input::placeholder { color: var(--s2-gris); opacity: 1; }
+.busqueda-cuadro input::placeholder { color: var(--s2-gris); font-weight: 600; opacity: 1; }
 .busqueda-catalogo .busqueda-quitar {
-  display: grid; flex: none; place-items: center; width: 36px; height: 36px; margin: 0 8px 0 0; padding: 0;
+  --pisada: 0 0 transparent;
+  display: grid; flex: none; place-items: center; width: var(--s2-toque); height: var(--s2-toque); margin: 0 6px 0 0; padding: 0;
   border-radius: var(--s2-radio-s); color: var(--s2-gris); background: none;
 }
-.busqueda-catalogo .busqueda-quitar:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); }
-.busqueda-catalogo .busqueda-quitar:focus-visible { outline: 0; box-shadow: var(--s2-foco); }
-/* «Buscar»: el botón principal teal de S2. */
+.busqueda-catalogo .busqueda-quitar:hover { color: var(--s2-tinta); background: var(--s2-fondo-2); }
+/* «Buscar»: botón principal naranja. */
 .busqueda-catalogo .busqueda-boton {
-  flex: none; min-height: 52px; margin: 0; padding: 0 24px; border-radius: var(--s2-radio); color: #fff;
-  font-size: 15px; font-weight: 650; background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 1px 2px rgb(6 62 71 / 30%), 0 8px 18px -8px rgb(11 107 122 / 60%);
-  transition: transform 160ms var(--s2-curva), filter 160ms var(--s2-curva);
+  --pisada: var(--s2-pisada-naranja);
+  flex: none; min-height: 56px; margin: 0; padding: 0 28px; border-radius: var(--s2-radio); color: #fff;
+  font-size: 17px; font-weight: 800; background: var(--s2-naranja-600); transition: background-color 160ms var(--s2-curva);
 }
-.busqueda-catalogo .busqueda-boton:hover { background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); filter: brightness(1.06); transform: translateY(-1px); }
-.busqueda-catalogo .busqueda-boton:active { transform: translateY(0); }
-.busqueda-catalogo .busqueda-boton:focus-visible { outline: 0; box-shadow: var(--s2-foco), 0 1px 2px rgb(6 62 71 / 30%); }
-.busqueda-error { margin: 0; color: var(--s2-peligro); font-size: 14px; }
+.busqueda-catalogo .busqueda-boton:hover { background: var(--s2-naranja-700); }
+/* El error va sobre la franja verde: rótulo blanco con el texto rojo dentro, para que se lea (≥ 4,5:1). */
+.busqueda-error {
+  justify-self: start; margin: 0; padding: 6px 10px; border-radius: var(--s2-radio-s); color: var(--s2-peligro);
+  background: var(--s2-superficie); font-size: 14px; font-weight: 800;
+}
 
-/* US-21 CA18: sin resultados con búsqueda, en la misma caja que los demás estados del catálogo. */
+/* US-21 CA18: sin resultados con búsqueda, como los demás estados vacíos del catálogo. */
 .busqueda-sin-resultados {
-  display: grid; justify-items: center; gap: 10px; margin-top: 22px; padding: 36px 24px; border: 1px solid var(--s2-linea);
-  border-radius: var(--s2-radio-l); text-align: center; color: var(--s2-tinta-2); background: var(--s2-superficie);
-  box-shadow: var(--s2-sombra-1);
+  display: grid; justify-items: center; gap: 10px; margin-top: 24px; padding: 48px 24px;
+  border-top: 1px solid var(--s2-linea); border-bottom: 1px solid var(--s2-linea); text-align: center; color: var(--s2-tinta-2);
 }
-.busqueda-sin-resultados p { max-width: 46ch; margin: 0; }
-.busqueda-sin-resultados-titulo { color: var(--s2-tinta); font-size: 17px; font-weight: 700; }
-.busqueda-sin-resultados a.boton-enlace {
-  margin-top: 6px; padding: 12px 20px; border-radius: var(--s2-radio); color: #fff;
-  background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); box-shadow: var(--s2-sombra-1);
-}
-.busqueda-sin-resultados a.boton-enlace:hover { background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-800)); }
+.busqueda-sin-resultados p { max-width: 46ch; margin: 0; font-size: 16px; font-weight: 600; }
+.busqueda-sin-resultados-titulo { color: var(--s2-tinta); font-size: 18px; font-weight: 800; }
+.busqueda-sin-resultados a.boton-enlace { margin-top: 8px; }
 
 @media (max-width: 560px) {
   .busqueda-fila { flex-direction: column; }
-  .busqueda-catalogo .busqueda-boton { width: 100%; }
+  .busqueda-catalogo .busqueda-boton { width: 100%; min-height: var(--s2-toque-l); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .busqueda-cuadro, .busqueda-catalogo .busqueda-boton { transition: none; }
-  .busqueda-catalogo .busqueda-boton:hover { transform: none; }
 }

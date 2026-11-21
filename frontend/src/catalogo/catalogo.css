@@ -1,60 +1,59 @@
-/* T21-4: pantalla /catalogo, tarjeta de anuncio, rejilla y paginación (US-96) con el diseño S2 (#250).
+/* T21-4: pantalla /catalogo, tarjeta de anuncio, rejilla y paginación (US-96). Diseño con vida (#361): franja de campo
+   a todo el ancho con el título y la búsqueda; debajo, los filtros y una rejilla de tarjetas sin caja.
    Los selectores llevan dos clases porque styles.css se carga después y sus reglas generales
    (`.pagina`, `.pagina a`, `button`) ganarían a una sola clase. */
 @import '../diseno/tokens.css';
 
-.pagina.pagina-catalogo { width: 100%; max-width: none; padding-top: 40px; color: var(--s2-tinta); }
-/* Título de pantalla de la guía S2. */
-.pagina-catalogo h1 {
-  margin: 0 0 20px; color: var(--s2-tinta); font-size: clamp(30px, 4vw, 38px); font-weight: 780; line-height: 1.1;
-  letter-spacing: -0.035em; text-wrap: balance;
-}
+.pagina.pagina-catalogo { width: 100%; max-width: none; padding-top: 0; color: var(--s2-tinta); }
 .pagina-catalogo button { margin-top: 0; }
 .pagina-catalogo a.s2-boton { color: #fff; text-decoration: none; }
-.pagina-catalogo a.s2-boton-secundario { color: var(--s2-teal-800); }
+.pagina-catalogo a.s2-boton-secundario { color: var(--s2-teal-700); }
+
+/* Franja de campo: sale de la columna hasta los bordes de la ventana; el contenido vuelve a la columna. */
+.catalogo-portada {
+  margin: -8px calc(50% - 50vw) 0; padding: 36px calc(50vw - 50%) 32px;
+}
+.catalogo-portada-contenido { position: relative; display: grid; gap: 18px; }
+.pagina-catalogo .catalogo-portada h1 {
+  margin: 0; color: #fff; font-size: clamp(32px, 3.6vw, 44px); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
+}
 
 /* Línea de resultados: total a la izquierda y «Ordenar por» a la derecha. */
 .catalogo-resultados {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 22px 0 16px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 24px 0 18px;
 }
-.catalogo-total { margin: 0; font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; }
-.catalogo-orden { display: flex; align-items: center; gap: 8px; color: var(--s2-tinta-2); font-size: 14px; }
-/* Receta de controles de la guía S2, como `.filtro-desplegable`: 42 px y el chevron de Lucide. */
+.catalogo-total { margin: 0; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.catalogo-orden { display: flex; align-items: center; gap: 10px; color: var(--s2-gris); font-size: 15px; font-weight: 700; }
 .catalogo-orden select {
-  height: 42px; padding: 0 38px 0 14px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio);
-  color: var(--s2-tinta-2); background-color: var(--s2-superficie); font: inherit; font-size: 14px; font-weight: 550;
-  box-shadow: var(--s2-sombra-1); cursor: pointer; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2334474e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  height: var(--s2-toque); padding: 0 38px 0 12px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde); border-radius: var(--s2-radio);
+  color: var(--s2-tinta); background-color: var(--s2-superficie); font: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2314261a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
-  transition: border-color 160ms var(--s2-curva), background-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
 }
-.catalogo-orden select:hover { border-color: var(--s2-teal-100); background-color: var(--s2-teal-50); }
-.catalogo-orden select:focus-visible { outline: 0; border-color: var(--s2-teal-500); box-shadow: var(--s2-foco); }
+.catalogo-orden select:hover { border-color: var(--s2-tinta); }
+.catalogo-orden select:focus-visible { outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
 
 /* CA14 y CA15: catálogo vacío, sin resultados con filtros y error, en lugar de la rejilla. */
 .catalogo-estado {
-  display: grid; justify-items: center; gap: 12px; margin-top: 22px; padding: 36px 24px; border: 1px solid var(--s2-linea);
-  border-radius: var(--s2-radio-l); text-align: center; background: var(--s2-superficie); box-shadow: var(--s2-sombra-1);
+  display: grid; justify-items: center; gap: 12px; margin-top: 24px; padding: 48px 24px;
+  border-top: 1px solid var(--s2-linea); border-bottom: 1px solid var(--s2-linea); text-align: center;
 }
-.catalogo-estado p { max-width: 46ch; margin: 0; color: var(--s2-tinta-2); font-size: 15px; }
+.catalogo-estado p { max-width: 46ch; margin: 0; color: var(--s2-tinta-2); font-size: 16px; font-weight: 600; }
 .catalogo-estado-icono {
-  display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; color: var(--s2-teal-700);
-  background: var(--s2-teal-50); box-shadow: inset 0 0 0 1px var(--s2-teal-100);
+  display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; color: var(--s2-teal-700); background: var(--s2-teal-50);
 }
 
 /* CA13: «Cargando…» y, debajo, esqueletos de tarjeta con brillo. */
-.catalogo-cargando { margin: 22px 0 16px; color: var(--s2-gris); font-size: 15px; font-weight: 550; }
-.tarjeta-esqueleto {
-  display: flex; flex: 1; flex-direction: column; overflow: hidden; border: 1px solid var(--s2-linea);
-  border-radius: var(--s2-radio-l); background: var(--s2-superficie);
-}
+.catalogo-cargando { margin: 24px 0 18px; color: var(--s2-gris); font-size: 16px; font-weight: 700; }
+.tarjeta-esqueleto { display: flex; flex: 1; flex-direction: column; gap: 12px; }
 .esqueleto-foto, .esqueleto-lineas span {
-  background: linear-gradient(90deg, var(--s2-linea-2) 0%, var(--s2-superficie) 45%, var(--s2-linea-2) 90%) 0 0 / 200% 100%;
+  background: linear-gradient(90deg, var(--s2-linea-2) 0%, var(--s2-fondo-2) 45%, var(--s2-linea-2) 90%) 0 0 / 200% 100%;
   animation: esqueleto-brillo 1.4s ease-in-out infinite;
 }
-.esqueleto-foto { aspect-ratio: 4 / 3; }
-.esqueleto-lineas { display: grid; gap: 10px; padding: 18px; }
-.esqueleto-lineas span { display: block; height: 12px; border-radius: 6px; }
+.esqueleto-foto { aspect-ratio: 4 / 3; border-radius: var(--s2-radio-l); }
+.esqueleto-lineas { display: grid; gap: 10px; padding: 0 2px; }
+.esqueleto-lineas span { display: block; height: 12px; border-radius: 4px; }
 .esqueleto-lineas span:nth-child(1) { width: 80%; height: 14px; }
 .esqueleto-lineas span:nth-child(2) { width: 45%; height: 18px; }
 .esqueleto-lineas span:nth-child(3) { width: 60%; }
@@ -62,80 +61,72 @@
 @keyframes esqueleto-brillo { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
 /* Rejilla: 1 columna, 2 desde 600 px, 3 desde 900 px y 4 desde 1200 px (US-96, «Pantallas para el boceto»). */
-.catalogo-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; margin: 0; padding: 0; list-style: none; }
+.catalogo-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px 22px; margin: 0; padding: 0; list-style: none; }
 .catalogo-rejilla > li { display: flex; min-width: 0; }
 @media (min-width: 600px) { .catalogo-rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 900px) { .catalogo-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1200px) { .catalogo-rejilla { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-/* Tarjeta clicable de la guía S2: todo el bloque es un enlace (CA3); al pasar el ratón sube 4 px con sombra teal. */
-.catalogo-rejilla .tarjeta-anuncio {
-  display: flex; flex: 1; flex-direction: column; min-width: 0; overflow: hidden; color: var(--s2-tinta); text-decoration: none;
-  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
-  box-shadow: var(--s2-sombra-2);
-  transition: transform 200ms var(--s2-curva), box-shadow 200ms var(--s2-curva), border-color 200ms var(--s2-curva);
+/* Tarjeta clicable: todo el bloque es un enlace (CA3). Sin caja: la foto arriba y el texto debajo, como los marketplaces.
+   Al pasar el ratón, la foto se acerca un poco y el título se subraya. La usa también el perfil de un centro (US-10). */
+.tarjeta-anuncio, .tarjeta-centro-enlace {
+  display: flex; flex: 1; flex-direction: column; min-width: 0; color: var(--s2-tinta); text-decoration: none; border-radius: var(--s2-radio-l);
 }
-.catalogo-rejilla .tarjeta-anuncio:hover { border-color: var(--s2-teal-100); box-shadow: var(--s2-sombra-3); transform: translateY(-4px); }
-.catalogo-rejilla .tarjeta-anuncio:focus-visible { outline: 3px solid var(--s2-teal-500); outline-offset: 3px; }
+.pagina .tarjeta-anuncio, .pagina .tarjeta-centro-enlace { color: var(--s2-tinta); }
+.tarjeta-anuncio:focus-visible, .tarjeta-centro-enlace:focus-visible { outline-offset: 4px; }
 
-.tarjeta-foto { position: relative; overflow: hidden; aspect-ratio: 4 / 3; background: var(--s2-linea-2); }
+.tarjeta-foto { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--s2-radio-l); background: var(--s2-fondo-2); }
 .tarjeta-foto img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 400ms var(--s2-curva); }
-.catalogo-rejilla .tarjeta-anuncio:hover .tarjeta-foto img { transform: scale(1.04); }
-/* «Sin foto» de la guía S2: hueco con degradado teal-50 → teal-100, icono ImageOff y el texto. */
+.tarjeta-anuncio:hover .tarjeta-foto img, .tarjeta-centro-enlace:hover .tarjeta-foto img { transform: scale(1.03); }
+/* «Sin foto»: el círculo del deporte (si se sabe) o el icono, y el texto. */
 .tarjeta-sin-foto {
-  display: grid; place-items: center; align-content: center; gap: 6px; height: 100%; color: var(--s2-teal-800); font-size: 14px;
-  font-weight: 600; background: linear-gradient(135deg, var(--s2-teal-50), var(--s2-teal-100));
+  display: grid; place-items: center; align-content: center; gap: 10px; height: 100%; color: var(--s2-tinta-2); font-size: 14px; font-weight: 800;
 }
-/* CA6: la etiqueta naranja «No disponible», con los colores de aviso de tokens.css. */
+/* CA6: «Reservado», etiqueta rectangular naranja arriba a la izquierda. */
 .tarjeta-no-disponible {
-  position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 999px; color: var(--s2-aviso);
-  background: var(--s2-aviso-50); font-size: 12.5px; font-weight: 700; box-shadow: var(--s2-sombra-2);
+  position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+  border-radius: var(--s2-radio-etiqueta); color: #fff; background: var(--s2-naranja-600); font-size: 13px; font-weight: 800;
 }
 
-.tarjeta-cuerpo { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 18px 16px; }
+.tarjeta-cuerpo { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 2px 0; }
 .tarjeta-cuerpo p { margin: 0; }
 .tarjeta-titulo {
-  display: -webkit-box; margin: 0; overflow: hidden; font-size: 16.5px; font-weight: 700; line-height: 1.3;
-  letter-spacing: -0.01em; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+  display: -webkit-box; margin: 0; overflow: hidden; font-size: 16px; font-weight: 800; line-height: 1.3;
+  -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
 }
-/* Precio: el importe grande en teal y «/ unidad» pequeño; la donación, en verde. */
-.tarjeta-precio { color: var(--s2-gris); font-size: 13.5px; font-variant-numeric: tabular-nums; }
-.tarjeta-precio strong { color: var(--s2-teal-800); font-size: 20px; font-weight: 760; letter-spacing: -0.02em; }
-/* Caso puntual sin variable en tokens.css: la especificación pide la donación «en verde». */
-.tarjeta-precio-donacion strong { color: #17784a; font-size: 18px; }
-.tarjeta-detalle {
-  padding: 4px 10px; border-radius: var(--s2-radio-s); color: var(--s2-tinta-2); background: var(--s2-linea-2);
-  font-size: 13px; font-weight: 550;
-}
-/* Pie: línea discontinua, el centro con su círculo y la fecha. */
-.tarjeta-pie {
-  display: grid; gap: 4px; width: 100%; margin-top: auto; padding-top: 12px; border-top: 1px dashed var(--s2-linea);
-}
+.tarjeta-anuncio:hover .tarjeta-titulo, .tarjeta-centro-enlace:hover .tarjeta-titulo { text-decoration: underline; text-underline-offset: 3px; }
+/* Precio: el importe grande y «/ unidad» pequeño; la donación, en verde. */
+.tarjeta-precio { color: var(--s2-gris); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tarjeta-precio strong { color: var(--s2-tinta); font-size: 20px; font-weight: 900; letter-spacing: -0.01em; }
+.tarjeta-precio-donacion strong { color: var(--s2-teal-700); font-size: 18px; font-weight: 900; }
+/* Precio en la tarjeta del perfil de un centro (US-10): un solo texto, «12,00 € / unidad» o «Gratis · Donación». */
+.tarjeta-centro-precio { color: var(--s2-tinta); font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.tarjeta-centro-precio-donacion { color: var(--s2-teal-700); }
+.tarjeta-detalle { display: flex; align-items: center; gap: 8px; color: var(--s2-tinta-2); font-size: 14px; font-weight: 700; }
+/* Pie: una línea fina, el centro con su localidad y la fecha. */
+.tarjeta-pie { display: grid; gap: 2px; width: 100%; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--s2-linea-2); }
 .tarjeta-origen {
-  display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; color: var(--s2-gris); font-size: 13.5px;
-  white-space: nowrap; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700;
 }
-.tarjeta-centro-punto {
-  flex: none; width: 18px; height: 18px; border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, var(--s2-teal-100), var(--s2-teal-500) 60%, var(--s2-teal-800));
-}
-.tarjeta-fecha { color: var(--s2-gris); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.tarjeta-origen svg { flex: none; }
+.tarjeta-origen span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tarjeta-fecha { color: var(--s2-gris); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* CA8: «Anterior» · «Página X de Y» · «Siguiente», con flechas como en el boceto. */
-.catalogo-paginacion { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 32px; }
-.catalogo-pagina-actual {
-  padding: 8px 14px; border-radius: 999px; color: var(--s2-teal-800); background: var(--s2-teal-50);
-  box-shadow: inset 0 0 0 1px var(--s2-teal-100); font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums;
+/* CA8: «Anterior» · «Página X de Y» · «Siguiente». */
+.catalogo-paginacion {
+  display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--s2-linea);
 }
+.catalogo-paginacion .s2-boton { min-height: var(--s2-toque); padding: 0 16px; font-size: 15px; }
+.catalogo-pagina-actual { color: var(--s2-tinta); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 599px) {
-  .pagina.pagina-catalogo { padding-top: 28px; }
+  .catalogo-portada { padding-top: 24px; padding-bottom: 22px; }
   .catalogo-paginacion { gap: 10px; }
-  .catalogo-paginacion .s2-boton { padding: 0 14px; }
+  .catalogo-paginacion .s2-boton { padding: 0 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .esqueleto-foto, .esqueleto-lineas span { animation: none; }
-  .catalogo-rejilla .tarjeta-anuncio, .tarjeta-foto img { transition: none; }
-  .catalogo-rejilla .tarjeta-anuncio:hover, .catalogo-rejilla .tarjeta-anuncio:hover .tarjeta-foto img { transform: none; }
+  .tarjeta-foto img { transition: none; }
+  .tarjeta-anuncio:hover .tarjeta-foto img, .tarjeta-centro-enlace:hover .tarjeta-foto img { transform: none; }
 }

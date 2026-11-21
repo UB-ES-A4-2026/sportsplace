@@ -12,7 +12,8 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
+/* overflow-x: clip deja que las franjas a todo el ancho (catálogo, perfil) salgan de la columna sin barra horizontal. */
+body { margin: 0; min-width: 320px; overflow-x: clip; }
 button { font: inherit; }
 
 /* La cabecera (diseno/cabecera.css) va fuera de .page, a todo el ancho; el contenido queda alineado con ella. */
