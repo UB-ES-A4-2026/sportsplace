@@ -1,4 +1,4 @@
-import { CalendarDays, MapPin } from 'lucide-react';
+import { CalendarDays, Globe, Mail, MapPin, Phone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { listarAnunciosDelCentro, obtenerCentro } from '../api/centros.js';
@@ -18,6 +18,10 @@ import {
   vistaDelPerfil,
   zonaDelCentro,
 } from '../perfil/perfilPublico.js';
+import { inicialesDe } from '../utilidades/iniciales.js';
+
+// Icono decorativo de cada dato de contacto (el texto del enlace es el dato).
+const ICONO_CONTACTO = { telefono: Phone, email: Mail, web: Globe };
 
 // US-10 T10-2: /centros/:id · «Perfil de centro», lo que ven los demás centros (ruta privada, CA2).
 // Carga a la vez GET /api/centros/:id (CA11) y GET /api/centros/:id/anuncios?pagina=n (CA12).
@@ -85,18 +89,13 @@ function PerfilDeCentro({ centro, lista, pagina, alCambiarDePagina }) {
 
   return (
     <section className="pagina pagina-anuncio pagina-centro" aria-labelledby="titulo-pagina">
-      {esMiCentro(centro) && (
-        <div className="perfil-banda centro-banda-propia" role="status">
-          <p>{TEXTOS.bandaPropia}</p>
-          <Link to="/perfil/editar" className="boton-enlace">{TEXTOS.editarPerfil}</Link>
-        </div>
-      )}
-
-      {/* Diseño S2 (Figma 04): portada con degradado y avatar decorativo. */}
-      <div className="perfil-portada">
-        <div className="perfil-portada-banda" aria-hidden="true" />
+      {/* Diseño con vida (#361): franja de campo a todo el ancho con las iniciales del centro (decorativas). */}
+      <div className="perfil-portada s2-campo">
+        <span className="s2-campo-linea" aria-hidden="true" />
+        <span className="s2-campo-circulo" aria-hidden="true" />
+        <span className="s2-campo-area s2-campo-area--der" aria-hidden="true" />
         <div className="perfil-portada-datos">
-          <span className="perfil-avatar" aria-hidden="true" />
+          <span className="perfil-avatar" aria-hidden="true">{inicialesDe(centro.nombre)}</span>
           <div className="perfil-portada-texto">
             <p className="centro-antetitulo">{TEXTOS.titulo}</p>
             <h1 id="titulo-pagina">{centro.nombre}</h1>
@@ -109,6 +108,16 @@ function PerfilDeCentro({ centro, lista, pagina, alCambiarDePagina }) {
       </div>
       {/* [Depende de US-45] hueco para la puntuación del centro. */}
 
+      {/* Banda amarilla bajo la franja: así ve el propio centro su perfil público. */}
+      {esMiCentro(centro) && (
+        <div className="perfil-banda centro-banda-propia" role="status">
+          <p>{TEXTOS.bandaPropia}</p>
+          <Link to="/perfil/editar" className="boton-enlace">{TEXTOS.editarPerfil}</Link>
+        </div>
+      )}
+
+
+      <div className="centro-cuerpo">
       <div className="perfil-rejilla">
         <section className="perfil-bloque" aria-labelledby="titulo-sobre-nosotros">
           <h2 id="titulo-sobre-nosotros">{TEXTOS.sobreNosotros}</h2>
@@ -126,6 +135,7 @@ function PerfilDeCentro({ centro, lista, pagina, alCambiarDePagina }) {
             <ul className="centro-contacto">
               {contacto.map((enlace) => (
                 <li key={enlace.tipo}>
+                  <ContactoIcono tipo={enlace.tipo} />
                   {/* CA8: la web en pestaña nueva con rel="noopener noreferrer"; email con mailto: y teléfono con tel:. */}
                   <a
                     href={enlace.href}
@@ -162,8 +172,14 @@ function PerfilDeCentro({ centro, lista, pagina, alCambiarDePagina }) {
           </nav>
         )}
       </section>
+      </div>
     </section>
   );
+}
+
+function ContactoIcono({ tipo }) {
+  const Icono = ICONO_CONTACTO[tipo];
+  return <span className="centro-contacto-icono" aria-hidden="true"><Icono size={17} /></span>;
 }
 
 // CA9: centro inexistente, id que no es UUID o centro eliminado.

@@ -7,6 +7,7 @@ import Aviso from '../components/Aviso.jsx';
 import { TEXTOS_PERFIL } from '../perfil/perfil.js';
 import { rutaDelCentro, TEXTOS as TEXTOS_PERFIL_PUBLICO } from '../perfil/perfilPublico.js';
 import { faltaCodigoPostal, textoDireccion, textoZona, TEXTOS_UBICACION } from '../perfil/ubicacion.js';
+import { inicialesDe } from '../utilidades/iniciales.js';
 
 // US-07: /perfil · «Mi perfil», vista previa propia de los datos del centro (GET /api/centros/mio).
 export default function PerfilPage() {
@@ -46,11 +47,10 @@ export default function PerfilPage() {
 function DatosDelCentro({ centro }) {
   return (
     <>
-      {/* Diseño S2 (Figma 04): portada con degradado y avatar decorativo. */}
+      {/* Diseño con vida (#361): cabecera del perfil con las iniciales del centro (decorativas). */}
       <div className="perfil-portada">
-        <div className="perfil-portada-banda" aria-hidden="true" />
         <div className="perfil-portada-datos">
-          <span className="perfil-avatar" aria-hidden="true" />
+          <span className="perfil-avatar" aria-hidden="true">{inicialesDe(centro.nombre)}</span>
           <div className="perfil-portada-texto">
             <h2 className="perfil-nombre">{centro.nombre}</h2>
             <p className="perfil-localidad"><MapPin size={16} aria-hidden="true" />{centro.localidad}</p>
