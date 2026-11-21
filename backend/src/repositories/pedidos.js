@@ -207,7 +207,14 @@ export function createPedidosRepository(database, { urlFoto = () => null } = {})
              WHERE id = $1 AND estado = 'pendiente'`,
             [id, motivoCodigo, motivoTexto],
           );
-          if (rowCount === 0) throw transicionNoPermitida(fila.estado);
+          if (rowCount === 0) {
+            // Con el FOR UPDATE no debería pasar; si pasa, se informa del estado real.
+            const { rows: [actual] } = await client.query(
+              'SELECT estado FROM public.pedidos WHERE id = $1',
+              [id],
+            );
+            throw transicionNoPermitida(actual?.estado ?? fila.estado);
+          }
           return aDetalle((await client.query(SELECT_DETALLE, [usuarioId, id])).rows);
         });
       } catch (error) {
