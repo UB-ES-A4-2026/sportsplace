@@ -135,7 +135,9 @@ function Bandeja({ lista, pestana, pagina, irAPagina }) {
         <tbody>
           {lista.pedidos.map(filaDePedido).map((fila) => (
             // CA6: toda la fila lleva al detalle; el enlace del título es el que se alcanza con el teclado.
-            <tr key={fila.id} className="pedidos-fila" onClick={() => navigate(fila.ruta)}>
+            // Diseño con vida (#361): los pendientes, con fondo amarillo suave (el estado sigue escrito en su columna).
+            <tr key={fila.id} className={fila.estado.color === 'amarillo' ? 'pedidos-fila pedidos-fila-pendiente' : 'pedidos-fila'}
+              onClick={() => navigate(fila.ruta)}>
               <td className="pedidos-foto">
                 {fila.foto
                   ? <img src={fila.foto} alt="" width="56" height="56" loading="lazy" />
