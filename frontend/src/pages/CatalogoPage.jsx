@@ -67,7 +67,11 @@ export default function CatalogoPage() {
           tarjeta blanca con el título y la búsqueda, como la portada de los marketplaces. */}
       <div className="catalogo-portada">
         <div className="catalogo-portada-tarjeta">
-          <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
+          <div className="catalogo-portada-textos">
+            <p className="catalogo-portada-lema">{TEXTOS.lema}</p>
+            <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
+            <p className="catalogo-portada-subtitulo">{TEXTOS.subtitulo}</p>
+          </div>
           <CuadroBusqueda q={q} alBuscar={buscar} alQuitar={quitar} />
         </div>
       </div>

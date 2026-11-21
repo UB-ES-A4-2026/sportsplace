@@ -22,9 +22,15 @@
   display: grid; gap: 18px; width: min(560px, 100%); padding: 30px 30px 28px; border-radius: var(--s2-radio-l);
   background: var(--s2-superficie); box-shadow: var(--s2-sombra-3);
 }
+.catalogo-portada-textos { display: grid; gap: 6px; }
+/* Antetítulo: pequeño, en mayúsculas y en el naranja de la marca (texto oscuro de 5,2:1 sobre blanco). */
+.catalogo-portada-lema {
+  margin: 0; color: var(--s2-naranja-600); font-size: 13px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+}
 .pagina-catalogo .catalogo-portada h1 {
   margin: 0; color: var(--s2-tinta); font-size: clamp(32px, 3.4vw, 42px); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;
 }
+.catalogo-portada-subtitulo { max-width: 46ch; margin: 2px 0 0; color: var(--s2-tinta-2); font-size: 17px; font-weight: 600; line-height: 1.45; }
 
 /* Línea de resultados: total a la izquierda y «Ordenar por» a la derecha. */
 .catalogo-resultados {
@@ -135,6 +141,7 @@
     background: url('../assets/portada-catalogo-movil.webp') 62% 55% / cover no-repeat var(--s2-teal-900);
   }
   .catalogo-portada-tarjeta { position: relative; width: 100%; margin-top: -44px; padding: 20px 18px; box-shadow: var(--s2-sombra-2); }
+  .catalogo-portada-subtitulo { font-size: 16px; }
 }
 @media (max-width: 599px) {
   .catalogo-paginacion { gap: 10px; }
