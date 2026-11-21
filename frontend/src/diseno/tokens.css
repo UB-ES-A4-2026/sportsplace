@@ -1,8 +1,8 @@
 /* Diseño S2 «con vida» (#361, sustituye al estilo base de #250): verde césped, naranja balón y letra Nunito.
    Se conservan los NOMBRES de las variables --s2-* (las usa todo el CSS de la app) y se cambian sus VALORES.
    Aunque se llamen «teal», ahora son la escala de verde; no renombrar en esta PR para no tocar 12 archivos a la vez.
-   Versión sobria: fondo blanco, líneas finas que separan los bloques (como los marketplaces), esquinas de 6-12 px,
-   botones planos y etiquetas rectangulares en lugar de píldoras. Los colores de marca son los de Lucía.
+   Valores del traspaso de Lucía tal cual: fondo verde muy claro, tarjetas redondas con borde, botones con «pisada»
+   (sombra sólida abajo) y etiquetas en pastilla. El foco es su corrección posterior (anillo oscuro + halo amarillo).
    Contraste comprobado: todo texto normal ≥ 4,5:1 sobre su fondo; los botones con texto blanco ≥ 4,5:1; los bordes de
    los campos ≥ 3:1 (WCAG 1.4.11). */
 @import '@fontsource-variable/nunito';
@@ -14,8 +14,8 @@
   --s2-teal-700: #15803d; /* texto y botones: 5,0:1 sobre blanco */
   --s2-teal-600: #15803d;
   --s2-teal-500: #22a355; /* solo decoración (líneas, puntos), nunca texto */
-  --s2-teal-100: #dff2e5;
-  --s2-teal-50: #f2f9f4;
+  --s2-teal-100: #dcfce7;
+  --s2-teal-50: #f0fdf4;
 
   /* Naranja balón: acción principal (Publicar, Buscar, Pedir material, Enviar). */
   --s2-naranja-700: #9a3412;
@@ -27,14 +27,14 @@
   --s2-amarillo: #facc15;
   --s2-amarillo-50: #fffbeb;
 
-  /* Texto y superficies: fondo blanco y líneas finas para separar. */
+  /* Texto y superficies. */
   --s2-tinta: #14261a;
   --s2-tinta-2: #2f4236;
   --s2-gris: #4b5b50; /* texto secundario: 7,2:1 sobre blanco */
-  --s2-linea: #e2e8e3;
-  --s2-linea-2: #eef2ef;
-  --s2-fondo: #fff;
-  --s2-fondo-2: #f6f8f6; /* bandas suaves: barra de filtros, huecos de foto, pie de bloques */
+  --s2-linea: #dceadf;
+  --s2-linea-2: #eef5ef;
+  --s2-fondo: #f3f8f2;
+  --s2-fondo-2: #eef5ef; /* bandas suaves dentro de una tarjeta blanca */
   --s2-superficie: #fff;
   --s2-peligro: #b91c1c;
   --s2-peligro-50: #fef2f2;
@@ -43,19 +43,20 @@
 
   /* Estados del pedido (E06 base común). Siempre con texto, nunca solo color. */
   --s2-estado-pendiente-fondo: #fef3c7;  --s2-estado-pendiente-texto: #854d0e;  --s2-estado-pendiente-punto: #ca8a04;
-  --s2-estado-aceptado-fondo: #dff2e5;   --s2-estado-aceptado-texto: #14532d;   --s2-estado-aceptado-punto: #15803d;
+  --s2-estado-aceptado-fondo: #dcfce7;   --s2-estado-aceptado-texto: #14532d;   --s2-estado-aceptado-punto: #15803d;
   --s2-estado-rechazado-fondo: #fee2e2;  --s2-estado-rechazado-texto: #991b1b;  --s2-estado-rechazado-punto: #dc2626;
   --s2-estado-cancelado-fondo: #eef1ee;  --s2-estado-cancelado-texto: #3f4b43;  --s2-estado-cancelado-punto: #6b7a6f;
   --s2-estado-recibido-fondo: #dbeafe;   --s2-estado-recibido-texto: #1e3a8a;   --s2-estado-recibido-punto: #1d4ed8;
   --s2-estado-borrador-texto: #6b21a8; /* anuncio en borrador (E03) */
 
-  /* Formas: esquinas moderadas y sombras suaves solo donde algo flota (menús, diálogos, hover). */
-  --s2-radio-s: 6px;
-  --s2-radio: 8px;
-  --s2-radio-l: 12px;
-  --s2-sombra-1: 0 1px 2px rgb(20 38 26 / 6%);
-  --s2-sombra-2: 0 2px 10px rgb(20 38 26 / 7%);
-  --s2-sombra-3: 0 12px 32px rgb(20 38 26 / 12%);
+  /* Formas: más redondas y con «pisada» (sombra sólida abajo) en lugar de sombras difuminadas. */
+  --s2-radio-s: 12px;
+  --s2-radio: 14px;
+  --s2-radio-l: 22px;
+  --s2-sombra-1: 0 2px 0 rgb(20 38 26 / 8%);
+  --s2-sombra-2: 0 4px 0 #cfe2d3;
+  --s2-sombra-3: 0 8px 0 #cfe2d3;
+  --s2-sombra-flota: 0 12px 32px rgb(20 38 26 / 16%); /* solo menús y diálogos, que flotan sobre la página */
   /* Foco: anillo oscuro + halo amarillo. Solo amarillo sobre el fondo claro daba 1,4:1 (WCAG 2.4.11 pide 3:1). */
   --s2-foco: 0 0 0 3px var(--s2-tinta), 0 0 0 7px var(--s2-amarillo);
   --s2-curva: cubic-bezier(0.16, 1, 0.3, 1);
@@ -65,14 +66,14 @@
   --s2-toque: 44px;   /* alto mínimo de cualquier control */
   --s2-toque-l: 52px; /* botones de acción principales */
 
-  /* Estructura: grosor de las líneas y bordes, radio de las etiquetas y «pisada» de los botones (aquí, planos). */
-  --s2-borde: 1px;
+  /* Estructura: grosor de los bordes de tarjetas y botones, campos, radio de las etiquetas y «pisada» de los botones. */
+  --s2-borde: 3px;
   --s2-campo-borde: #84948a; /* borde de campos y desplegables: 3,2:1 sobre blanco */
-  --s2-campo-grosor: 1px;
-  --s2-radio-etiqueta: 4px;
-  --s2-pisada-naranja: 0 0 transparent;
-  --s2-pisada-verde: 0 0 transparent;
-  --s2-pisada-roja: 0 0 transparent;
+  --s2-campo-grosor: 2px;
+  --s2-radio-etiqueta: 999px;
+  --s2-pisada-naranja: inset 0 -4px 0 var(--s2-naranja-700);
+  --s2-pisada-verde: inset 0 -4px 0 var(--s2-teal-800);
+  --s2-pisada-roja: inset 0 -4px 0 #7f1d1d;
 
   font-family: var(--s2-letra);
   caret-color: var(--s2-teal-700);
@@ -95,73 +96,74 @@
   white-space: nowrap; border: 0;
 }
 
-/* Botón principal: naranja y plano. */
+/* Botón principal: naranja con pisada. */
 .s2-boton {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--s2-toque-l); margin: 0;
-  padding: 0 22px; border: 0; border-radius: var(--s2-radio); color: #fff; font: inherit; font-size: 16px;
-  font-weight: 800; line-height: 1.2; white-space: nowrap; text-decoration: none; cursor: pointer;
+  padding: 0 22px; border: 0; border-radius: var(--s2-radio); color: #fff; font: inherit; font-size: 17px;
+  font-weight: 900; line-height: 1.2; white-space: nowrap; text-decoration: none; cursor: pointer;
   background: var(--s2-naranja-600); box-shadow: var(--s2-pisada-naranja);
-  transition: background-color 160ms var(--s2-curva), transform 160ms var(--s2-curva);
+  transition: transform 160ms var(--s2-curva), filter 160ms var(--s2-curva);
 }
-.s2-boton:hover { color: #fff; background: var(--s2-naranja-700); }
-.s2-boton:active { transform: translateY(1px); }
+.s2-boton:hover { color: #fff; background: var(--s2-naranja-600); filter: brightness(0.94); }
+.s2-boton:active { transform: translateY(1px); box-shadow: inset 0 -2px 0 var(--s2-naranja-700); }
 .s2-boton:focus-visible {
   outline: 3px solid var(--s2-tinta); outline-offset: 2px;
   box-shadow: var(--s2-pisada-naranja), 0 0 0 7px var(--s2-amarillo);
 }
-.s2-boton:disabled { color: #fff; background: #5c6b60; box-shadow: none; cursor: not-allowed; transform: none; opacity: 1; }
+.s2-boton:disabled { color: #fff; background: #5c6b60; box-shadow: none; filter: none; cursor: not-allowed; transform: none; opacity: 1; }
 
-/* Botón secundario: blanco con borde verde. */
+/* Botón secundario: borde verde. */
 .s2-boton-secundario {
   color: var(--s2-teal-700); background: var(--s2-superficie); box-shadow: inset 0 0 0 var(--s2-borde) var(--s2-teal-700);
 }
-.s2-boton-secundario:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); }
+.s2-boton-secundario:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); filter: none; }
+.s2-boton-secundario:active { box-shadow: inset 0 0 0 var(--s2-borde) var(--s2-teal-700); }
 /* Cada variante conserva su borde o su pisada con el foco (si no, heredaría la de .s2-boton). */
 .s2-boton-secundario:focus-visible { box-shadow: inset 0 0 0 var(--s2-borde) var(--s2-teal-700), 0 0 0 7px var(--s2-amarillo); }
 .s2-boton-secundario:disabled { color: var(--s2-gris); background: var(--s2-linea-2); box-shadow: none; }
 
-/* Confirmar (Aceptar, Sí, lo he cobrado…): verde. */
+/* Confirmar (Aceptar, Sí, lo he cobrado…): verde con pisada. */
 .s2-boton-verde { background: var(--s2-teal-700); box-shadow: var(--s2-pisada-verde); }
-.s2-boton-verde:hover { background: var(--s2-teal-800); }
+.s2-boton-verde:hover { background: var(--s2-teal-700); }
+.s2-boton-verde:active { box-shadow: inset 0 -2px 0 var(--s2-teal-800); }
 .s2-boton-verde:focus-visible { box-shadow: var(--s2-pisada-verde), 0 0 0 7px var(--s2-amarillo); }
 
 /* Acción destructiva (Rechazar): borde rojo; en el diálogo, relleno rojo con .s2-boton-peligro-lleno. */
 .s2-boton-peligro { color: var(--s2-peligro); background: var(--s2-superficie); box-shadow: inset 0 0 0 var(--s2-borde) var(--s2-peligro); }
-.s2-boton-peligro:hover { color: var(--s2-peligro); background: var(--s2-peligro-50); }
-.s2-boton-peligro-lleno { color: #fff; background: var(--s2-peligro); box-shadow: var(--s2-pisada-roja); }
-.s2-boton-peligro-lleno:hover { color: #fff; background: var(--s2-estado-rechazado-texto); }
+.s2-boton-peligro:hover { color: var(--s2-peligro); background: var(--s2-peligro-50); filter: none; }
+.s2-boton-peligro-lleno { color: #fff; background: var(--s2-peligro); box-shadow: none; }
+.s2-boton-peligro-lleno:hover { color: #fff; background: var(--s2-peligro); }
 .s2-boton-peligro:focus-visible { box-shadow: inset 0 0 0 var(--s2-borde) var(--s2-peligro), 0 0 0 7px var(--s2-amarillo); }
-.s2-boton-peligro-lleno:focus-visible { box-shadow: var(--s2-pisada-roja), 0 0 0 7px var(--s2-amarillo); }
+.s2-boton-peligro-lleno:focus-visible { box-shadow: 0 0 0 7px var(--s2-amarillo); }
 
-/* Estado de un pedido: punto de color y texto, sin fondo (<span class="s2-estado s2-estado--pendiente">Pendiente</span>). */
+/* Etiqueta de estado de pedido: <span class="s2-estado s2-estado--pendiente">Pendiente</span>. */
 .s2-estado {
-  --punto: currentColor;
-  display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 800; line-height: 1.3; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px;
+  font-size: 14px; font-weight: 900; line-height: 1.4; white-space: nowrap;
 }
-.s2-estado::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--punto); }
-.s2-estado--pendiente { --punto: var(--s2-estado-pendiente-punto); color: var(--s2-estado-pendiente-texto); }
-.s2-estado--aceptado { --punto: var(--s2-estado-aceptado-punto); color: var(--s2-estado-aceptado-texto); }
-.s2-estado--rechazado { --punto: var(--s2-estado-rechazado-punto); color: var(--s2-estado-rechazado-texto); }
-.s2-estado--cancelado { --punto: var(--s2-estado-cancelado-punto); color: var(--s2-estado-cancelado-texto); }
-.s2-estado--recibido { --punto: var(--s2-estado-recibido-punto); color: var(--s2-estado-recibido-texto); }
-/* «Pagado»: etiqueta rectangular con borde, para distinguirla del estado. */
+.s2-estado::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.s2-estado--pendiente { color: var(--s2-estado-pendiente-texto); background: var(--s2-estado-pendiente-fondo); }
+.s2-estado--aceptado { color: var(--s2-estado-aceptado-texto); background: var(--s2-estado-aceptado-fondo); }
+.s2-estado--rechazado { color: var(--s2-estado-rechazado-texto); background: var(--s2-estado-rechazado-fondo); }
+.s2-estado--cancelado { color: var(--s2-estado-cancelado-texto); background: var(--s2-estado-cancelado-fondo); }
+.s2-estado--recibido { color: var(--s2-estado-recibido-texto); background: var(--s2-estado-recibido-fondo); }
 .s2-pagado {
-  display: inline-flex; align-items: center; padding: 1px 7px; border: 1px solid currentColor; border-radius: var(--s2-radio-etiqueta);
-  color: var(--s2-teal-800); background: var(--s2-superficie); font-size: 13px; font-weight: 800; line-height: 1.4;
+  display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 999px; color: #fff; background: var(--s2-teal-800);
+  font-size: 14px; font-weight: 900; line-height: 1.4;
 }
 
 /* Paso numerado (círculo amarillo con número), para formularios y secciones. */
 .s2-paso {
-  display: inline-grid; place-items: center; width: 26px; height: 26px; flex: none; border-radius: 50%;
-  color: var(--s2-tinta); background: var(--s2-amarillo); font-size: 14px; font-weight: 900;
+  display: inline-grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%;
+  color: var(--s2-tinta); background: var(--s2-amarillo); font-size: 16px; font-weight: 900;
 }
 
 /* Franja de campo de fútbol para cabeceras de página (Catálogo, Perfil de centro). Decorativa: aria-hidden en las líneas. */
 .s2-campo { position: relative; overflow: hidden; color: #fff; background:
-  repeating-linear-gradient(90deg, rgb(255 255 255 / 4%) 0 88px, transparent 88px 176px), var(--s2-teal-800); }
-.s2-campo-linea { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgb(255 255 255 / 14%); }
-.s2-campo-circulo { position: absolute; left: 50%; top: 50%; width: 220px; height: 220px; margin: -110px 0 0 -110px;
-  border: 2px solid rgb(255 255 255 / 14%); border-radius: 50%; }
-.s2-campo-area { position: absolute; top: 50%; width: 120px; height: 220px; margin-top: -110px; border: 2px solid rgb(255 255 255 / 14%); }
-.s2-campo-area--izq { left: -2px; }
-.s2-campo-area--der { right: -2px; }
+  repeating-linear-gradient(90deg, rgb(255 255 255 / 5%) 0 80px, transparent 80px 160px), var(--s2-teal-700); }
+.s2-campo-linea { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: rgb(255 255 255 / 20%); }
+.s2-campo-circulo { position: absolute; left: 50%; top: 50%; width: 240px; height: 240px; margin: -120px 0 0 -120px;
+  border: 4px solid rgb(255 255 255 / 20%); border-radius: 50%; }
+.s2-campo-area { position: absolute; top: 50%; width: 130px; height: 230px; margin-top: -115px; border: 4px solid rgb(255 255 255 / 20%); }
+.s2-campo-area--izq { left: -4px; }
+.s2-campo-area--der { right: -4px; }
