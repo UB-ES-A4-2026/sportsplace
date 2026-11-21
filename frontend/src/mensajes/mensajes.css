@@ -1,87 +1,101 @@
-/* US-28 T28-3: /mensajes/nueva y /mensajes/:id con el diseño S2 (#250). */
+/* US-28 T28-3: /mensajes/nueva y /mensajes/:id. Diseño con vida (#361): columna centrada; la conversación ocupa toda la
+   altura de la ventana y solo hace scroll el hilo; mensajes propios en verde a la derecha y los del otro centro en gris
+   a la izquierda; el cuadro de escribir queda abajo. */
 @import '../diseno/tokens.css';
 
-.pagina-mensajes { width: 100%; max-width: 780px; padding-top: 40px; color: var(--s2-tinta); }
-.pagina-mensajes .enlace-volver { color: var(--s2-teal-700); }
-.pagina-mensajes .enlace-volver:hover { color: var(--s2-teal-900); }
-.mensajes-titulo { font-size: clamp(30px, 4vw, 38px); font-weight: 780; letter-spacing: -0.035em; text-wrap: balance; }
+.pagina.pagina-mensajes { width: 100%; max-width: 720px; margin: 0 auto; padding-top: 28px; color: var(--s2-tinta); }
+.pagina-mensajes .enlace-volver { margin-bottom: 4px; }
+.mensajes-titulo { margin: 0; font-size: clamp(28px, 3vw, 34px); font-weight: 900; letter-spacing: -0.015em; text-wrap: balance; }
 .pagina-mensajes button { margin-top: 0; }
 
-/* Cabecera del anuncio: miniatura 64×64, título, precio y vendedor. */
+/* Anuncio: miniatura 64×64, título, precio y vendedor; separado por líneas, sin caja. */
 .mensajes-anuncio {
-  display: flex; align-items: center; gap: 14px; margin-top: 20px; padding: 12px 16px 12px 12px; border: 1px solid var(--s2-linea);
-  border-radius: var(--s2-radio-l); background: var(--s2-superficie); box-shadow: var(--s2-sombra-2);
+  display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 14px 0;
+  border-top: 1px solid var(--s2-linea); border-bottom: 1px solid var(--s2-linea);
 }
 .mensajes-anuncio-foto { flex-shrink: 0; width: 64px; height: 64px; border-radius: var(--s2-radio); object-fit: cover; }
 .mensajes-anuncio-sin-foto {
-  display: grid; place-content: center; justify-items: center; gap: 2px; color: var(--s2-teal-700);
-  background: linear-gradient(135deg, var(--s2-teal-50), var(--s2-teal-100)); font-size: 10.5px; font-weight: 650;
+  display: grid; place-content: center; justify-items: center; gap: 2px; color: var(--s2-gris);
+  background: var(--s2-fondo-2); font-size: 10.5px; font-weight: 800;
 }
 .mensajes-anuncio-datos { display: grid; gap: 2px; min-width: 0; }
 .mensajes-anuncio-titulo {
-  overflow: hidden; color: var(--s2-tinta); font-size: 16px; font-weight: 680; letter-spacing: -0.01em; text-overflow: ellipsis;
-  white-space: nowrap; text-decoration: none;
+  overflow: hidden; color: var(--s2-tinta); font-size: 16px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; text-decoration: none;
 }
-a.mensajes-anuncio-titulo:hover { color: var(--s2-teal-800); text-decoration: underline; text-underline-offset: 3px; }
-.mensajes-anuncio-precio { color: var(--s2-teal-800); font-size: 14.5px; font-weight: 720; font-variant-numeric: tabular-nums; }
-.mensajes-anuncio-centro { color: var(--s2-gris); font-size: 13.5px; }
+.pagina a.mensajes-anuncio-titulo { color: var(--s2-tinta); text-decoration: underline; text-decoration-color: var(--s2-linea); text-underline-offset: 3px; }
+.pagina a.mensajes-anuncio-titulo:hover { color: var(--s2-teal-700); text-decoration-color: currentColor; }
+.mensajes-anuncio-precio { color: var(--s2-teal-800); font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.mensajes-anuncio-centro { color: var(--s2-gris); font-size: 14px; font-weight: 700; }
 
-/* Cuadro de texto con contador y «Enviar». */
+/* Cuadro de texto con ayuda, contador y «Enviar». */
 .cuadro-mensaje { display: grid; gap: 8px; margin-top: 20px; }
-.cuadro-mensaje .campo-ayuda { color: var(--s2-gris); font-size: 14px; }
+.cuadro-mensaje .campo-ayuda { display: flex; align-items: flex-start; gap: 8px; color: var(--s2-tinta-2); font-size: 15px; font-weight: 700; }
+.cuadro-mensaje .campo-ayuda svg { flex: none; margin-top: 2px; color: var(--s2-teal-700); }
 .cuadro-mensaje textarea {
-  width: 100%; padding: 12px 14px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); color: var(--s2-tinta);
-  background: var(--s2-superficie); font: inherit; font-size: 15px; line-height: 1.55; resize: vertical; box-shadow: var(--s2-sombra-1);
+  width: 100%; padding: 12px 14px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde); border-radius: var(--s2-radio);
+  color: var(--s2-tinta); background: var(--s2-superficie); font: inherit; font-size: 16px; font-weight: 600; line-height: 1.5; resize: vertical;
   transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
 }
 .cuadro-mensaje textarea::placeholder { color: var(--s2-gris); opacity: 1; }
-.cuadro-mensaje textarea:focus-visible { outline: 0; border-color: var(--s2-teal-500); box-shadow: var(--s2-foco); }
+.cuadro-mensaje textarea:focus-visible { outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
 .cuadro-mensaje-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.cuadro-mensaje-contador { color: var(--s2-gris); font-size: 13px; font-variant-numeric: tabular-nums; }
-.cuadro-mensaje-contador.alerta { color: var(--s2-peligro); font-weight: 700; }
+.cuadro-mensaje-pie .s2-boton { min-height: var(--s2-toque); padding: 0 20px; }
+.cuadro-mensaje-contador { color: var(--s2-gris); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cuadro-mensaje-contador.alerta { color: var(--s2-peligro); font-weight: 800; }
 
-/* Pantalla «Conversación»: ocupa todo el ancho de <main> para que los mensajes propios queden a la derecha (CA16).
-   Va con `.pagina` delante porque styles.css se carga después y su `.pagina { max-width: 780px }` ganaría. */
-.pagina.pagina-conversacion { max-width: none; }
-.mensajes-otro-centro { margin: 6px 0 0; font-size: 18px; font-weight: 680; letter-spacing: -0.01em; }
-.mensajes-otro-centro a { color: var(--s2-teal-800); text-decoration: none; }
-.mensajes-otro-centro a:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Pantalla «Conversación»: toda la altura de la ventana (menos la cabecera); solo el hilo hace scroll. */
+.page:has(.pagina-conversacion) { padding-bottom: 0; }
+.pagina.pagina-conversacion {
+  display: flex; flex-direction: column; max-width: 860px; height: calc(100dvh - 77px); min-height: 480px; padding: 16px 0 0;
+}
+.mensajes-cabecera {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; margin-top: 12px; padding: 12px 0;
+  border-top: 1px solid var(--s2-linea); border-bottom: 1px solid var(--s2-linea);
+}
+.mensajes-cabecera .mensajes-anuncio { flex: 1 1 280px; margin: 0; padding: 0 0 0 24px; border: 0; border-left: 1px solid var(--s2-linea); }
+.mensajes-cabecera .mensajes-anuncio-foto { width: 48px; height: 48px; }
+.mensajes-con-quien { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mensajes-avatar {
+  display: grid; flex: none; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+  color: var(--s2-teal-800); background: var(--s2-teal-100); font-size: 15px; font-weight: 900;
+}
+.mensajes-otro-centro { margin: 0; font-size: 18px; font-weight: 800; }
+.pagina .mensajes-otro-centro a { color: var(--s2-tinta); text-decoration: underline; text-decoration-color: var(--s2-linea); text-underline-offset: 3px; }
+.pagina .mensajes-otro-centro a:hover { color: var(--s2-teal-700); text-decoration-color: currentColor; }
+/* CA33-CA35: franjas de aviso, en amarillo. */
 .mensajes-banda {
-  display: flex; align-items: center; gap: 10px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid #f4dfb8;
-  border-radius: var(--s2-radio); color: var(--s2-aviso); background: var(--s2-aviso-50); font-size: 14px; font-weight: 550;
+  display: flex; align-items: center; gap: 10px; margin: 12px 0 0; padding: 10px 14px; border-left: 4px solid var(--s2-amarillo);
+  border-radius: var(--s2-radio-s); color: var(--s2-aviso); background: var(--s2-amarillo-50); font-size: 15px; font-weight: 800;
 }
+.mensajes-banda svg { flex: none; }
 
-.mensajes-hilo {
-  display: grid; gap: 14px; margin-top: 20px; padding: 20px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l);
-  background: linear-gradient(180deg, var(--s2-fondo), #eef6f7);
-}
+.mensajes-hilo { display: grid; flex: 1 1 auto; align-content: start; gap: 12px; min-height: 160px; overflow-y: auto; padding: 18px 2px; overscroll-behavior: contain; }
 .mensajes-anteriores { justify-self: center; }
-.mensajes-lista { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.mensajes-hilo .mensajes-anteriores { min-height: var(--s2-toque); font-size: 15px; }
+.mensajes-lista { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .mensaje {
-  display: grid; gap: 6px; max-width: min(560px, 85%); padding: 12px 16px; border-radius: 18px; animation: mensaje-llega 220ms var(--s2-curva);
+  display: grid; gap: 4px; max-width: min(560px, 82%); padding: 10px 14px; border-radius: 16px; animation: mensaje-llega 200ms var(--s2-curva);
 }
-@keyframes mensaje-llega { from { opacity: 0; transform: translateY(6px); } }
-.mensaje-mio {
-  justify-self: end; border-bottom-right-radius: 6px; color: #fff;
-  background: linear-gradient(135deg, var(--s2-teal-600), var(--s2-teal-800)); box-shadow: 0 10px 20px -10px rgb(11 107 122 / 60%);
-}
-.mensaje-otro { justify-self: start; border-bottom-left-radius: 6px; color: var(--s2-tinta); background: var(--s2-superficie); box-shadow: var(--s2-sombra-1); }
-.mensaje-texto { margin: 0; font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
-.mensaje-fecha { font-size: 12px; font-variant-numeric: tabular-nums; }
-.mensaje-mio .mensaje-fecha { color: rgb(255 255 255 / 82%); }
+@keyframes mensaje-llega { from { opacity: 0; transform: translateY(4px); } }
+.mensaje-mio { justify-self: end; border-top-right-radius: 4px; color: #fff; background: var(--s2-teal-700); }
+.mensaje-otro { justify-self: start; border-top-left-radius: 4px; color: var(--s2-tinta); background: var(--s2-linea-2); }
+.mensaje-texto { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mensaje-fecha { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mensaje-mio .mensaje-fecha { justify-self: end; color: rgb(255 255 255 / 88%); }
 .mensaje-otro .mensaje-fecha { color: var(--s2-gris); }
 .mensaje-mio ::selection { color: var(--s2-teal-900); background: #fff; }
 
-/* Pie fijo: el cuadro de escritura queda pegado abajo mientras se lee el hilo. */
-.mensajes-pie {
-  position: sticky; bottom: 0; z-index: 2; margin-top: 12px; padding: 4px 0 16px;
-  background: linear-gradient(rgb(245 248 244 / 0%), #f5f8f4 22%);
-}
-.mensajes-pie .cuadro-mensaje { margin-top: 8px; }
-.mensajes-pie .franja-pausado { border-radius: var(--s2-radio); }
+/* Pie: el cuadro de escribir, abajo y separado del hilo por una línea. */
+.mensajes-pie { flex: none; padding: 4px 0 16px; border-top: 1px solid var(--s2-linea); background: var(--s2-superficie); }
+.mensajes-pie .cuadro-mensaje { margin-top: 10px; }
+.mensajes-pie .cuadro-mensaje textarea { min-height: 64px; }
+.mensajes-pie .franja-pausado { margin-top: 12px; border-radius: var(--s2-radio-s); }
 
+@media (max-width: 920px) {
+  .pagina.pagina-conversacion { height: calc(100dvh - 69px); }
+}
 @media (max-width: 560px) {
-  .mensajes-hilo { padding: 14px; }
+  .mensajes-cabecera .mensajes-anuncio { padding-left: 0; border-left: 0; }
   .mensaje { max-width: 88%; }
 }
 
