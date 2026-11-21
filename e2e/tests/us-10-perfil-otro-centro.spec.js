@@ -24,7 +24,7 @@ const TEXTOS = {
   irAlCatalogo: 'Ir al catálogo',
   bandaPropia: 'Así ven tu perfil los demás centros.',
   verComoMeVen: 'Ver cómo ven mi perfil',
-  noDisponible: 'No disponible',
+  noDisponible: 'Reservado',
   cargando: 'Cargando…',
   error: 'No se ha podido cargar.',
 };

@@ -213,10 +213,10 @@ test('US-32 · CA1, CA2 y CA4 · «Pedir» solo en anuncios activos de otro cent
   await boton(page, 'Pedir').click();
   await expect(page).toHaveURL(`/anuncios/${activo}/pedir`);
 
-  // CA2: reservado → deshabilitado con «No disponible».
+  // CA2: reservado → deshabilitado con «Reservado».
   await page.goto(`/anuncios/${reservado}`);
-  await expect(page.getByRole('button', { name: /Pedir|No disponible/ })).toBeDisabled();
-  await expect(page.getByText('No disponible', { exact: true })).toBeVisible();
+  await expect(boton(page, 'Pedir')).toBeDisabled();
+  await expect(boton(page, 'Pedir')).toHaveAccessibleDescription('Reservado');
 });
 
 test('US-32 · CA4 · sin sesión, /pedir lleva a entrar y vuelve', async ({ page, request, cuentas }) => {

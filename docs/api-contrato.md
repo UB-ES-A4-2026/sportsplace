@@ -531,7 +531,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Anuncios del perfil del centr
 
 - `pagina`: entero mayor que 0, por defecto 1. El tamaño de página es fijo, 20; `por_pagina` se ignora.
 - `200 { "anuncios": [resumen], "pagina": 1, "total": 21 }`. Cada elemento tiene el mismo formato que en `GET /api/anuncios/mios` (con `foto_principal_url`).
-- Solo los anuncios `activo` y `reservado` (la web muestra estos como «No disponible»); nunca `pausado`, `entregado`, `retirado` ni `borrador`, aunque sea el propio centro (CA6, CA15). `total` cuenta los mismos.
+- Solo los anuncios `activo` y `reservado` (la web muestra los `reservado` como «Reservado»); nunca `pausado`, `entregado`, `retirado` ni `borrador`, aunque sea el propio centro (CA6, CA15). `total` cuenta los mismos.
 - Orden: `publicado_en` descendente y, a igualdad, `id` descendente.
 - Una página sin resultados devuelve `anuncios: []` con la `pagina` pedida (no se ajusta a la última).
 - `400 DATOS_INVALIDOS` con `details.pagina` «Debe ser un número entero mayor que 0.» (`0`, `abc`, `2.5`, `-1` o el parámetro repetido).
@@ -615,7 +615,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **ot
 }
 ```
 
-- Solo anuncios `activo` o `reservado` con `unidades_disponibles` > 0 y de centros distintos al de la sesión (CA4, CA24). Los `reservado` van en su sitio del orden; la web les pone «No disponible» (CA6).
+- Solo anuncios `activo` o `reservado` con `unidades_disponibles` > 0 y de centros distintos al de la sesión (CA4, CA24). Los `reservado` van en su sitio del orden; la web les pone «Reservado» (CA6).
 - Orden: `publicado_en` descendente y, a igual fecha, `id` ascendente, estable entre páginas (CA5). Lo sirve el índice `anuncios_catalogo_estado_publicado` sobre `anuncios(estado, publicado_en DESC, id)` (CA22).
 - `total` cuenta todos los anuncios que cumplen la consulta y `total_paginas` = ⌈`total` / 20⌉ (CA11). Con 0 anuncios, `total: 0` y `total_paginas: 0` (CA19). Una `pagina` mayor que `total_paginas` responde `200` con `anuncios: []` y el `total` real (CA18); la web corrige la URL a la última página (CA10).
 - `foto_principal_url` es la URL pública de la foto con `es_principal` o `null` si no hay fotos (CA20). `distancia_km` lo rellenará US-23 y `es_favorito`, US-25: hasta entonces van a `null` y `false`.
