@@ -1,113 +1,137 @@
-/* T32-4: /anuncios/:id/pedir con el diseño S2 (#250): solo variables de diseno/tokens.css.
+/* T32-4: /anuncios/:id/pedir. Diseño con vida (#361): título y resumen del anuncio en una línea; debajo, a la izquierda,
+   los pasos numerados (Unidades, Forma de pago, Entrega, Mensaje) separados por líneas finas y, a la derecha, el total
+   con los botones, fijo al bajar. Los números de los pasos salen de un contador CSS: no cambian los nombres accesibles.
    Los selectores llevan dos clases porque styles.css se carga después y sus reglas generales ganarían. */
 @import '../diseno/tokens.css';
 
-.pagina.pagina-pedir { width: 100%; max-width: 720px; padding-top: 40px; color: var(--s2-tinta); }
-.pagina-pedir h1 {
-  margin: 0 0 20px; font-size: clamp(30px, 4vw, 38px); font-weight: 780; line-height: 1.1; letter-spacing: -0.035em;
-}
+.pagina.pagina-pedir { width: 100%; max-width: 1040px; padding-top: 32px; color: var(--s2-tinta); }
+.pagina-pedir h1 { margin: 0; font-size: clamp(28px, 3vw, 34px); font-weight: 900; line-height: 1.1; letter-spacing: -0.015em; }
 .pagina-pedir button { margin-top: 0; }
 
-/* (1) Tarjeta resumen. */
-.pagina-pedir .pedir-resumen {
-  display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px;
-  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
-  box-shadow: var(--s2-sombra-2);
+/* (1) Título y resumen del anuncio en una línea. */
+.pedir-encabezado {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; padding-bottom: 20px; border-bottom: 1px solid var(--s2-linea);
 }
+.pagina-pedir .pedir-resumen { display: grid; flex: 1 1 420px; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; align-items: center; }
 .pedir-resumen-foto {
-  display: grid; place-items: center; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--s2-radio);
-  color: var(--s2-gris); font-size: 13px; font-weight: 600;
-  background: linear-gradient(135deg, var(--s2-teal-50), var(--s2-teal-100));
+  display: grid; place-items: center; overflow: hidden; width: 72px; height: 54px; border-radius: var(--s2-radio-s);
+  color: var(--s2-gris); background: var(--s2-fondo-2); font-size: 11px; font-weight: 800; text-align: center;
 }
+.pedir-resumen-foto span { display: grid; justify-items: center; gap: 2px; }
 .pedir-resumen-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.pedir-resumen-datos { display: grid; gap: 3px; min-width: 0; }
+.pedir-resumen-datos { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
 .pedir-resumen-datos p { margin: 0; }
-.pedir-resumen-titulo { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
-.pedir-resumen-centro { overflow: hidden; color: var(--s2-gris); font-size: 14px; white-space: nowrap; text-overflow: ellipsis; }
-.pedir-resumen-modalidad { color: var(--s2-teal-800); font-weight: 650; }
-.pedir-resumen-disponibles { color: var(--s2-tinta-2); font-size: 14px; }
+.pedir-resumen-titulo { flex: 1 1 100%; font-size: 17px; font-weight: 800; overflow-wrap: anywhere; }
+.pedir-resumen-centro, .pedir-resumen-modalidad, .pedir-resumen-disponibles { color: var(--s2-gris); font-size: 14px; font-weight: 700; }
+.pedir-resumen-modalidad { color: var(--s2-teal-800); }
+.pedir-resumen-datos p + p:not(.pedir-resumen-titulo + p) { padding-left: 12px; border-left: 1px solid var(--s2-linea); }
 
-/* Formulario. */
-.pedir-formulario { display: grid; gap: 22px; margin-top: 26px; }
-.pedir-campo { display: grid; gap: 6px; }
-.pedir-campo label, .pedir-grupo legend { color: var(--s2-tinta); font-size: 14px; font-weight: 650; }
+/* Formulario en dos columnas: los pasos a la izquierda y el panel del total a la derecha. */
+.pedir-formulario {
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0 40px; align-items: start; margin-top: 4px; counter-reset: paso;
+}
+.pedir-formulario > .pedir-campo, .pedir-formulario > .pedir-grupo { grid-column: 1; padding: 20px 0; border-bottom: 1px solid var(--s2-linea); }
+/* Número del paso: círculo amarillo a la izquierda del título (contenido generado sin texto alternativo). */
+.pedir-formulario > .pedir-campo, .pedir-formulario > .pedir-grupo { position: relative; padding-left: 40px; counter-increment: paso; }
+.pedir-formulario > .pedir-campo::before, .pedir-formulario > .pedir-grupo::before {
+  content: counter(paso) / ''; position: absolute; top: 18px; left: 0; display: grid; place-items: center; width: 26px; height: 26px;
+  border-radius: 50%; color: var(--s2-tinta); background: var(--s2-amarillo); font-size: 14px; font-weight: 900;
+}
+.pedir-campo { display: grid; gap: 8px; }
+.pedir-campo label, .pedir-grupo legend { color: var(--s2-tinta); font-size: 16px; font-weight: 800; }
 .pedir-formulario input:not([type="radio"]), .pedir-formulario select, .pedir-formulario textarea {
-  width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio);
-  color: var(--s2-tinta); background: var(--s2-superficie); font: inherit; font-size: 15px;
-  box-shadow: var(--s2-sombra-1); transition: border-color 160ms, box-shadow 160ms;
+  width: 100%; min-height: var(--s2-toque); padding: 0 12px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde);
+  border-radius: var(--s2-radio-s); color: var(--s2-tinta); background: var(--s2-superficie); font: inherit; font-size: 16px; font-weight: 600;
+  transition: border-color 160ms, box-shadow 160ms;
 }
 .pedir-formulario textarea { padding: 10px 12px; resize: vertical; line-height: 1.5; }
 .pedir-formulario input:focus-visible, .pedir-formulario select:focus-visible, .pedir-formulario textarea:focus-visible {
-  outline: 0; border-color: var(--s2-teal-500); box-shadow: var(--s2-foco);
+  outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco);
 }
 .pedir-formulario [aria-invalid="true"] { border-color: var(--s2-peligro); }
-.pedir-error { margin: 0; color: var(--s2-peligro); font-size: 14px; font-weight: 550; }
-.pedir-ayuda { margin: 0; color: var(--s2-gris); font-size: 13.5px; line-height: 1.5; }
-.pedir-contador { margin: 0; color: var(--s2-gris); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.pedir-error { margin: 0; color: var(--s2-peligro); font-size: 14px; font-weight: 800; }
+.pedir-ayuda { margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 600; line-height: 1.45; }
+.pedir-contador { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 
-/* (2) Unidades con − y +. */
-.pedir-unidades { display: flex; gap: 8px; align-items: stretch; max-width: 220px; }
-.pedir-unidades input { text-align: center; font-variant-numeric: tabular-nums; }
+/* (2) Unidades con − y + de 46 px y el número en medio. */
+.pedir-unidades { display: flex; gap: 8px; align-items: stretch; }
+.pedir-formulario .pedir-unidades input { width: 84px; min-height: 46px; text-align: center; font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .pagina-pedir .pedir-paso {
-  flex: none; width: 44px; min-height: 42px; padding: 0; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio);
-  color: var(--s2-teal-800); background: var(--s2-superficie); font-size: 20px; font-weight: 600; line-height: 1;
+  --pisada: 0 0 transparent;
+  display: grid; flex: none; place-items: center; width: 46px; min-height: 46px; padding: 0; border-radius: var(--s2-radio-s);
+  color: #fff; background: var(--s2-tinta);
 }
-.pagina-pedir .pedir-paso:hover:not(:disabled) { background: var(--s2-teal-50); }
+.pagina-pedir .pedir-paso:hover:not(:disabled) { background: var(--s2-teal-800); }
 .pagina-pedir .pedir-paso:disabled { color: var(--s2-gris); background: var(--s2-linea-2); cursor: not-allowed; opacity: 1; }
-.pagina-pedir .pedir-paso:focus-visible { outline: 0; box-shadow: var(--s2-foco); }
 
-/* (3) y (4): grupos de radio como opciones seleccionables. */
-.pedir-grupo { display: grid; gap: 10px; margin: 0; padding: 0; border: 0; min-width: 0; }
-.pedir-grupo legend { margin-bottom: 8px; padding: 0; }
+/* (3) y (4): grupos de radio como tarjetas con icono; toda la tarjeta marca la opción. */
+.pedir-grupo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; border: 0; min-width: 0; }
+.pedir-grupo legend { float: left; width: 100%; margin: 0 0 10px; padding: 0; }
+.pedir-grupo > :not(.pedir-opcion) { grid-column: 1 / -1; }
 .pedir-opcion {
-  display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 12px 14px;
-  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); background: var(--s2-superficie);
-  transition: border-color 160ms, background-color 160ms;
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "icono texto radio" ". ayuda .";
+  gap: 2px 12px; align-items: center; min-height: 60px; padding: 12px 14px; border: 1px solid var(--s2-campo-borde);
+  border-radius: var(--s2-radio); background: var(--s2-superficie); transition: border-color 160ms, background-color 160ms, box-shadow 160ms;
 }
-.pedir-opcion.elegida { border-color: var(--s2-teal-100); background: var(--s2-teal-50); }
-.pedir-opcion input { width: 18px; height: 18px; margin: 0; accent-color: var(--s2-teal-700); }
-.pedir-opcion label { font-weight: 600; cursor: pointer; }
-.pedir-opcion .pedir-ayuda { grid-column: 2; }
+.pedir-opcion:hover { border-color: var(--s2-tinta); }
+.pedir-opcion.elegida { border-color: var(--s2-teal-700); background: var(--s2-teal-50); box-shadow: inset 0 0 0 1px var(--s2-teal-700); }
+.pedir-opcion:focus-within { outline: 3px solid var(--s2-tinta); outline-offset: 2px; box-shadow: 0 0 0 7px var(--s2-amarillo); }
+.pedir-opcion-icono {
+  display: grid; grid-area: icono; place-items: center; width: 36px; height: 36px; border-radius: var(--s2-radio-s);
+  color: var(--s2-teal-800); background: var(--s2-teal-100);
+}
+/* El radio queda por encima de la capa del label::after: se puede pulsar (y marcar en los E2E) directamente. */
+.pedir-opcion input { position: relative; z-index: 1; grid-area: radio; width: 20px; height: 20px; margin: 0; accent-color: var(--s2-teal-700); }
+.pedir-opcion input:focus-visible { outline: 0; box-shadow: none; }
+.pedir-opcion label { grid-area: texto; font-size: 16px; font-weight: 800; cursor: pointer; }
+.pedir-opcion label::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.pedir-opcion .pedir-ayuda { grid-area: ayuda; font-size: 13px; }
 .pedir-advertencia {
-  margin: 0; padding: 10px 14px; border-radius: var(--s2-radio); color: var(--s2-aviso);
-  background: var(--s2-aviso-50); font-size: 14px; font-weight: 550;
+  margin: 0; padding: 10px 14px; border-left: 4px solid var(--s2-amarillo); border-radius: var(--s2-radio-s); color: var(--s2-aviso);
+  background: var(--s2-amarillo-50); font-size: 14px; font-weight: 700;
 }
-.pedir-direccion { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin-top: 6px; }
+.pedir-direccion { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin-top: 8px; }
+.pedir-direccion .pedir-campo label { font-size: 15px; }
 .pedir-campo-destinatario, .pedir-campo-calle_numero, .pedir-campo-indicaciones { grid-column: 1 / -1; }
 
-/* (6) Total. */
-.pagina-pedir .pedir-total {
-  display: grid; gap: 6px; padding: 16px 18px; border: 1px solid var(--s2-teal-100); border-radius: var(--s2-radio-l);
-  background: var(--s2-teal-50);
+/* (6) a (8): panel lateral fijo con el total y los botones. */
+.pedir-lateral {
+  display: grid; grid-column: 2; grid-row: 1 / span 6; gap: 16px; position: sticky; top: 92px; margin-top: 20px; padding: 22px;
+  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie); box-shadow: var(--s2-sombra-2);
 }
+.pagina-pedir .pedir-total { display: grid; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--s2-linea); }
 .pedir-total p { margin: 0; }
-.pedir-total-importe { color: var(--s2-teal-800); font-size: 22px; font-weight: 760; font-variant-numeric: tabular-nums; }
+.pedir-total-importe { color: var(--s2-tinta); font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
 
-/* (8) Botones. */
-.pedir-botones { display: flex; flex-wrap: wrap; gap: 10px; }
+.pedir-botones { display: grid; gap: 10px; }
 .pagina-pedir .pedir-boton {
-  min-height: 44px; padding: 0 20px; border: 0; border-radius: var(--s2-radio); color: #fff; font-size: 15px; font-weight: 650;
-  background: var(--s2-teal-700);
+  --pisada: var(--s2-pisada-naranja);
+  width: 100%; min-height: var(--s2-toque-l); padding: 0 20px; border-radius: var(--s2-radio); color: #fff; font-size: 17px; font-weight: 800;
+  background: var(--s2-naranja-600);
 }
-.pagina-pedir .pedir-boton:hover:not(:disabled) { background: var(--s2-teal-800); }
-.pagina-pedir .pedir-boton:focus-visible { outline: 0; box-shadow: var(--s2-foco); }
+.pagina-pedir .pedir-boton:hover:not(:disabled) { background: var(--s2-naranja-700); }
 .pagina-pedir .pedir-boton-secundario {
-  color: var(--s2-teal-800); background: var(--s2-superficie); box-shadow: inset 0 0 0 1px var(--s2-linea);
+  --pisada: inset 0 0 0 var(--s2-borde) var(--s2-teal-700);
+  min-height: var(--s2-toque); color: var(--s2-teal-700); background: var(--s2-superficie); font-size: 16px;
 }
 .pagina-pedir .pedir-boton-secundario:hover:not(:disabled) { background: var(--s2-teal-50); }
 
 /* CA5: anuncio que no se puede pedir. */
 .pedir-no-disponible {
-  display: grid; justify-items: start; gap: 10px; padding: 22px 24px; border: 1px solid var(--s2-linea);
-  border-radius: var(--s2-radio-l); background: var(--s2-superficie);
+  display: grid; justify-items: start; gap: 10px; margin-top: 20px; padding: 22px 0; border-top: 1px solid var(--s2-linea);
+  border-bottom: 1px solid var(--s2-linea); font-weight: 700;
 }
 .pedir-no-disponible p { margin: 0; }
 
+@media (max-width: 860px) {
+  .pedir-formulario { grid-template-columns: minmax(0, 1fr); }
+  .pedir-lateral { grid-column: 1; grid-row: auto; position: static; }
+}
 @media (max-width: 599px) {
-  .pagina.pagina-pedir { padding-top: 28px; }
-  .pagina-pedir .pedir-resumen { grid-template-columns: 88px minmax(0, 1fr); }
+  .pagina.pagina-pedir { padding-top: 22px; }
+  .pedir-grupo { grid-template-columns: minmax(0, 1fr); }
   .pedir-direccion { grid-template-columns: minmax(0, 1fr); }
-  .pedir-botones .pedir-boton { flex: 1 1 100%; }
+  .pedir-resumen-datos p + p:not(.pedir-resumen-titulo + p) { padding-left: 0; border-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

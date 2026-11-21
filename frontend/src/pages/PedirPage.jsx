@@ -1,3 +1,4 @@
+import { Banknote, ImageOff, Landmark, Minus, Plus, Store, Truck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { fotosDelDetalle } from '../anuncios/detalleOtroCentro.js';
@@ -30,6 +31,8 @@ function sinError(errores, clave) {
 }
 
 // US-32 T32-4 (+ US-35 T35-3 y US-40 T40-4): /anuncios/:id/pedir · «Hacer un pedido» sobre un anuncio de otro centro.
+// Diseño con vida (#361): título y resumen en una línea; debajo, los pasos numerados (por CSS) a la izquierda y el total
+// con los botones a la derecha. El orden del DOM no cambia (los E2E y el foco de los errores dependen de él).
 export default function PedirPage() {
   const { id } = useParams();
   const [intento, setIntento] = useState(0);
@@ -173,12 +176,13 @@ function FormularioPedido({ anuncio }) {
     <>
       <Aviso aviso={aviso} onCerrar={() => setAviso(null)} />
       <section className="pagina pagina-pedir" aria-labelledby="titulo-pagina">
+        <div className="pedir-encabezado">
         <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
 
         {/* (1) Tarjeta resumen del anuncio. */}
         <div className="pedir-resumen">
           <div className="pedir-resumen-foto">
-            {foto ? <img src={foto} alt="" /> : <span>Sin foto</span>}
+            {foto ? <img src={foto} alt="" /> : <span><ImageOff size={18} aria-hidden="true" />Sin foto</span>}
           </div>
           <div className="pedir-resumen-datos">
             <p className="pedir-resumen-titulo">{anuncio.titulo}</p>
@@ -187,6 +191,7 @@ function FormularioPedido({ anuncio }) {
             <p className="pedir-resumen-disponibles">{textoDisponibles(maximo)}</p>
           </div>
         </div>
+        </div>
 
         <form className="pedir-formulario" onSubmit={enviar} noValidate>
           {/* (2) «Unidades» con − y + (CA7). */}
@@ -194,12 +199,12 @@ function FormularioPedido({ anuncio }) {
             <label htmlFor={idDe('unidades')}>{TEXTOS.unidades}</label>
             <div className="pedir-unidades">
               <button type="button" className="pedir-paso" aria-label={TEXTOS.menos} disabled={(unidades ?? 1) <= 1}
-                onClick={() => sumarUnidades(-1)}>−</button>
+                onClick={() => sumarUnidades(-1)}><Minus size={20} strokeWidth={2.6} aria-hidden="true" /></button>
               <input id={idDe('unidades')} type="number" inputMode="numeric" min={1} max={maximo} step={1}
                 value={formulario.unidades} onChange={(evento) => cambiar('unidades', evento.target.value)}
                 aria-invalid={errores.unidades ? 'true' : undefined} aria-describedby={describir('unidades')} />
               <button type="button" className="pedir-paso" aria-label={TEXTOS.mas} disabled={(unidades ?? 0) >= maximo}
-                onClick={() => sumarUnidades(1)}>+</button>
+                onClick={() => sumarUnidades(1)}><Plus size={20} strokeWidth={2.6} aria-hidden="true" /></button>
             </div>
             {error('unidades')}
           </div>
@@ -208,10 +213,10 @@ function FormularioPedido({ anuncio }) {
           {venta && (
             <fieldset className="pedir-grupo">
               <legend>{TEXTOS.formaPago}</legend>
-              <Opcion id={idDe('metodo_pago')} nombre="metodo_pago" valor="transferencia" texto={TEXTOS.transferencia}
+              <Opcion id={idDe('metodo_pago')} nombre="metodo_pago" valor="transferencia" texto={TEXTOS.transferencia} icono={Landmark}
                 ayuda={TEXTOS.ayudaTransferencia} elegido={formulario.metodoPago} onElegir={(valor) => cambiar('metodoPago', valor)}
                 describir={describir('metodo_pago', 'ayuda-transferencia')} idAyuda="ayuda-transferencia" />
-              <Opcion id="pedir-pago-efectivo" nombre="metodo_pago" valor="efectivo_recogida" texto={TEXTOS.efectivo}
+              <Opcion id="pedir-pago-efectivo" nombre="metodo_pago" valor="efectivo_recogida" texto={TEXTOS.efectivo} icono={Banknote}
                 ayuda={TEXTOS.ayudaEfectivo} elegido={formulario.metodoPago} onElegir={(valor) => cambiar('metodoPago', valor)}
                 describir={describir('metodo_pago', 'ayuda-efectivo')} idAyuda="ayuda-efectivo" />
               {error('metodo_pago')}
@@ -221,9 +226,9 @@ function FormularioPedido({ anuncio }) {
           {/* (4) US-40: «Entrega», sin opción marcada al principio. */}
           <fieldset className="pedir-grupo">
             <legend>{TEXTOS.entrega}</legend>
-            <Opcion id={idDe('metodo_entrega')} nombre="metodo_entrega" valor="recogida" texto={TEXTOS.recogida}
+            <Opcion id={idDe('metodo_entrega')} nombre="metodo_entrega" valor="recogida" texto={TEXTOS.recogida} icono={Store}
               elegido={formulario.metodoEntrega} onElegir={elegirEntrega} describir={describir('metodo_entrega')} />
-            <Opcion id="pedir-entrega-envio" nombre="metodo_entrega" valor="envio" texto={TEXTOS.envio}
+            <Opcion id="pedir-entrega-envio" nombre="metodo_entrega" valor="envio" texto={TEXTOS.envio} icono={Truck}
               elegido={formulario.metodoEntrega} onElegir={elegirEntrega} describir={describir('metodo_entrega')} />
             <p className="pedir-ayuda">{TEXTOS.ayudaEntrega}</p>
             {error('metodo_entrega')}
@@ -272,7 +277,8 @@ function FormularioPedido({ anuncio }) {
             {error('mensaje')}
           </div>
 
-          {/* (6) y (7): total (CA9) y, en venta, que Sportsplace no gestiona el dinero. */}
+          {/* (6) a (8): panel lateral con el total (CA9), en venta el aviso del dinero, y los botones (CA6, CA10). */}
+          <div className="pedir-lateral">
           <div className="pedir-total">
             <p className="pedir-total-importe">{textoTotal(anuncio, formulario.unidades)}</p>
             {venta && <p className="pedir-ayuda">{TEXTOS.avisoDinero}</p>}
@@ -285,6 +291,7 @@ function FormularioPedido({ anuncio }) {
               {TEXTOS.cancelar}
             </button>
           </div>
+          </div>
         </form>
       </section>
 
@@ -296,9 +303,11 @@ function FormularioPedido({ anuncio }) {
 }
 
 // Una opción de radio con su ayuda debajo, fuera de la etiqueta: el nombre accesible es solo el texto del CA.
-function Opcion({ id, nombre, valor, texto, ayuda, idAyuda, elegido, onElegir, describir }) {
+// Diseño con vida: se ve como una tarjeta con icono (decorativo); toda la tarjeta marca la opción (label::after, en CSS).
+function Opcion({ id, nombre, valor, texto, ayuda, idAyuda, elegido, onElegir, describir, icono: Icono }) {
   return (
     <div className={elegido === valor ? 'pedir-opcion elegida' : 'pedir-opcion'}>
+      {Icono && <span className="pedir-opcion-icono" aria-hidden="true"><Icono size={19} /></span>}
       <input id={id} type="radio" name={nombre} value={valor} checked={elegido === valor}
         onChange={() => onElegir(valor)} aria-describedby={describir} />
       <label htmlFor={id}>{texto}</label>
