@@ -1,4 +1,4 @@
-import { ShoppingBag } from 'lucide-react';
+import { Clock3, MapPin, ShoppingBag } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
@@ -7,24 +7,30 @@ import {
   botonesDelDetalle,
   destinoDeVolver,
   enlaceAlCentro,
-  precioDelDetalle,
+  partesDelPrecio,
   textoDistancia,
   textoUnidades,
 } from '../anuncios/detalleOtroCentro.js';
 import { formatearFecha } from '../anuncios/ficha.js';
 import { CATEGORIAS, DEPORTES, ESTADOS_MATERIAL, etiquetaDe } from '../anuncios/valores.js';
+import { CirculoDeporte, IconoDeporte } from '../diseno/IconoDeporte.jsx';
+import { iconoCategoria } from '../diseno/iconosDeporte.js';
+import { inicialesDe } from '../utilidades/iniciales.js';
 import Aviso from './Aviso.jsx';
+import BarrasEstado from './BarrasEstado.jsx';
 import BotonEscribirAlCentro from './BotonEscribirAlCentro.jsx';
 import GaleriaDetalle from './GaleriaDetalle.jsx';
 
 // US-24 T24-2: vista de un anuncio de otro centro en /anuncios/:id (respuesta de GET /api/catalogo/:id).
-// Dos columnas en escritorio (galería | datos) y una en < 900 px; debajo, a todo el ancho, la descripción.
+// Diseño con vida (#361): dos columnas en escritorio (galería | datos) y una en < 900 px; los bloques se separan con
+// líneas finas. El orden no cambia: título, precio, Detalles, Pedir, Escribir al centro, Ofrecido por y Descripción.
 export default function DetalleOtroCentro({ anuncio }) {
   const location = useLocation();
   const reservado = anuncio.estado === 'reservado';
   // CA10: «Pedir» es de US-32 y US-28 activa «Escribir al centro».
   const botones = botonesDelDetalle(anuncio, { mensajes: true });
   const distancia = textoDistancia(anuncio.distancia_km);
+  const { importe, sufijo } = partesDelPrecio(anuncio);
   // US-32 CA20: al volver de /anuncios/:id/pedir porque el anuncio ya no está disponible, aviso rojo.
   const [aviso, setAviso] = useState(() => location.state?.aviso ?? null);
   const cerrarAviso = useCallback(() => setAviso(null), []);
@@ -37,20 +43,37 @@ export default function DetalleOtroCentro({ anuncio }) {
       <Link to={destinoDeVolver(location.state)} className="enlace-volver">{TEXTOS.volver}</Link>
 
       <div className="detalle-columnas">
-        <GaleriaDetalle titulo={anuncio.titulo} fotos={anuncio.fotos} />
+        <GaleriaDetalle titulo={anuncio.titulo} fotos={anuncio.fotos} deporte={anuncio.deporte} />
 
         <div className="detalle-datos">
-          {/* CA4: etiqueta naranja solo si está reservado. */}
-          {reservado && <p className="etiqueta-estado etiqueta-naranja detalle-reservado">{TEXTOS.reservado}</p>}
+          {/* CA4: aviso naranja solo si está reservado (los E2E lo buscan por .etiqueta-estado). */}
+          {reservado && (
+            <p className="etiqueta-estado etiqueta-naranja detalle-reservado">
+              <Clock3 size={17} aria-hidden="true" />
+              {TEXTOS.reservado}
+            </p>
+          )}
           <h1 id="titulo-pagina">{anuncio.titulo}</h1>
-          <p className="detalle-precio">{precioDelDetalle(anuncio)}</p>
+          <p className="detalle-precio">
+            {importe}
+            {sufijo && <> <span className="detalle-precio-sufijo">{sufijo}</span></>}
+          </p>
 
-          <section className="detalle-tarjeta" aria-labelledby="titulo-detalles">
+          <section className="detalle-bloque" aria-labelledby="titulo-detalles">
             <h2 id="titulo-detalles" className="detalle-subtitulo">{TEXTOS.detalles}</h2>
             <dl className="detalle-lista">
-              <div><dt>Categoría</dt><dd>{etiquetaDe(CATEGORIAS, anuncio.categoria)}</dd></div>
-              <div><dt>Deporte</dt><dd>{etiquetaDe(DEPORTES, anuncio.deporte)}</dd></div>
-              <div><dt>Estado del material</dt><dd>{etiquetaDe(ESTADOS_MATERIAL, anuncio.estado_material)}</dd></div>
+              <div>
+                <dt>Categoría</dt>
+                <dd><IconoDeporte nombre={iconoCategoria(anuncio.categoria)} tamano={18} />{etiquetaDe(CATEGORIAS, anuncio.categoria)}</dd>
+              </div>
+              <div>
+                <dt>Deporte</dt>
+                <dd><CirculoDeporte deporte={anuncio.deporte} tamano={22} />{etiquetaDe(DEPORTES, anuncio.deporte)}</dd>
+              </div>
+              <div>
+                <dt>Estado del material</dt>
+                <dd><BarrasEstado estado={anuncio.estado_material} />{etiquetaDe(ESTADOS_MATERIAL, anuncio.estado_material)}</dd>
+              </div>
               <div><dt>Unidades disponibles</dt><dd>{textoUnidades(anuncio.unidades_disponibles)}</dd></div>
               {anuncio.publicado_en && (
                 <div><dt>Publicado el</dt><dd>{formatearFecha(anuncio.publicado_en)}</dd></div>
@@ -65,9 +88,9 @@ export default function DetalleOtroCentro({ anuncio }) {
             {botones.escribir.habilitado && <BotonEscribirAlCentro anuncioId={anuncio.id} />}
           </div>
 
-          <section className="detalle-centro detalle-tarjeta" aria-labelledby="titulo-centro">
-            {/* Diseño S2: avatar decorativo del centro. */}
-            <span className="detalle-centro-avatar" aria-hidden="true" />
+          <section className="detalle-centro" aria-labelledby="titulo-centro">
+            {/* Diseño con vida: iniciales del centro, decorativas (el nombre va escrito al lado). */}
+            <span className="detalle-centro-avatar" aria-hidden="true">{inicialesDe(anuncio.centro?.nombre)}</span>
             <div>
               <h2 id="titulo-centro" className="detalle-subtitulo">{TEXTOS.ofrecidoPor}</h2>
               {/* US-10 CA1: el nombre del centro enlaza a su perfil. */}
@@ -77,6 +100,7 @@ export default function DetalleOtroCentro({ anuncio }) {
                   : anuncio.centro?.nombre}
               </p>
               <p className="detalle-centro-datos">
+                <MapPin size={15} aria-hidden="true" />
                 {anuncio.centro?.localidad}
                 {distancia && <> · {distancia}</>}
               </p>
@@ -85,7 +109,7 @@ export default function DetalleOtroCentro({ anuncio }) {
         </div>
       </div>
 
-      <section className="ficha-descripcion detalle-descripcion detalle-tarjeta" aria-labelledby="titulo-descripcion">
+      <section className="ficha-descripcion detalle-descripcion" aria-labelledby="titulo-descripcion">
         <h2 id="titulo-descripcion">{TEXTOS.descripcion}</h2>
         {/* CA8: React escapa el texto (un <script> se ve tal cual) y el CSS respeta los saltos de línea. */}
         <p>{anuncio.descripcion}</p>
@@ -109,15 +133,17 @@ function BloquePedir({ accion }) {
   }
   if (accion.tipo === 'reservado') {
     return (
-      <div className="detalle-boton">
-        <button type="button" disabled aria-describedby="ayuda-pedir"><ShoppingBag size={18} aria-hidden="true" />{TEXTOS.pedir}</button>
+      <div className="detalle-boton detalle-boton-pedir">
+        <button type="button" className="s2-boton" disabled aria-describedby="ayuda-pedir">
+          <ShoppingBag size={19} aria-hidden="true" />{TEXTOS.pedir}
+        </button>
         <p id="ayuda-pedir" className="detalle-ayuda">{TEXTOS.noDisponibleParaPedir}</p>
       </div>
     );
   }
   return (
-    <div className="detalle-boton">
-      <Link to={accion.ruta} className="boton-enlace"><ShoppingBag size={18} aria-hidden="true" />{TEXTOS.pedir}</Link>
+    <div className="detalle-boton detalle-boton-pedir">
+      <Link to={accion.ruta} className="s2-boton"><ShoppingBag size={19} aria-hidden="true" />{TEXTOS.pedir}</Link>
     </div>
   );
 }

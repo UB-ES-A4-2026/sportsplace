@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   TEXTOS,
@@ -8,10 +9,13 @@ import {
   hayNavegacion,
   textoAlternativoDeFoto,
 } from '../anuncios/detalleOtroCentro.js';
+import { CirculoDeporte } from '../diseno/IconoDeporte.jsx';
+import { coloresDeporte } from '../diseno/iconosDeporte.js';
 
-// Galería de la vista de otro centro (US-24 CA6 y CA7): la principal primero, flechas «‹» «›» en bucle, miniaturas
-// debajo (la activa con borde) y ← → del teclado. Con 1 foto no hay flechas ni miniaturas; sin fotos, «Sin foto».
-export default function GaleriaDetalle({ titulo, fotos }) {
+// Galería de la vista de otro centro (US-24 CA6 y CA7): la principal primero, flechas en bucle, miniaturas debajo (la
+// activa con borde) y ← → del teclado. Con 1 foto no hay flechas ni miniaturas; sin fotos, «Sin foto» sobre el color
+// del deporte (diseño con vida, #361).
+export default function GaleriaDetalle({ titulo, fotos, deporte }) {
   const lista = fotosDelDetalle(fotos);
   const total = lista.length;
   const [indice, setIndice] = useState(0);
@@ -32,7 +36,14 @@ export default function GaleriaDetalle({ titulo, fotos }) {
     return () => window.removeEventListener('keydown', alPulsar);
   }, [actual, total]);
 
-  if (total === 0) return <div className="detalle-sin-foto">{TEXTOS.sinFoto}</div>;
+  if (total === 0) {
+    return (
+      <div className="detalle-sin-foto" style={deporte ? { background: coloresDeporte(deporte).tinte } : undefined}>
+        {deporte ? <CirculoDeporte deporte={deporte} tamano={120} /> : <ImageOff size={40} aria-hidden="true" />}
+        <span>{TEXTOS.sinFoto}</span>
+      </div>
+    );
+  }
 
   const foto = lista[actual];
   const navegable = hayNavegacion(total);
@@ -49,7 +60,7 @@ export default function GaleriaDetalle({ titulo, fotos }) {
               aria-label="Foto anterior"
               onClick={() => setIndice(fotoAnterior(actual, total))}
             >
-              ‹
+              <ChevronLeft size={26} aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -57,8 +68,10 @@ export default function GaleriaDetalle({ titulo, fotos }) {
               aria-label="Foto siguiente"
               onClick={() => setIndice(fotoSiguiente(actual, total))}
             >
-              ›
+              <ChevronRight size={26} aria-hidden="true" />
             </button>
+            {/* Decorativo: el texto alternativo de la foto ya dice «Foto n de N». */}
+            <span className="detalle-galeria-contador" aria-hidden="true">{actual + 1} / {total}</span>
           </>
         )}
       </div>

@@ -13,6 +13,7 @@ import {
   fotoSiguiente,
   fotosDelDetalle,
   hayNavegacion,
+  partesDelPrecio,
   precioDelDetalle,
   textoAlternativoDeFoto,
   textoDistancia,
@@ -98,6 +99,19 @@ describe('formatos (CA9 y pantalla)', () => {
 
   test('donación: «Gratis · Donación»', () => {
     assert.equal(precioDelDetalle({ modalidad: 'donacion', precio_unitario_centimos: null }), 'Gratis · Donación');
+  });
+});
+
+describe('partesDelPrecio (diseño con vida, #361)', () => {
+  test('venta: importe y «/ unidad» por separado, que juntos son el texto de CA9', () => {
+    const anuncio = { modalidad: 'venta', precio_unitario_centimos: 123450 };
+    const { importe, sufijo } = partesDelPrecio(anuncio);
+    assert.deepEqual({ importe, sufijo }, { importe: '1.234,50 €', sufijo: '/ unidad' });
+    assert.equal(`${importe} ${sufijo}`, precioDelDetalle(anuncio));
+  });
+
+  test('donación: todo el texto en el importe y sin sufijo', () => {
+    assert.deepEqual(partesDelPrecio({ modalidad: 'donacion', precio_unitario_centimos: null }), { importe: 'Gratis · Donación', sufijo: null });
   });
 });
 
