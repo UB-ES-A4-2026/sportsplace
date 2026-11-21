@@ -92,6 +92,9 @@ button:disabled { opacity: 0.65; cursor: wait; }
 .franja-pausado { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; color: var(--s2-tinta-2); background: var(--s2-linea-2); font-size: 14px; line-height: 1.5; }
 .boton-peligro { --pisada: var(--s2-pisada-roja); background: var(--s2-peligro); }
 .boton-peligro:hover { background: var(--s2-estado-rechazado-texto); }
+/* «Rechazar» (US-79): secundario con borde rojo; el relleno rojo queda para confirmar en el diálogo. */
+.boton-secundario.boton-borde-peligro { --pisada: inset 0 0 0 var(--s2-borde) var(--s2-peligro); color: var(--s2-peligro); }
+.boton-secundario.boton-borde-peligro:hover { color: var(--s2-peligro); background: var(--s2-peligro-50); }
 .boton-texto-peligro { --pisada: 0 0 transparent; margin-top: 0; padding: 8px 0; color: var(--s2-peligro); background: none; }
 .boton-texto-peligro:hover { color: var(--s2-peligro); background: none; text-decoration: underline; }
 .dialogo { width: min(440px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: var(--s2-radio-l); color: inherit; background: var(--s2-superficie); box-shadow: var(--s2-sombra-3); }
