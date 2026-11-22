@@ -89,7 +89,7 @@ export default function CatalogoPage() {
       {/* CA15: con la API caída, el error y «Reintentar», que repite la misma petición. */}
       {actual?.error && (
         <div className="catalogo-estado">
-          <span className="catalogo-estado-icono" aria-hidden="true"><CloudOff size={24} /></span>
+          <span className="catalogo-estado-icono" aria-hidden="true"><CloudOff size={52} strokeWidth={2} /></span>
           <p role="alert">{TEXTOS.error}</p>
           <button type="button" className="s2-boton" onClick={() => setIntento((n) => n + 1)}>{TEXTOS.reintentar}</button>
         </div>
@@ -151,15 +151,15 @@ function SinAnuncios({ q, filtros, alLimpiarFiltros }) {
   if (tipo === 'filtros') {
     return (
       <div className="catalogo-estado" role="status">
-        <span className="catalogo-estado-icono" aria-hidden="true"><SearchX size={24} /></span>
+        <span className="catalogo-estado-icono" aria-hidden="true"><SearchX size={52} strokeWidth={2} /></span>
         <p>{TEXTOS_FILTROS.sinResultados}</p>
-        <button type="button" className="s2-boton s2-boton-secundario" onClick={alLimpiarFiltros}>{TEXTOS_FILTROS.limpiar}</button>
+        <button type="button" className="s2-boton s2-boton-verde" onClick={alLimpiarFiltros}>{TEXTOS_FILTROS.limpiar}</button>
       </div>
     );
   }
   return (
     <div className="catalogo-estado">
-      <span className="catalogo-estado-icono" aria-hidden="true"><PackageOpen size={24} /></span>
+      <span className="catalogo-estado-icono" aria-hidden="true"><PackageOpen size={52} strokeWidth={2} /></span>
       <p>{TEXTOS.vacio}</p>
       <Link to="/anuncios/nuevo" className="s2-boton">{TEXTOS.publicar}</Link>
     </div>

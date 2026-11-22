@@ -1,5 +1,6 @@
-/* T21-4: pantalla /catalogo, tarjeta de anuncio, rejilla y paginación (US-96). Diseño con vida (#361): franja de campo
-   a todo el ancho con el título y la búsqueda; debajo, los filtros y una rejilla de tarjetas sin caja.
+/* T21-4: pantalla /catalogo, tarjeta de anuncio, rejilla y paginación (US-96). Diseño con vida (#361, mockup de Lucía
+   «Main»): portada con la foto y la búsqueda; debajo, los filtros en una tarjeta blanca y la rejilla de tarjetas blancas
+   con borde. La tarjeta la usa también el perfil de un centro (US-10).
    Los selectores llevan dos clases porque styles.css se carga después y sus reglas generales
    (`.pagina`, `.pagina a`, `button`) ganarían a una sola clase. */
 @import '../diseno/tokens.css';
@@ -32,106 +33,139 @@
 }
 .catalogo-portada-subtitulo { max-width: 46ch; margin: 2px 0 0; color: var(--s2-tinta-2); font-size: 17px; font-weight: 600; line-height: 1.45; }
 
-/* Línea de resultados: total a la izquierda y «Ordenar por» a la derecha. */
+/* Línea de resultados (CA11): el total grande a la izquierda y «Ordenar por» a la derecha. */
 .catalogo-resultados {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 24px 0 18px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0 18px;
 }
-.catalogo-total { margin: 0; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.catalogo-orden { display: flex; align-items: center; gap: 10px; color: var(--s2-gris); font-size: 15px; font-weight: 700; }
+.catalogo-total { margin: 0; font-size: 26px; font-weight: 900; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.catalogo-orden { display: flex; align-items: center; gap: 10px; color: var(--s2-tinta); font-size: 17px; font-weight: 800; }
 .catalogo-orden select {
-  height: var(--s2-toque); padding: 0 38px 0 12px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde); border-radius: var(--s2-radio);
-  color: var(--s2-tinta); background-color: var(--s2-superficie); font: inherit; font-size: 15px; font-weight: 700;
+  min-height: 48px; padding: 0 40px 0 12px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde); border-radius: var(--s2-radio-s);
+  color: var(--s2-tinta); background-color: var(--s2-superficie); font: inherit; font-size: 16px; font-weight: 800;
   cursor: pointer; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2314261a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2314261a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
 }
 .catalogo-orden select:hover { border-color: var(--s2-tinta); }
 .catalogo-orden select:focus-visible { outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
 
-/* CA14 y CA15: catálogo vacío, sin resultados con filtros y error, en lugar de la rejilla. */
-.catalogo-estado {
-  display: grid; justify-items: center; gap: 12px; margin-top: 24px; padding: 48px 24px;
-  border-top: 1px solid var(--s2-linea); border-bottom: 1px solid var(--s2-linea); text-align: center;
+/* CA14 y CA15, US-22 CA10 y US-21 CA18: catálogo vacío, sin resultados y error, en lugar de la rejilla. Recuadro blanco
+   con borde discontinuo, un círculo amarillo con el icono, el texto grande y el botón (como el vacío del mockup). */
+.catalogo-estado,
+.pagina-catalogo .busqueda-sin-resultados {
+  display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 24px; padding: 44px 24px;
+  border: var(--s2-borde) dashed var(--s2-linea); border-radius: 24px; color: var(--s2-tinta); background: var(--s2-superficie);
+  text-align: center;
 }
-.catalogo-estado p { max-width: 46ch; margin: 0; color: var(--s2-tinta-2); font-size: 16px; font-weight: 600; }
+.catalogo-estado p,
+.pagina-catalogo .busqueda-sin-resultados p { max-width: 46ch; margin: 0; color: var(--s2-gris); font-size: 18px; font-weight: 700; }
+.catalogo-estado p:first-of-type,
+.pagina-catalogo .busqueda-sin-resultados .busqueda-sin-resultados-titulo { color: var(--s2-tinta); font-size: 24px; font-weight: 900; line-height: 1.25; }
 .catalogo-estado-icono {
-  display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; color: var(--s2-teal-700); background: var(--s2-teal-50);
+  display: grid; flex: none; place-items: center; width: 96px; height: 96px; border-radius: 50%; color: var(--s2-aviso);
+  background: var(--s2-aviso-50);
 }
+.catalogo-estado .s2-boton,
+.pagina-catalogo .busqueda-sin-resultados a.boton-enlace { min-height: 54px; margin-top: 0; padding: 0 26px; font-size: 18px; font-weight: 900; }
 
-/* CA13: «Cargando…» y, debajo, esqueletos de tarjeta con brillo. */
-.catalogo-cargando { margin: 24px 0 18px; color: var(--s2-gris); font-size: 16px; font-weight: 700; }
-.tarjeta-esqueleto { display: flex; flex: 1; flex-direction: column; gap: 12px; }
+/* CA13: «Cargando…» y, debajo, esqueletos con la forma de la tarjeta. */
+.catalogo-cargando { margin: 24px 0 18px; color: var(--s2-gris); font-size: 18px; font-weight: 800; }
+.tarjeta-esqueleto {
+  display: flex; flex: 1; flex-direction: column; overflow: hidden; border: var(--s2-borde) solid var(--s2-linea);
+  border-radius: var(--s2-radio-l); background: var(--s2-superficie);
+}
 .esqueleto-foto, .esqueleto-lineas span {
-  background: linear-gradient(90deg, var(--s2-linea-2) 0%, var(--s2-fondo-2) 45%, var(--s2-linea-2) 90%) 0 0 / 200% 100%;
+  background: linear-gradient(90deg, var(--s2-linea-2) 0%, var(--s2-fondo) 45%, var(--s2-linea-2) 90%) 0 0 / 200% 100%;
   animation: esqueleto-brillo 1.4s ease-in-out infinite;
 }
-.esqueleto-foto { aspect-ratio: 4 / 3; border-radius: var(--s2-radio-l); }
-.esqueleto-lineas { display: grid; gap: 10px; padding: 0 2px; }
-.esqueleto-lineas span { display: block; height: 12px; border-radius: 4px; }
-.esqueleto-lineas span:nth-child(1) { width: 80%; height: 14px; }
-.esqueleto-lineas span:nth-child(2) { width: 45%; height: 18px; }
+.esqueleto-foto { aspect-ratio: 4 / 3; }
+.esqueleto-lineas { display: grid; gap: 10px; padding: 16px 16px 18px; }
+.esqueleto-lineas span { display: block; height: 14px; border-radius: 4px; }
+.esqueleto-lineas span:nth-child(1) { width: 80%; height: 18px; }
+.esqueleto-lineas span:nth-child(2) { width: 50%; height: 24px; }
 .esqueleto-lineas span:nth-child(3) { width: 60%; }
 .esqueleto-lineas span:nth-child(4) { width: 70%; margin-top: 8px; }
 @keyframes esqueleto-brillo { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
 /* Rejilla: 1 columna, 2 desde 600 px, 3 desde 900 px y 4 desde 1200 px (US-96, «Pantallas para el boceto»). */
-.catalogo-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px 22px; margin: 0; padding: 0; list-style: none; }
+.catalogo-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; margin: 0; padding: 0; list-style: none; }
 .catalogo-rejilla > li { display: flex; min-width: 0; }
 @media (min-width: 600px) { .catalogo-rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 900px) { .catalogo-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1200px) { .catalogo-rejilla { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-/* Tarjeta clicable: todo el bloque es un enlace (CA3). Sin caja: la foto arriba y el texto debajo, como los marketplaces.
-   Al pasar el ratón, la foto se acerca un poco y el título se subraya. La usa también el perfil de un centro (US-10). */
+/* Tarjeta clicable: todo el bloque es un enlace (CA3). Tarjeta blanca de radio 22 con borde de 3 px; al pasar el
+   ratón sube un poco y deja la «pisada» debajo. La usa también el perfil de un centro (US-10). */
 .tarjeta-anuncio, .tarjeta-centro-enlace {
-  display: flex; flex: 1; flex-direction: column; min-width: 0; color: var(--s2-tinta); text-decoration: none; border-radius: var(--s2-radio-l);
+  display: flex; flex: 1; flex-direction: column; min-width: 0; overflow: hidden;
+  border: var(--s2-borde) solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  color: var(--s2-tinta); background: var(--s2-superficie); text-decoration: none;
+  transition: transform 150ms var(--s2-curva), box-shadow 150ms var(--s2-curva);
 }
 .pagina .tarjeta-anuncio, .pagina .tarjeta-centro-enlace { color: var(--s2-tinta); }
-.tarjeta-anuncio:focus-visible, .tarjeta-centro-enlace:focus-visible { outline-offset: 4px; }
+.tarjeta-anuncio:hover, .tarjeta-centro-enlace:hover { transform: translateY(-3px); box-shadow: var(--s2-sombra-3); }
+.tarjeta-anuncio:focus-visible, .tarjeta-centro-enlace:focus-visible { outline-offset: 3px; }
 
-.tarjeta-foto { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--s2-radio-l); background: var(--s2-fondo-2); }
-.tarjeta-foto img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 400ms var(--s2-curva); }
-.tarjeta-anuncio:hover .tarjeta-foto img, .tarjeta-centro-enlace:hover .tarjeta-foto img { transform: scale(1.03); }
-/* «Sin foto»: el círculo del deporte (si se sabe) o el icono, y el texto. */
+/* Foto 4:3 sobre el tinte del deporte (o el fondo suave si no se sabe). */
+.tarjeta-foto { position: relative; display: block; flex: none; aspect-ratio: 4 / 3; overflow: hidden; background: var(--s2-fondo-2); }
+.tarjeta-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* «Sin foto» (US-96): el círculo grande del deporte y el texto debajo. */
 .tarjeta-sin-foto {
-  display: grid; place-items: center; align-content: center; gap: 10px; height: 100%; color: var(--s2-tinta-2); font-size: 14px; font-weight: 800;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; padding-top: 18px;
+  color: var(--s2-tinta-2); font-size: 14px; font-weight: 800;
 }
-/* CA6: «Reservado», etiqueta rectangular naranja arriba a la izquierda. */
-.tarjeta-no-disponible {
-  position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
-  border-radius: var(--s2-radio-etiqueta); color: #fff; background: var(--s2-naranja-600); font-size: 13px; font-weight: 800;
+.tarjeta-sin-foto > span:first-child { box-shadow: 0 6px 0 color-mix(in srgb, var(--s2-tinta) 15%, transparent); }
+.tarjeta-sin-foto-circulo {
+  display: grid; place-items: center; width: 116px; height: 116px; border-radius: 50%; color: var(--s2-gris); background: var(--s2-superficie);
 }
+/* Arriba a la izquierda: la modalidad («Venta» blanca, «Donación» verde oscuro) y «Reservado» naranja (CA6). */
+.tarjeta-etiquetas { position: absolute; top: 12px; right: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tarjeta-modalidad, .tarjeta-no-disponible {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: var(--s2-radio-etiqueta);
+  font-size: 14px; font-weight: 900; line-height: 1.2; white-space: nowrap;
+}
+.tarjeta-modalidad { color: var(--s2-tinta); background: var(--s2-superficie); }
+.tarjeta-modalidad-donacion { color: #fff; background: var(--s2-teal-800); }
+.tarjeta-no-disponible { color: #fff; background: var(--s2-naranja-600); }
 
-.tarjeta-cuerpo { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 2px 0; }
+.tarjeta-cuerpo { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 16px 18px; }
 .tarjeta-cuerpo p { margin: 0; }
+.tarjeta-deporte { color: var(--s2-gris); font-size: 14px; font-weight: 800; }
 .tarjeta-titulo {
-  display: -webkit-box; margin: 0; overflow: hidden; font-size: 16px; font-weight: 800; line-height: 1.3;
-  -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+  display: -webkit-box; max-width: 100%; margin: 0; overflow: hidden; color: var(--s2-tinta); font-size: 19px; font-weight: 900;
+  line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
 }
-.tarjeta-anuncio:hover .tarjeta-titulo, .tarjeta-centro-enlace:hover .tarjeta-titulo { text-decoration: underline; text-underline-offset: 3px; }
-/* Precio: el importe grande y «/ unidad» pequeño; la donación, en verde. */
-.tarjeta-precio { color: var(--s2-gris); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.tarjeta-precio strong { color: var(--s2-tinta); font-size: 20px; font-weight: 900; letter-spacing: -0.01em; }
-.tarjeta-precio-donacion strong { color: var(--s2-teal-700); font-size: 18px; font-weight: 900; }
-/* Precio en la tarjeta del perfil de un centro (US-10): un solo texto, «12,00 € / unidad» o «Gratis · Donación». */
-.tarjeta-centro-precio { color: var(--s2-tinta); font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
-.tarjeta-centro-precio-donacion { color: var(--s2-teal-700); }
-.tarjeta-detalle { display: flex; align-items: center; gap: 8px; color: var(--s2-tinta-2); font-size: 14px; font-weight: 700; }
-/* Pie: una línea fina, el centro con su localidad y la fecha. */
-.tarjeta-pie { display: grid; gap: 2px; width: 100%; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--s2-linea-2); }
-.tarjeta-origen {
-  display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700;
+/* Precio: el importe a 26 px y «/ unidad» pequeño; la donación, «Gratis · Donación» en una pastilla verde clara. */
+.tarjeta-precio { color: var(--s2-gris); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tarjeta-precio strong { color: var(--s2-teal-800); font-size: 26px; font-weight: 900; line-height: 1.1; }
+.tarjeta-precio-donacion {
+  padding: 4px 12px; border-radius: 10px; color: var(--s2-teal-800); background: var(--s2-teal-100); font-size: 22px; font-weight: 900;
+  line-height: 1.25;
 }
-.tarjeta-origen svg { flex: none; }
-.tarjeta-origen span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.tarjeta-fecha { color: var(--s2-gris); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Estado del material: barritas de 6 × 14 y el texto. */
+.tarjeta-detalle { display: flex; align-items: center; gap: 8px; color: var(--s2-tinta); font-size: 15px; font-weight: 800; }
+.tarjeta-detalle .barras-estado { align-items: center; }
+.tarjeta-detalle .barra-estado { width: 6px; height: 14px; border-radius: 2px; }
+/* Pie: el centro en negrita en su línea y, debajo, la localidad y la fecha. El « · » entre centro y localidad está en el
+   texto (CA) pero no se ve: el salto de línea ya los separa. */
+.tarjeta-pie {
+  width: 100%; margin-top: auto; padding-top: 10px; border-top: 2px solid var(--s2-linea-2); color: var(--s2-gris);
+  font-size: 14px; font-weight: 700; line-height: 1.45;
+}
+.tarjeta-cuerpo .tarjeta-origen, .tarjeta-cuerpo .tarjeta-fecha { display: inline; }
+.tarjeta-origen-nombre {
+  display: block; margin-bottom: 2px; overflow: hidden; color: var(--s2-tinta); font-size: 15px; font-weight: 900;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.tarjeta-origen-separador { display: none; }
+.tarjeta-origen-lugar svg { margin-right: 4px; vertical-align: -3px; }
+.tarjeta-fecha { font-variant-numeric: tabular-nums; }
+.tarjeta-fecha::before { content: ' · '; }
 
 /* CA8: «Anterior» · «Página X de Y» · «Siguiente». */
-.catalogo-paginacion {
-  display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--s2-linea);
-}
-.catalogo-paginacion .s2-boton { min-height: var(--s2-toque); padding: 0 16px; font-size: 15px; }
-.catalogo-pagina-actual { color: var(--s2-tinta); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.catalogo-paginacion { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 32px; }
+.catalogo-paginacion .s2-boton { min-height: var(--s2-toque); padding: 0 16px; font-size: 16px; }
+.catalogo-pagina-actual { color: var(--s2-tinta); font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; }
 
 /* Móvil: la foto arriba (más ligera) y la tarjeta debajo, montada un poco sobre la foto. */
 @media (max-width: 720px) {
@@ -144,12 +178,14 @@
   .catalogo-portada-subtitulo { font-size: 16px; }
 }
 @media (max-width: 599px) {
+  .catalogo-total { font-size: 24px; }
+  .catalogo-estado, .pagina-catalogo .busqueda-sin-resultados { padding: 32px 18px; }
   .catalogo-paginacion { gap: 10px; }
   .catalogo-paginacion .s2-boton { padding: 0 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .esqueleto-foto, .esqueleto-lineas span { animation: none; }
-  .tarjeta-foto img { transition: none; }
-  .tarjeta-anuncio:hover .tarjeta-foto img, .tarjeta-centro-enlace:hover .tarjeta-foto img { transform: none; }
+  .tarjeta-anuncio, .tarjeta-centro-enlace { transition: none; }
+  .tarjeta-anuncio:hover, .tarjeta-centro-enlace:hover { transform: none; }
 }
