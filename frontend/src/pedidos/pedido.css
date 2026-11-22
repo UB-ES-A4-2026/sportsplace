@@ -52,6 +52,7 @@
 .etiqueta-pagado { color: #fff; background: #067647; }
 .pedido-acciones { margin-top: 22px; }
 .pedido-acciones:empty { display: none; }
+.pedido-seccion .pedido-acciones-cierre { margin-top: 12px; }
 
 @media (max-width: 760px) {
   .pagina.pagina-pedido { grid-template-columns: minmax(0, 1fr); padding-top: 28px; }
