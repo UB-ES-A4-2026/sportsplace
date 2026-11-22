@@ -1,4 +1,4 @@
-import { Clock3, MapPin, ShoppingBag } from 'lucide-react';
+import { Clock3, Package } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
@@ -22,8 +22,9 @@ import BotonEscribirAlCentro from './BotonEscribirAlCentro.jsx';
 import GaleriaDetalle from './GaleriaDetalle.jsx';
 
 // US-24 T24-2: vista de un anuncio de otro centro en /anuncios/:id (respuesta de GET /api/catalogo/:id).
-// Diseño con vida (#361): dos columnas en escritorio (galería | datos) y una en < 900 px; los bloques se separan con
-// líneas finas. El orden no cambia: título, precio, Detalles, Pedir, Escribir al centro, Ofrecido por y Descripción.
+// Diseño con vida (#361, mockup «Anuncio» de Lucía): «← Volver al catálogo» como botón blanco y una tarjeta blanca con
+// dos columnas en escritorio (galería | datos) y una en < 900 px; la descripción debajo, a todo el ancho. El orden no
+// cambia: título, precio, Detalles, Pedir, Escribir al centro, Ofrecido por y Descripción.
 export default function DetalleOtroCentro({ anuncio }) {
   const location = useLocation();
   const reservado = anuncio.estado === 'reservado';
@@ -42,78 +43,80 @@ export default function DetalleOtroCentro({ anuncio }) {
       {/* CA1 (T24-3): vuelve a la URL del catálogo de la que se vino; si se entró por el enlace, a /catalogo. */}
       <Link to={destinoDeVolver(location.state)} className="enlace-volver">{TEXTOS.volver}</Link>
 
-      <div className="detalle-columnas">
-        <GaleriaDetalle titulo={anuncio.titulo} fotos={anuncio.fotos} deporte={anuncio.deporte} />
+      <div className="detalle-tarjeta">
+        <div className="detalle-columnas">
+          <GaleriaDetalle titulo={anuncio.titulo} fotos={anuncio.fotos} deporte={anuncio.deporte} categoria={anuncio.categoria} />
 
-        <div className="detalle-datos">
-          {/* CA4: aviso naranja solo si está reservado (los E2E lo buscan por .etiqueta-estado). */}
-          {reservado && (
-            <p className="etiqueta-estado etiqueta-naranja detalle-reservado">
-              <Clock3 size={17} aria-hidden="true" />
-              {TEXTOS.reservado}
+          <div className="detalle-datos">
+            {/* CA4: aviso naranja solo si está reservado (los E2E lo buscan por .etiqueta-estado). */}
+            {reservado && (
+              <p className="etiqueta-estado etiqueta-naranja detalle-reservado">
+                <Clock3 size={20} strokeWidth={2.6} aria-hidden="true" />
+                {TEXTOS.reservado}
+              </p>
+            )}
+            <h1 id="titulo-pagina">{anuncio.titulo}</h1>
+            {/* «Gratis · Donación» va en una pastilla verde clara, como en la tarjeta del catálogo. */}
+            <p className={sufijo ? 'detalle-precio' : 'detalle-precio detalle-precio-donacion'}>
+              {importe}
+              {sufijo && <> <span className="detalle-precio-sufijo">{sufijo}</span></>}
             </p>
-          )}
-          <h1 id="titulo-pagina">{anuncio.titulo}</h1>
-          <p className="detalle-precio">
-            {importe}
-            {sufijo && <> <span className="detalle-precio-sufijo">{sufijo}</span></>}
-          </p>
 
-          <section className="detalle-bloque" aria-labelledby="titulo-detalles">
-            <h2 id="titulo-detalles" className="detalle-subtitulo">{TEXTOS.detalles}</h2>
-            <dl className="detalle-lista">
-              <div>
-                <dt>Categoría</dt>
-                <dd><IconoDeporte nombre={iconoCategoria(anuncio.categoria)} tamano={18} />{etiquetaDe(CATEGORIAS, anuncio.categoria)}</dd>
-              </div>
-              <div>
-                <dt>Deporte</dt>
-                <dd><CirculoDeporte deporte={anuncio.deporte} tamano={22} />{etiquetaDe(DEPORTES, anuncio.deporte)}</dd>
-              </div>
-              <div>
-                <dt>Estado del material</dt>
-                <dd><BarrasEstado estado={anuncio.estado_material} />{etiquetaDe(ESTADOS_MATERIAL, anuncio.estado_material)}</dd>
-              </div>
-              <div><dt>Unidades disponibles</dt><dd>{textoUnidades(anuncio.unidades_disponibles)}</dd></div>
-              {anuncio.publicado_en && (
-                <div><dt>Publicado el</dt><dd>{formatearFecha(anuncio.publicado_en)}</dd></div>
-              )}
-            </dl>
-          </section>
+            <section className="detalle-bloque" aria-labelledby="titulo-detalles">
+              <h2 id="titulo-detalles" className="detalle-subtitulo">{TEXTOS.detalles}</h2>
+              <dl className="detalle-lista">
+                <div>
+                  <dt>Categoría</dt>
+                  <dd><IconoDeporte nombre={iconoCategoria(anuncio.categoria)} tamano={18} grosor={2.4} />{etiquetaDe(CATEGORIAS, anuncio.categoria)}</dd>
+                </div>
+                <div>
+                  <dt>Deporte</dt>
+                  <dd><CirculoDeporte deporte={anuncio.deporte} tamano={22} />{etiquetaDe(DEPORTES, anuncio.deporte)}</dd>
+                </div>
+                <div>
+                  <dt>Estado del material</dt>
+                  <dd><BarrasEstado estado={anuncio.estado_material} />{etiquetaDe(ESTADOS_MATERIAL, anuncio.estado_material)}</dd>
+                </div>
+                <div><dt>Unidades disponibles</dt><dd>{textoUnidades(anuncio.unidades_disponibles)}</dd></div>
+                {anuncio.publicado_en && (
+                  <div className="detalle-lista-ancho"><dt>Publicado el</dt><dd>{formatearFecha(anuncio.publicado_en)}</dd></div>
+                )}
+              </dl>
+            </section>
 
-          {/* CA3, CA4 y CA10: «Pedir» [US-32] principal y «Escribir al centro» [US-28] secundario. */}
-          <div className="detalle-botones">
-            <BloquePedir accion={accionDePedir(anuncio)} />
-            {/* US-28 CA1-CA2: esta vista solo se pinta para anuncios activos o reservados de otro centro. */}
-            {botones.escribir.habilitado && <BotonEscribirAlCentro anuncioId={anuncio.id} />}
-          </div>
-
-          <section className="detalle-centro" aria-labelledby="titulo-centro">
-            {/* Diseño con vida: iniciales del centro, decorativas (el nombre va escrito al lado). */}
-            <span className="detalle-centro-avatar" aria-hidden="true">{inicialesDe(anuncio.centro?.nombre)}</span>
-            <div>
-              <h2 id="titulo-centro" className="detalle-subtitulo">{TEXTOS.ofrecidoPor}</h2>
-              {/* US-10 CA1: el nombre del centro enlaza a su perfil. */}
-              <p className="detalle-centro-nombre">
-                {enlaceAlCentro(anuncio.centro)
-                  ? <Link to={enlaceAlCentro(anuncio.centro)}>{anuncio.centro.nombre}</Link>
-                  : anuncio.centro?.nombre}
-              </p>
-              <p className="detalle-centro-datos">
-                <MapPin size={15} aria-hidden="true" />
-                {anuncio.centro?.localidad}
-                {distancia && <> · {distancia}</>}
-              </p>
+            {/* CA3, CA4 y CA10: «Pedir» [US-32] principal y «Escribir al centro» [US-28] secundario. */}
+            <div className="detalle-botones">
+              <BloquePedir accion={accionDePedir(anuncio)} />
+              {/* US-28 CA1-CA2: esta vista solo se pinta para anuncios activos o reservados de otro centro. */}
+              {botones.escribir.habilitado && <BotonEscribirAlCentro anuncioId={anuncio.id} />}
             </div>
-          </section>
-        </div>
-      </div>
 
-      <section className="ficha-descripcion detalle-descripcion" aria-labelledby="titulo-descripcion">
-        <h2 id="titulo-descripcion">{TEXTOS.descripcion}</h2>
-        {/* CA8: React escapa el texto (un <script> se ve tal cual) y el CSS respeta los saltos de línea. */}
-        <p>{anuncio.descripcion}</p>
-      </section>
+            <section className="detalle-centro" aria-labelledby="titulo-centro">
+              {/* Diseño con vida: iniciales del centro, decorativas (el nombre va escrito al lado). */}
+              <span className="detalle-centro-avatar" aria-hidden="true">{inicialesDe(anuncio.centro?.nombre)}</span>
+              <div>
+                <h2 id="titulo-centro" className="detalle-subtitulo">{TEXTOS.ofrecidoPor}</h2>
+                {/* US-10 CA1: el nombre del centro enlaza a su perfil. */}
+                <p className="detalle-centro-nombre">
+                  {enlaceAlCentro(anuncio.centro)
+                    ? <Link to={enlaceAlCentro(anuncio.centro)}>{anuncio.centro.nombre}</Link>
+                    : anuncio.centro?.nombre}
+                </p>
+                <p className="detalle-centro-datos">
+                  {anuncio.centro?.localidad}
+                  {distancia && <> · {distancia}</>}
+                </p>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <section className="ficha-descripcion detalle-descripcion" aria-labelledby="titulo-descripcion">
+          <h2 id="titulo-descripcion">{TEXTOS.descripcion}</h2>
+          {/* CA8: React escapa el texto (un <script> se ve tal cual) y el CSS respeta los saltos de línea. */}
+          <p>{anuncio.descripcion}</p>
+        </section>
+      </div>
     </section>
     </>
   );
@@ -135,15 +138,15 @@ function BloquePedir({ accion }) {
     return (
       <div className="detalle-boton detalle-boton-pedir">
         <button type="button" className="s2-boton" disabled aria-describedby="ayuda-pedir">
-          <ShoppingBag size={19} aria-hidden="true" />{TEXTOS.pedir}
+          <Package size={22} strokeWidth={2.6} aria-hidden="true" />{TEXTOS.pedir}
         </button>
-        <p id="ayuda-pedir" className="detalle-ayuda">{TEXTOS.noDisponibleParaPedir}</p>
+        <p id="ayuda-pedir" className="detalle-ayuda"><Clock3 size={16} strokeWidth={2.6} aria-hidden="true" />{TEXTOS.noDisponibleParaPedir}</p>
       </div>
     );
   }
   return (
     <div className="detalle-boton detalle-boton-pedir">
-      <Link to={accion.ruta} className="s2-boton"><ShoppingBag size={19} aria-hidden="true" />{TEXTOS.pedir}</Link>
+      <Link to={accion.ruta} className="s2-boton"><Package size={22} strokeWidth={2.6} aria-hidden="true" />{TEXTOS.pedir}</Link>
     </div>
   );
 }

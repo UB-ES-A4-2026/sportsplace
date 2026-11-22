@@ -1,10 +1,11 @@
 /* E03 · Publicación de material. Estilos del formulario de anuncio, la ficha y los avisos.
    Van en su propio archivo para no chocar con los cambios de styles.css de otras historias.
-   Diseño con vida (#361): fondo blanco, bloques separados por líneas finas y estados con un punto de color. */
+   Diseño con vida (#361, mockups de Lucía): datos y listas en tarjetas blancas con borde de 3 px y esquinas redondas,
+   estados en pastilla y títulos en negrita gruesa. El detalle de otro centro sigue el mockup «Anuncio». */
 
 /* Formulario de anuncio (US-12, reutilizable) */
 .pagina-anuncio { padding-top: 40px; }
-.pagina-anuncio h1 { font-size: clamp(28px, 3.4vw, 36px); font-weight: 800; line-height: 1.12; letter-spacing: -0.02em; }
+.pagina-anuncio h1 { font-size: clamp(28px, 3.4vw, 36px); font-weight: 900; line-height: 1.12; letter-spacing: -0.01em; }
 .formulario-anuncio { margin-top: 28px; }
 .formulario-anuncio textarea,
 .formulario-anuncio select {
@@ -46,7 +47,8 @@
 .enlace-volver:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ficha-cabecera { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
 .ficha-cabecera h1 { overflow-wrap: anywhere; }
-/* Estado del anuncio: punto del color del estado y texto, sin fondo. */
+/* Estado del anuncio: punto del color del estado y texto (nunca solo el color). En la ficha y en «Mis anuncios», en
+   pastilla con su fondo, como .s2-estado de tokens.css. */
 .etiqueta-estado {
   display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 800; line-height: 1.3; white-space: nowrap;
 }
@@ -56,20 +58,37 @@
 .etiqueta-naranja { color: var(--s2-naranja-700); }
 .etiqueta-azul { color: var(--s2-estado-recibido-texto); }
 .etiqueta-morado { color: var(--s2-estado-borrador-texto); }
-/* Tabla de datos y descripción: filas separadas por líneas finas. */
-.ficha-datos {
-  width: 100%; margin-top: 24px; border-top: 1px solid var(--s2-linea); border-collapse: collapse; font-size: 15px;
+.ficha-cabecera .etiqueta-estado, .fila-estado .etiqueta-estado {
+  gap: 6px; padding: 3px 12px; border-radius: var(--s2-radio-etiqueta); font-weight: 900; line-height: 1.4;
 }
-.ficha-datos th, .ficha-datos td { padding: 12px 0; border-bottom: 1px solid var(--s2-linea-2); text-align: left; vertical-align: top; }
-.ficha-datos th { width: 50%; padding-right: 16px; color: var(--s2-gris); font-weight: 700; }
-.ficha-datos td { color: var(--s2-tinta); font-weight: 800; }
-.ficha .ficha-precio .precio-anuncio-grande { color: var(--s2-teal-800); font-size: 28px; font-weight: 900; letter-spacing: -0.01em; }
+.ficha-cabecera .etiqueta-verde, .fila-estado .etiqueta-verde { background: var(--s2-estado-aceptado-fondo); }
+.ficha-cabecera .etiqueta-gris, .fila-estado .etiqueta-gris { background: var(--s2-estado-cancelado-fondo); }
+.ficha-cabecera .etiqueta-naranja, .fila-estado .etiqueta-naranja { background: var(--s2-naranja-100); }
+.ficha-cabecera .etiqueta-azul, .fila-estado .etiqueta-azul { background: var(--s2-estado-recibido-fondo); }
+.ficha-cabecera .etiqueta-morado, .fila-estado .etiqueta-morado { background: var(--s2-linea-2); }
+/* Tabla de datos en una tarjeta blanca: etiqueta en gris y dato en negrita, filas separadas por una línea suave. */
+.ficha-datos {
+  width: 100%; margin-top: 20px; overflow: hidden; border: var(--s2-borde) solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  border-collapse: separate; border-spacing: 0; background: var(--s2-superficie); font-size: 16px;
+}
+.ficha-datos th, .ficha-datos td { padding: 12px 18px; border-bottom: 2px solid var(--s2-linea-2); text-align: left; vertical-align: top; }
+.ficha-datos tr:last-child th, .ficha-datos tr:last-child td { border-bottom: 0; }
+.ficha-datos th { width: 50%; color: var(--s2-gris); font-weight: 800; }
+.ficha-datos td { color: var(--s2-tinta); font-weight: 900; }
+.ficha .ficha-precio .precio-anuncio-grande { color: var(--s2-teal-800); font-size: 32px; font-weight: 900; letter-spacing: 0; }
 .ficha .galeria { margin-top: 18px; }
 .ficha .galeria-grande { border-radius: var(--s2-radio-l); background: var(--s2-fondo-2); }
 .ficha-descripcion { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--s2-linea); }
 .ficha-descripcion h2 { margin-bottom: 8px; font-size: 17px; font-weight: 800; }
 .ficha-descripcion p { margin: 0; color: var(--s2-tinta-2); font-size: 16px; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
-.ficha-fechas { margin: 24px 0 0; color: var(--s2-gris); font-size: 13px; font-weight: 600; }
+/* En la ficha propia, la descripción también va en tarjeta. */
+.ficha .ficha-descripcion {
+  margin-top: 16px; padding: 18px 20px; border: var(--s2-borde) solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  background: var(--s2-superficie);
+}
+.ficha .ficha-descripcion h2 { margin: 0 0 6px; font-size: 18px; font-weight: 900; letter-spacing: 0; }
+.ficha .ficha-descripcion p { color: var(--s2-tinta); font-weight: 600; line-height: 1.55; }
+.ficha-fechas { margin: 16px 0 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
 .ficha-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; }
 .ficha-acciones > button { margin-top: 0; }
 .ficha-acciones:empty { display: none; }
@@ -92,21 +111,25 @@
 .mis-anuncios-cabecera .boton-enlace:hover { background: var(--s2-naranja-700); }
 .mis-anuncios-total { margin: 14px 0 0; color: var(--s2-gris); font-size: 15px; font-weight: 700; }
 .mis-anuncios-vacio { margin-top: 24px; }
-/* La lista no va en tarjeta: una línea fina arriba y otra entre anuncios. */
-.lista-anuncios { display: grid; gap: 0; margin: 16px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--s2-linea); }
-.fila-anuncio { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--s2-linea); }
+/* La lista va en una tarjeta blanca con borde; los anuncios se separan con una línea suave. */
+.lista-anuncios {
+  display: grid; gap: 0; margin: 16px 0 0; padding: 0 20px; list-style: none; border: var(--s2-borde) solid var(--s2-linea);
+  border-radius: var(--s2-radio-l); background: var(--s2-superficie);
+}
+.fila-anuncio { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 16px 0; border-bottom: 2px solid var(--s2-linea-2); }
+.fila-anuncio:last-child { border-bottom: 0; }
 .fila-miniatura { width: 72px; height: 72px; }
 .fila-miniatura img { display: block; width: 72px; height: 72px; border-radius: var(--s2-radio); object-fit: cover; }
 .sin-foto {
   display: grid; place-items: center; width: 72px; height: 72px; border-radius: var(--s2-radio); color: var(--s2-gris);
-  background: var(--s2-fondo-2); font-size: 12px; font-weight: 700; text-align: center;
+  background: var(--s2-fondo-2); font-size: 12px; font-weight: 800; text-align: center;
 }
 .fila-datos { display: grid; gap: 4px; min-width: 0; }
-.fila-titulo { overflow: hidden; font-weight: 800; white-space: nowrap; text-overflow: ellipsis; }
-.pagina .fila-titulo { color: var(--s2-tinta); font-size: 16px; text-decoration: none; }
+.fila-titulo { overflow: hidden; font-weight: 900; white-space: nowrap; text-overflow: ellipsis; }
+.pagina .fila-titulo { color: var(--s2-tinta); font-size: 17px; text-decoration: none; }
 .pagina .fila-titulo:hover { color: var(--s2-teal-700); text-decoration: underline; text-underline-offset: 3px; }
-.fila-detalle { margin: 0; color: var(--s2-tinta-2); font-size: 14px; font-weight: 600; }
-.fila-estado { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 600; }
+.fila-detalle { margin: 0; color: var(--s2-tinta-2); font-size: 15px; font-weight: 700; }
+.fila-estado { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
 .fila-acciones { display: flex; align-items: center; gap: 8px; }
 .fila-acciones:empty { display: none; }
 .fila-acciones button { margin-top: 0; padding: 8px 12px; }
@@ -141,90 +164,121 @@
 .ficha-acciones .boton-enlace { margin-top: 0; }
 .fila-acciones .boton-enlace { margin-top: 0; padding: 8px 12px; }
 
-/* Detalle de un anuncio de otro centro (US-24 T24-2), diseño con vida (#361): dos columnas en escritorio y una en
-   < 900 px; sin tarjetas: los bloques (detalles, acciones, «Ofrecido por» y descripción) se separan con líneas finas.
-   El orden de los elementos no cambia (título, precio, detalles, botones, «Ofrecido por», descripción). */
-.pagina.detalle-otro-centro { max-width: none; padding-top: 16px; }
-.detalle-columnas { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 44px; align-items: start; }
-@media (max-width: 899px) { .detalle-columnas { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
+/* Detalle de un anuncio de otro centro (US-24 T24-2). Diseño con vida (#361, mockup «Anuncio» de Lucía): cabe sin
+   scroll en 1440 × 900. «← Volver al catálogo» como botón blanco y una tarjeta blanca con dos columnas en escritorio y
+   una en < 900 px; la descripción debajo, a todo el ancho. El orden de los elementos no cambia (título, precio,
+   detalles, botones, «Ofrecido por», descripción). */
+.pagina.detalle-otro-centro { display: flex; flex-direction: column; gap: 12px; max-width: none; padding: 14px 0 0; }
+/* El aspecto de botón blanco de «← Volver al catálogo» es el común de styles.css; aquí solo su sitio. */
+.pagina.detalle-otro-centro .enlace-volver { align-self: flex-start; margin: 0; }
+.detalle-tarjeta {
+  display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 2px solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  background: var(--s2-superficie);
+}
+.detalle-columnas { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 899px) { .detalle-columnas { grid-template-columns: minmax(0, 1fr); } }
 
-/* Galería: foto 16:11, flechas redondas de 52 px, contador y miniaturas de 72 × 54. */
-.detalle-galeria-marco { position: relative; overflow: hidden; border-radius: var(--s2-radio-l); background: var(--s2-fondo-2); }
-.detalle-galeria-grande { display: block; width: 100%; aspect-ratio: 16 / 11; object-fit: contain; background: var(--s2-fondo-2); }
-.detalle-galeria-flecha {
-  --pisada: var(--s2-sombra-2);
+/* Galería: foto 16:11 sobre el tinte del deporte, flechas redondas de 52 px, contador «1 / 3» y miniaturas de 72 × 54
+   (la activa con borde verde de 3 px). */
+.detalle-galeria { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.detalle-galeria-marco { position: relative; overflow: hidden; border-radius: 16px; background: var(--s2-fondo-2); }
+.detalle-galeria-grande { display: block; width: 100%; aspect-ratio: 16 / 11; object-fit: contain; }
+.detalle-galeria .detalle-galeria-flecha {
+  --pisada: 0 3px 0 color-mix(in srgb, var(--s2-tinta) 20%, transparent);
   position: absolute; top: 50%; display: grid; place-items: center; width: 52px; height: 52px; min-height: 0; margin: 0; padding: 0;
   border-radius: 50%; transform: translateY(-50%); color: var(--s2-tinta); background: var(--s2-superficie);
 }
-.detalle-galeria-flecha:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); }
-.detalle-galeria-flecha-anterior { left: 12px; }
-.detalle-galeria-flecha-siguiente { right: 12px; }
+.detalle-galeria .detalle-galeria-flecha:hover { color: var(--s2-tinta); background: var(--s2-linea-2); }
+.detalle-galeria-flecha-anterior { left: 10px; }
+.detalle-galeria-flecha-siguiente { right: 10px; }
 .detalle-galeria-contador {
-  position: absolute; right: 12px; bottom: 12px; padding: 2px 8px; border-radius: var(--s2-radio-etiqueta); color: #fff;
-  background: color-mix(in srgb, var(--s2-tinta) 82%, transparent); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums;
+  position: absolute; right: 10px; bottom: 10px; padding: 3px 10px; border-radius: var(--s2-radio-etiqueta); color: #fff;
+  background: var(--s2-tinta); font-size: 14px; font-weight: 900; font-variant-numeric: tabular-nums;
 }
-.detalle-galeria-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
-.detalle-galeria-miniaturas .galeria-miniatura { width: 72px; height: 54px; border-radius: var(--s2-radio-s); background: var(--s2-fondo-2); }
-.detalle-galeria-miniaturas .galeria-miniatura-activa { --pisada: inset 0 0 0 2px var(--s2-teal-700); }
-.detalle-galeria-miniaturas .galeria-miniatura img { opacity: 0.82; }
-.detalle-galeria-miniaturas .galeria-miniatura-activa img { opacity: 1; }
+.detalle-galeria-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.detalle-galeria-miniaturas .galeria-miniatura {
+  --pisada: 0 0 transparent;
+  width: 72px; height: 54px; border: 3px solid transparent; border-radius: 10px; background: var(--s2-fondo-2);
+}
+.detalle-galeria-miniaturas .galeria-miniatura img { border-radius: 7px; }
+.detalle-galeria-miniaturas .galeria-miniatura-activa { border-color: var(--s2-teal-700); }
+/* «Sin foto» (US-24): el círculo grande del deporte sobre su tinte, con un marco discontinuo decorativo. */
 .detalle-sin-foto {
-  display: grid; place-items: center; align-content: center; gap: 14px; aspect-ratio: 16 / 11; border-radius: var(--s2-radio-l);
-  color: var(--s2-tinta-2); background: var(--s2-fondo-2); font-size: 15px; font-weight: 800;
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  aspect-ratio: 16 / 11; border-radius: 16px; color: var(--s2-tinta-2); background: var(--s2-fondo-2); font-size: 16px; font-weight: 800;
+}
+.detalle-sin-foto::before {
+  content: ''; position: absolute; inset: 12px; border: 3px dashed color-mix(in srgb, var(--s2-tinta) 12%, transparent); border-radius: 12px;
+}
+.detalle-sin-foto > span:first-child { box-shadow: 0 8px 0 color-mix(in srgb, var(--s2-tinta) 15%, transparent); }
+.detalle-sin-foto-circulo {
+  display: grid; place-items: center; width: 170px; height: 170px; border-radius: 50%; color: var(--s2-gris); background: var(--s2-superficie);
 }
 
 /* Columna de datos */
+.detalle-datos { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .detalle-otro-centro .detalle-datos h1 {
-  margin: 0; font-size: clamp(26px, 2.6vw, 32px); font-weight: 800; line-height: 1.15; letter-spacing: -0.015em; overflow-wrap: anywhere;
+  margin: 0; font-size: 30px; font-weight: 900; line-height: 1.15; letter-spacing: 0; overflow-wrap: anywhere;
 }
 /* CA4: «Reservado» como franja naranja con icono (sin el punto de .etiqueta-estado). */
 .etiqueta-estado.detalle-reservado {
-  display: flex; gap: 8px; margin: 0 0 12px; padding: 10px 12px; border-radius: var(--s2-radio); color: var(--s2-naranja-700);
-  background: var(--s2-naranja-100); font-size: 15px; white-space: normal;
+  display: flex; gap: 8px; margin: 0; padding: 8px 12px; border-radius: var(--s2-radio-s); color: var(--s2-naranja-700);
+  background: var(--s2-naranja-100); font-size: 15px; font-weight: 900; white-space: normal;
 }
 .etiqueta-estado.detalle-reservado::before { display: none; }
-.detalle-precio { margin: 8px 0 0; color: var(--s2-teal-800); font-size: 30px; font-weight: 900; letter-spacing: -0.01em; }
-.detalle-precio-sufijo { color: var(--s2-gris); font-size: 16px; font-weight: 700; letter-spacing: 0; }
+.detalle-precio { margin: 0; color: var(--s2-teal-800); font-size: 32px; font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.detalle-precio-sufijo { color: var(--s2-gris); font-size: 17px; font-weight: 800; }
+.detalle-precio-donacion { align-self: flex-start; padding: 4px 14px; border-radius: var(--s2-radio-s); background: var(--s2-teal-100); font-size: 28px; }
 
-.detalle-bloque { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--s2-linea); }
-.detalle-subtitulo { margin: 0 0 4px; color: var(--s2-tinta); font-size: 15px; font-weight: 800; }
-.detalle-lista { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; margin: 0; }
-.detalle-lista > div { display: grid; gap: 2px; padding: 9px 0; border-bottom: 1px solid var(--s2-linea-2); }
-.detalle-lista dt { color: var(--s2-gris); font-size: 13px; font-weight: 700; }
-.detalle-lista dd { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0; color: var(--s2-tinta); font-size: 15px; font-weight: 800; }
+/* «Detalles»: rejilla de 3 bloques sobre el fondo suave; «Publicado el» ocupa dos. */
+.detalle-bloque { margin: 0; }
+.detalle-subtitulo { margin: 0 0 6px; color: var(--s2-tinta); font-size: 16px; font-weight: 900; letter-spacing: 0; }
+.detalle-lista { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.detalle-lista > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 8px 10px; border-radius: var(--s2-radio-s); background: var(--s2-fondo); }
+.detalle-lista > .detalle-lista-ancho { grid-column: span 2; }
+.detalle-lista dt { color: var(--s2-gris); font-size: 13px; font-weight: 800; }
+.detalle-lista dd { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0; color: var(--s2-tinta); font-size: 15px; font-weight: 900; }
 .detalle-lista dd > svg { flex: none; color: var(--s2-teal-700); }
+.detalle-lista .barra-estado { width: 5px; height: 13px; border-radius: 2px; }
+@media (max-width: 599px) { .detalle-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* Acciones: «Pedir» [US-32] naranja a todo el ancho y «Escribir al centro» [US-28] secundario debajo. */
-.detalle-botones { display: grid; gap: 10px; margin-top: 20px; }
+/* Acciones: «Pedir» [US-32] naranja a todo el ancho y «Escribir al centro» [US-28] secundario verde debajo. */
+.detalle-botones { display: grid; gap: 8px; margin: 0; }
 .detalle-boton { min-width: 0; }
 .detalle-boton svg { flex: none; }
 .detalle-boton .s2-boton { width: 100%; }
-.detalle-boton-pedir .s2-boton { min-height: 54px; font-size: 17px; }
-.detalle-boton .s2-boton-secundario { min-height: var(--s2-toque); }
+.detalle-boton-pedir .s2-boton { min-height: 54px; font-size: 18px; }
+.detalle-boton .s2-boton-secundario { min-height: 50px; }
 /* US-32 (T32-3): el aviso de pedido pendiente con «Ver mi pedido». */
 .detalle-pedido-pendiente {
-  display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--s2-radio); color: var(--s2-teal-900); background: var(--s2-teal-50);
+  display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--s2-radio); color: var(--s2-teal-900); background: var(--s2-teal-100);
 }
-.detalle-pedido-pendiente p { margin: 0; font-weight: 800; }
-.detalle-pedido-pendiente a { font-weight: 800; }
-.detalle-ayuda { margin: 6px 0 0; color: var(--s2-gris); font-size: 13px; font-weight: 700; text-align: center; }
+.detalle-pedido-pendiente p { margin: 0; font-weight: 900; }
+.detalle-pedido-pendiente a { font-weight: 900; }
+.detalle-ayuda {
+  display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 0; color: var(--s2-naranja-700);
+  font-size: 15px; font-weight: 900;
+}
 
-/* «Ofrecido por»: fila con las iniciales del centro, entre dos líneas. */
+/* «Ofrecido por»: recuadro con las iniciales del centro en un círculo azul, el nombre (enlace) y la localidad. */
 .detalle-centro {
-  display: flex; align-items: center; gap: 14px; margin-top: 20px; padding: 14px 0;
-  border-top: 1px solid var(--s2-linea); border-bottom: 1px solid var(--s2-linea);
+  display: flex; align-items: center; gap: 12px; margin: 0; padding: 10px 12px; border: 2px solid var(--s2-linea); border-radius: var(--s2-radio);
 }
-.detalle-centro .detalle-subtitulo { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 700; }
+.detalle-centro > div { display: flex; flex-direction: column; min-width: 0; }
+.detalle-centro .detalle-subtitulo { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 800; }
 .detalle-centro-avatar {
-  flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%;
-  color: var(--s2-teal-800); background: var(--s2-teal-100); font-size: 16px; font-weight: 900;
+  flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #fff;
+  background: var(--s2-estado-recibido-punto); font-size: 16px; font-weight: 900;
 }
-.detalle-centro-nombre { margin: 0; font-size: 17px; font-weight: 800; }
-.detalle-centro-nombre a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-.detalle-centro-nombre a:hover { text-decoration-thickness: 2px; }
-.detalle-centro-datos { display: flex; align-items: center; gap: 4px; margin: 2px 0 0; color: var(--s2-gris); font-size: 14px; font-weight: 600; }
-.detalle-centro-datos svg { flex: none; }
-.detalle-descripcion { margin-top: 28px; }
-.detalle-descripcion p { max-width: 80ch; }
-.detalle-descripcion h2 { margin: 0 0 8px; font-size: 17px; }
+.detalle-centro-nombre { margin: 0; font-size: 17px; font-weight: 900; overflow-wrap: anywhere; }
+.pagina .detalle-centro-nombre a { color: var(--s2-teal-800); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.pagina .detalle-centro-nombre a:hover { color: var(--s2-teal-900); }
+.detalle-centro-datos { margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
+
+/* «Descripción», a todo el ancho bajo las dos columnas. */
+.detalle-otro-centro .detalle-descripcion {
+  display: flex; flex-direction: column; gap: 4px; margin: 0; padding-top: 12px; border-top: 2px solid var(--s2-linea-2);
+}
+.detalle-otro-centro .detalle-descripcion h2 { margin: 0; font-size: 18px; font-weight: 900; letter-spacing: 0; }
+.detalle-otro-centro .detalle-descripcion p { max-width: 100ch; color: var(--s2-tinta); font-size: 16px; font-weight: 600; line-height: 1.5; }
 .detalle-no-disponible-botones { display: flex; flex-wrap: wrap; gap: 10px; }
