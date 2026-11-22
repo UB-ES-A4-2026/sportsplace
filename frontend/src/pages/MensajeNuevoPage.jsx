@@ -8,6 +8,9 @@ import CuadroMensaje from '../components/CuadroMensaje.jsx';
 import { anuncioAdmiteConversacion, resultadoDelFallo, TEXTOS, textoDeAyuda } from '../mensajes/conversacion.js';
 import '../mensajes/mensajes.css';
 
+// CA13: Ctrl+Enter (o Cmd+Enter) ya envía en el cuadro; el diseño con vida (#361) lo dice debajo, a la izquierda del pie.
+const AYUDA_ATAJO = 'Ctrl + Enter también envía.';
+
 // US-28 T28-3: /mensajes/nueva?anuncio=:id · primer mensaje sobre un anuncio de otro centro.
 export default function MensajeNuevoPage() {
   const [parametros] = useSearchParams();
@@ -76,8 +79,11 @@ export default function MensajeNuevoPage() {
     <>
       <Aviso aviso={aviso} onCerrar={cerrarAviso} />
       <section className="pagina pagina-mensajes" aria-labelledby="titulo-pagina" aria-busy={!actual || undefined}>
-        <Link to={`/anuncios/${encodeURIComponent(anuncioId)}`} className="enlace-volver">{TEXTOS.volverAnuncio}</Link>
-        <h1 id="titulo-pagina" className="mensajes-titulo">{TEXTOS.nueva}</h1>
+        {/* Diseño con vida (#361): «← Volver al anuncio» y el título en la misma fila. */}
+        <div className="mensajes-encabezado">
+          <Link to={`/anuncios/${encodeURIComponent(anuncioId)}`} className="enlace-volver">{TEXTOS.volverAnuncio}</Link>
+          <h1 id="titulo-pagina" className="mensajes-titulo">{TEXTOS.nueva}</h1>
+        </div>
 
         {!actual && <p className="intro-text" role="status">{TEXTOS.cargando}</p>}
         {actual?.error && (
@@ -90,8 +96,11 @@ export default function MensajeNuevoPage() {
         {anuncio && (
           <>
             <CabeceraAnuncioMensajes anuncio={anuncio} vendedor={anuncio.centro?.nombre} />
-            <CuadroMensaje valor={texto} onCambiar={setTexto} onEnviar={enviar} enviando={enviando} filas={5}
-              ayuda={textoDeAyuda(anuncio.centro?.nombre)} />
+            <div className="mensajes-escribir">
+              <CuadroMensaje valor={texto} onCambiar={setTexto} onEnviar={enviar} enviando={enviando} filas={5}
+                ayuda={textoDeAyuda(anuncio.centro?.nombre)} />
+              <p className="mensajes-atajo">{AYUDA_ATAJO}</p>
+            </div>
           </>
         )}
       </section>

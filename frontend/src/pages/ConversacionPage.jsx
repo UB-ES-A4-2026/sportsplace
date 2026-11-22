@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { History, TriangleAlert } from 'lucide-react';
+import { CircleAlert, History } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { enviarMensaje, obtenerConversacion } from '../api/mensajes.js';
 import Aviso from '../components/Aviso.jsx';
@@ -153,7 +153,7 @@ export default function ConversacionPage() {
 
         {conversacion && (
           <>
-            {/* Diseño con vida (#361): una fila con el otro centro (iniciales decorativas) y el anuncio. */}
+            {/* Diseño con vida (#361): una tarjeta con el otro centro (iniciales decorativas) y el anuncio. */}
             <div className="mensajes-cabecera">
               <div className="mensajes-con-quien">
                 <span className="mensajes-avatar" aria-hidden="true">{inicialesDe(centro.nombre)}</span>
@@ -166,7 +166,7 @@ export default function ConversacionPage() {
                 conEnlace={tituloConEnlace(conversacion.anuncio.estado)} />
             </div>
             {banda && (
-              <p className="mensajes-banda" role="status"><TriangleAlert size={16} aria-hidden="true" />{banda}</p>
+              <p className="mensajes-banda" role="status"><CircleAlert size={20} strokeWidth={2.6} aria-hidden="true" />{banda}</p>
             )}
 
             <div className="mensajes-hilo">
