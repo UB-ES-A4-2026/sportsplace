@@ -1,4 +1,4 @@
-import { Banknote, ImageOff, Landmark, Minus, Plus, Store, Truck } from 'lucide-react';
+import { Banknote, Check, ImageOff, Landmark, MapPin, Minus, Plus, Send, Store, Truck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { fotosDelDetalle } from '../anuncios/detalleOtroCentro.js';
@@ -22,6 +22,12 @@ const ORDEN_ERRORES = [
 ];
 const idDe = (clave) => `pedir-${clave.replace('direccion_envio.', 'direccion-')}`;
 
+// «Mensaje para el vendedor (opcional)»: «(opcional)» se ve más suave, pero la etiqueta sigue siendo el mismo texto.
+const [MENSAJE_TITULO, MENSAJE_OPCIONAL] = TEXTOS.mensaje.split(/ (?=\()/);
+
+// Número del paso (círculo amarillo). Decorativo: el nombre accesible es solo el texto de la etiqueta o la leyenda.
+const Paso = ({ numero }) => <span className="s2-paso" aria-hidden="true">{numero}</span>;
+
 // Quita el error de un campo cuando se corrige (sin crear un objeto nuevo si no lo tenía).
 function sinError(errores, clave) {
   if (!errores[clave]) return errores;
@@ -31,8 +37,9 @@ function sinError(errores, clave) {
 }
 
 // US-32 T32-4 (+ US-35 T35-3 y US-40 T40-4): /anuncios/:id/pedir · «Hacer un pedido» sobre un anuncio de otro centro.
-// Diseño con vida (#361): título y resumen en una línea; debajo, los pasos numerados (por CSS) a la izquierda y el total
-// con los botones a la derecha. El orden del DOM no cambia (los E2E y el foco de los errores dependen de él).
+// Diseño con vida (#361, mockup «Pedir» de Lucía): título y resumen en una línea; debajo, los pasos numerados a la
+// izquierda y, a la derecha, la dirección de envío y el total con los botones. Los textos, etiquetas y radios son los
+// de siempre (los E2E los buscan por su nombre); el foco de los errores va por ORDEN_ERRORES, no por el DOM.
 export default function PedirPage() {
   const { id } = useParams();
   const [intento, setIntento] = useState(0);
@@ -171,126 +178,156 @@ function FormularioPedido({ anuncio }) {
   const avisoEfectivo = avisoEfectivoConEnvio(formulario);
   const error = (clave) => errores[clave] && <p id={`${idDe(clave)}-error`} className="pedir-error">{errores[clave]}</p>;
   const describir = (clave, ayuda) => [ayuda, errores[clave] && `${idDe(clave)}-error`].filter(Boolean).join(' ') || undefined;
+  const conEnvio = formulario.metodoEntrega === 'envio' && formulario.direccion;
+  // Los pasos se numeran según los bloques que se ven: en donación no hay «Forma de pago».
+  const pasoEntrega = venta ? 3 : 2;
 
   return (
     <>
       <Aviso aviso={aviso} onCerrar={() => setAviso(null)} />
       <section className="pagina pagina-pedir" aria-labelledby="titulo-pagina">
         <div className="pedir-encabezado">
-        <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
+          <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
 
-        {/* (1) Tarjeta resumen del anuncio. */}
-        <div className="pedir-resumen">
-          <div className="pedir-resumen-foto">
-            {foto ? <img src={foto} alt="" /> : <span><ImageOff size={18} aria-hidden="true" />Sin foto</span>}
-          </div>
-          <div className="pedir-resumen-datos">
-            <p className="pedir-resumen-titulo">{anuncio.titulo}</p>
-            <p className="pedir-resumen-centro">{anuncio.centro?.nombre} · {anuncio.centro?.localidad}</p>
-            <p className="pedir-resumen-modalidad">{textoModalidad(anuncio)}</p>
-            <p className="pedir-resumen-disponibles">{textoDisponibles(maximo)}</p>
-          </div>
-        </div>
-        </div>
-
-        <form className="pedir-formulario" onSubmit={enviar} noValidate>
-          {/* (2) «Unidades» con − y + (CA7). */}
-          <div className="pedir-campo">
-            <label htmlFor={idDe('unidades')}>{TEXTOS.unidades}</label>
-            <div className="pedir-unidades">
-              <button type="button" className="pedir-paso" aria-label={TEXTOS.menos} disabled={(unidades ?? 1) <= 1}
-                onClick={() => sumarUnidades(-1)}><Minus size={20} strokeWidth={2.6} aria-hidden="true" /></button>
-              <input id={idDe('unidades')} type="number" inputMode="numeric" min={1} max={maximo} step={1}
-                value={formulario.unidades} onChange={(evento) => cambiar('unidades', evento.target.value)}
-                aria-invalid={errores.unidades ? 'true' : undefined} aria-describedby={describir('unidades')} />
-              <button type="button" className="pedir-paso" aria-label={TEXTOS.mas} disabled={(unidades ?? 0) >= maximo}
-                onClick={() => sumarUnidades(1)}><Plus size={20} strokeWidth={2.6} aria-hidden="true" /></button>
+          {/* (1) Tarjeta resumen del anuncio. */}
+          <div className="pedir-resumen">
+            <div className="pedir-resumen-foto">
+              {foto ? <img src={foto} alt="" /> : <span><ImageOff size={18} aria-hidden="true" />Sin foto</span>}
             </div>
-            {error('unidades')}
+            <div className="pedir-resumen-datos">
+              <p className="pedir-resumen-titulo">{anuncio.titulo}</p>
+              <p className="pedir-resumen-centro">{anuncio.centro?.nombre} · {anuncio.centro?.localidad}</p>
+              <p className="pedir-resumen-modalidad">{textoModalidad(anuncio)}</p>
+              <p className="pedir-resumen-disponibles">{textoDisponibles(maximo)}</p>
+            </div>
           </div>
+        </div>
 
-          {/* (3) US-35: «Forma de pago», solo en venta y sin opción marcada al principio. */}
-          {venta && (
-            <fieldset className="pedir-grupo">
-              <legend>{TEXTOS.formaPago}</legend>
-              <Opcion id={idDe('metodo_pago')} nombre="metodo_pago" valor="transferencia" texto={TEXTOS.transferencia} icono={Landmark}
-                ayuda={TEXTOS.ayudaTransferencia} elegido={formulario.metodoPago} onElegir={(valor) => cambiar('metodoPago', valor)}
-                describir={describir('metodo_pago', 'ayuda-transferencia')} idAyuda="ayuda-transferencia" />
-              <Opcion id="pedir-pago-efectivo" nombre="metodo_pago" valor="efectivo_recogida" texto={TEXTOS.efectivo} icono={Banknote}
-                ayuda={TEXTOS.ayudaEfectivo} elegido={formulario.metodoPago} onElegir={(valor) => cambiar('metodoPago', valor)}
-                describir={describir('metodo_pago', 'ayuda-efectivo')} idAyuda="ayuda-efectivo" />
-              {error('metodo_pago')}
-            </fieldset>
-          )}
-
-          {/* (4) US-40: «Entrega», sin opción marcada al principio. */}
-          <fieldset className="pedir-grupo">
-            <legend>{TEXTOS.entrega}</legend>
-            <Opcion id={idDe('metodo_entrega')} nombre="metodo_entrega" valor="recogida" texto={TEXTOS.recogida} icono={Store}
-              elegido={formulario.metodoEntrega} onElegir={elegirEntrega} describir={describir('metodo_entrega')} />
-            <Opcion id="pedir-entrega-envio" nombre="metodo_entrega" valor="envio" texto={TEXTOS.envio} icono={Truck}
-              elegido={formulario.metodoEntrega} onElegir={elegirEntrega} describir={describir('metodo_entrega')} />
-            <p className="pedir-ayuda">{TEXTOS.ayudaEntrega}</p>
-            {error('metodo_entrega')}
-            {avisoEfectivo && <p className="pedir-advertencia">{avisoEfectivo}</p>}
-
-            {formulario.metodoEntrega === 'envio' && formulario.direccion && (
-              <div className="pedir-direccion">
-                {CAMPOS_DIRECCION.map(({ nombre, etiqueta }) => {
-                  const claveError = `direccion_envio.${nombre}`;
-                  const comunes = {
-                    id: idDe(claveError),
-                    value: formulario.direccion[nombre] ?? '',
-                    onChange: (evento) => cambiarDireccion(nombre, evento.target.value),
-                    'aria-invalid': errores[claveError] ? 'true' : undefined,
-                    'aria-describedby': describir(claveError),
-                  };
-                  return (
-                    <div key={nombre} className={`pedir-campo pedir-campo-${nombre}`}>
-                      <label htmlFor={comunes.id}>{etiqueta}</label>
-                      {nombre === 'provincia' && (
-                        <select {...comunes}>
-                          <option value="">Elige una provincia</option>
-                          {PROVINCIAS.map((provincia) => <option key={provincia} value={provincia}>{provincia}</option>)}
-                        </select>
-                      )}
-                      {nombre === 'indicaciones' && <textarea rows={3} {...comunes} />}
-                      {!['provincia', 'indicaciones'].includes(nombre) && (
-                        <input type={nombre === 'telefono_contacto' ? 'tel' : 'text'}
-                          inputMode={nombre === 'codigo_postal' ? 'numeric' : undefined} {...comunes} />
-                      )}
-                      {error(claveError)}
-                    </div>
-                  );
-                })}
+        {/* Diseño con vida (#361): a la izquierda lo que se elige, en pasos numerados; a la derecha, la dirección de
+            envío (hueco fijo que se rellena al elegir envío) y el total con los botones. */}
+        <form className="pedir-formulario" onSubmit={enviar} noValidate>
+          <div className="pedir-columna">
+            {/* (2) «Unidades» con − y + (CA7). */}
+            <div className="pedir-campo pedir-tarjeta pedir-bloque-unidades">
+              <div className="pedir-titulo">
+                <Paso numero={1} />
+                <label htmlFor={idDe('unidades')}>{TEXTOS.unidades}</label>
               </div>
+              <div className="pedir-unidades">
+                <button type="button" className="pedir-paso" aria-label={TEXTOS.menos} disabled={(unidades ?? 1) <= 1}
+                  onClick={() => sumarUnidades(-1)}><Minus size={22} strokeWidth={3} aria-hidden="true" /></button>
+                <input id={idDe('unidades')} type="number" inputMode="numeric" min={1} max={maximo} step={1}
+                  value={formulario.unidades} onChange={(evento) => cambiar('unidades', evento.target.value)}
+                  aria-invalid={errores.unidades ? 'true' : undefined} aria-describedby={describir('unidades')} />
+                <button type="button" className="pedir-paso" aria-label={TEXTOS.mas} disabled={(unidades ?? 0) >= maximo}
+                  onClick={() => sumarUnidades(1)}><Plus size={22} strokeWidth={3} aria-hidden="true" /></button>
+              </div>
+              {error('unidades')}
+            </div>
+
+            {/* (3) US-35: «Forma de pago», solo en venta y sin opción marcada al principio. */}
+            {venta && (
+              <fieldset className="pedir-grupo pedir-tarjeta">
+                <legend className="pedir-titulo"><Paso numero={2} /><span>{TEXTOS.formaPago}</span></legend>
+                <div className="pedir-opciones">
+                  <Opcion id={idDe('metodo_pago')} nombre="metodo_pago" valor="transferencia" texto={TEXTOS.transferencia} icono={Landmark}
+                    ayuda={TEXTOS.ayudaTransferencia} elegido={formulario.metodoPago} onElegir={(valor) => cambiar('metodoPago', valor)}
+                    describir={describir('metodo_pago', 'ayuda-transferencia')} idAyuda="ayuda-transferencia" />
+                  <Opcion id="pedir-pago-efectivo" nombre="metodo_pago" valor="efectivo_recogida" texto={TEXTOS.efectivo} icono={Banknote}
+                    ayuda={TEXTOS.ayudaEfectivo} elegido={formulario.metodoPago} onElegir={(valor) => cambiar('metodoPago', valor)}
+                    describir={describir('metodo_pago', 'ayuda-efectivo')} idAyuda="ayuda-efectivo" />
+                </div>
+                {error('metodo_pago')}
+              </fieldset>
             )}
-          </fieldset>
 
-          {/* (5) «Mensaje para el vendedor (opcional)» con contador (CA8). */}
-          <div className="pedir-campo">
-            <label htmlFor={idDe('mensaje')}>{TEXTOS.mensaje}</label>
-            <textarea id={idDe('mensaje')} rows={4} value={formulario.mensaje}
-              onChange={(evento) => cambiar('mensaje', evento.target.value)}
-              aria-invalid={errores.mensaje ? 'true' : undefined} aria-describedby={describir('mensaje', 'contador-mensaje')} />
-            <p id="contador-mensaje" className="pedir-contador">{[...formulario.mensaje].length}/{MAX_MENSAJE}</p>
-            {error('mensaje')}
+            {/* (4) US-40: «Entrega», sin opción marcada al principio. */}
+            <fieldset className="pedir-grupo pedir-tarjeta">
+              <legend className="pedir-titulo"><Paso numero={pasoEntrega} /><span>{TEXTOS.entrega}</span></legend>
+              <div className="pedir-opciones">
+                <Opcion id={idDe('metodo_entrega')} nombre="metodo_entrega" valor="recogida" texto={TEXTOS.recogida} icono={Store}
+                  elegido={formulario.metodoEntrega} onElegir={elegirEntrega} describir={describir('metodo_entrega')} />
+                <Opcion id="pedir-entrega-envio" nombre="metodo_entrega" valor="envio" texto={TEXTOS.envio} icono={Truck}
+                  elegido={formulario.metodoEntrega} onElegir={elegirEntrega} describir={describir('metodo_entrega')} />
+              </div>
+              <p className="pedir-ayuda pedir-nota">{TEXTOS.ayudaEntrega}</p>
+              {error('metodo_entrega')}
+              {avisoEfectivo && <p className="pedir-advertencia">{avisoEfectivo}</p>}
+            </fieldset>
+
+            {/* (5) «Mensaje para el vendedor (opcional)» con contador (CA8). */}
+            <div className="pedir-campo pedir-tarjeta">
+              <div className="pedir-titulo">
+                <Paso numero={pasoEntrega + 1} />
+                <label htmlFor={idDe('mensaje')}>
+                  {MENSAJE_TITULO}{MENSAJE_OPCIONAL && <>{' '}<span className="pedir-opcional">{MENSAJE_OPCIONAL}</span></>}
+                </label>
+              </div>
+              <textarea id={idDe('mensaje')} rows={2} value={formulario.mensaje}
+                onChange={(evento) => cambiar('mensaje', evento.target.value)}
+                aria-invalid={errores.mensaje ? 'true' : undefined} aria-describedby={describir('mensaje', 'contador-mensaje')} />
+              <p id="contador-mensaje" className="pedir-contador">{[...formulario.mensaje].length}/{MAX_MENSAJE}</p>
+              {error('mensaje')}
+            </div>
           </div>
 
-          {/* (6) a (8): panel lateral con el total (CA9), en venta el aviso del dinero, y los botones (CA6, CA10). */}
-          <div className="pedir-lateral">
-          <div className="pedir-total">
-            <p className="pedir-total-importe">{textoTotal(anuncio, formulario.unidades)}</p>
-            {venta && <p className="pedir-ayuda">{TEXTOS.avisoDinero}</p>}
-          </div>
+          <div className="pedir-columna pedir-columna-lateral">
+            {/* US-40 (4): los campos de la dirección, solo con «Que me lo envíen»; sin envío queda el hueco vacío. */}
+            <section className={conEnvio ? 'pedir-tarjeta pedir-envio' : 'pedir-tarjeta pedir-envio pedir-envio-vacio'}
+              aria-labelledby="titulo-envio">
+              <h2 id="titulo-envio" className="pedir-envio-titulo">
+                <MapPin size={22} strokeWidth={2.6} aria-hidden="true" />Dirección de envío
+              </h2>
+              {conEnvio ? (
+                <div className="pedir-direccion">
+                  {CAMPOS_DIRECCION.map(({ nombre, etiqueta }) => {
+                    const claveError = `direccion_envio.${nombre}`;
+                    const comunes = {
+                      id: idDe(claveError),
+                      value: formulario.direccion[nombre] ?? '',
+                      onChange: (evento) => cambiarDireccion(nombre, evento.target.value),
+                      'aria-invalid': errores[claveError] ? 'true' : undefined,
+                      'aria-describedby': describir(claveError),
+                    };
+                    return (
+                      <div key={nombre} className={`pedir-campo pedir-campo-${nombre}`}>
+                        <label htmlFor={comunes.id}>{etiqueta}</label>
+                        {nombre === 'provincia' && (
+                          <select {...comunes}>
+                            <option value="">Elige una provincia</option>
+                            {PROVINCIAS.map((provincia) => <option key={provincia} value={provincia}>{provincia}</option>)}
+                          </select>
+                        )}
+                        {nombre === 'indicaciones' && <textarea rows={2} {...comunes} />}
+                        {!['provincia', 'indicaciones'].includes(nombre) && (
+                          <input type={nombre === 'telefono_contacto' ? 'tel' : 'text'}
+                            inputMode={nombre === 'codigo_postal' ? 'numeric' : undefined} {...comunes} />
+                        )}
+                        {error(claveError)}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="pedir-envio-hueco" aria-hidden="true"><Truck size={36} strokeWidth={2} /></div>
+              )}
+            </section>
 
-          {/* (8) «Enviar pedido» y «Cancelar» (CA6, CA10). */}
-          <div className="pedir-botones">
-            <button type="submit" className="pedir-boton" disabled={enviando}>{enviando ? TEXTOS.enviando : TEXTOS.enviar}</button>
-            <button type="button" className="pedir-boton pedir-boton-secundario" onClick={cancelar} disabled={enviando}>
-              {TEXTOS.cancelar}
-            </button>
-          </div>
+            {/* (6) a (8): el total (CA9), en venta el aviso del dinero, y los botones (CA6, CA10). */}
+            <div className="pedir-lateral">
+              <div className="pedir-total">
+                <p className="pedir-total-importe">{textoTotal(anuncio, formulario.unidades)}</p>
+                {venta && <p className="pedir-total-nota">{TEXTOS.avisoDinero}</p>}
+              </div>
+              <div className="pedir-botones">
+                <button type="button" className="pedir-boton pedir-boton-secundario" onClick={cancelar} disabled={enviando}>
+                  {TEXTOS.cancelar}
+                </button>
+                <button type="submit" className="pedir-boton" disabled={enviando}>
+                  <Send size={22} strokeWidth={2.6} aria-hidden="true" />{enviando ? TEXTOS.enviando : TEXTOS.enviar}
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </section>
@@ -303,13 +340,15 @@ function FormularioPedido({ anuncio }) {
 }
 
 // Una opción de radio con su ayuda debajo, fuera de la etiqueta: el nombre accesible es solo el texto del CA.
-// Diseño con vida: se ve como una tarjeta con icono (decorativo); toda la tarjeta marca la opción (label::after, en CSS).
+// Diseño con vida: tarjeta-radio con icono de color (decorativo), título, ayuda y la marca ✓; toda la tarjeta marca la
+// opción (label::after, en CSS). El radio real queda transparente encima de la marca: se pulsa y se marca (E2E) igual.
 function Opcion({ id, nombre, valor, texto, ayuda, idAyuda, elegido, onElegir, describir, icono: Icono }) {
   return (
-    <div className={elegido === valor ? 'pedir-opcion elegida' : 'pedir-opcion'}>
-      {Icono && <span className="pedir-opcion-icono" aria-hidden="true"><Icono size={19} /></span>}
+    <div className={`pedir-opcion pedir-opcion-${valor}${elegido === valor ? ' elegida' : ''}`}>
+      {Icono && <span className="pedir-opcion-icono" aria-hidden="true"><Icono size={20} strokeWidth={2.4} /></span>}
       <input id={id} type="radio" name={nombre} value={valor} checked={elegido === valor}
         onChange={() => onElegir(valor)} aria-describedby={describir} />
+      <span className="pedir-opcion-marca" aria-hidden="true"><Check size={12} strokeWidth={4} /></span>
       <label htmlFor={id}>{texto}</label>
       {ayuda && <p id={idAyuda} className="pedir-ayuda">{ayuda}</p>}
     </div>
