@@ -400,7 +400,8 @@ test('US-40 · CA14, CA15, CA16 y CA20 · quién ve cada dirección según el es
   const estados = [
     [{ estado: 'pendiente' }, false],
     [{ estado: 'aceptado', respondido_en: new Date().toISOString() }, true],
-    [{ estado: 'recibido', respondido_en: new Date().toISOString() }, true],
+    // recibido_en lo exige la migración de US-42 (pedidos_recibido_con_fecha).
+    [{ estado: 'recibido', respondido_en: new Date().toISOString(), recibido_en: new Date().toISOString() }, true],
     [{ estado: 'rechazado', respondido_en: new Date().toISOString(), cerrado_por: 'vendedor', motivo_codigo: 'sin_unidades' }, false],
     [{ estado: 'cancelado', cancelado_en: new Date().toISOString(), cerrado_por: 'comprador', motivo_codigo: 'ya_no_necesario' }, false],
   ];

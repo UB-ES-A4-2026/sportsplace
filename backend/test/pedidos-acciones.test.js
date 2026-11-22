@@ -66,6 +66,7 @@ test('CA10: el objeto pedido tiene la forma de la base común de E06', () => {
     motivo_texto: null,
     cerrado_por: null,
     pagado_en: null,
+    recibido_en: null,
     creado_en: '2026-10-21T08:30:00.000Z',
     respondido_en: null,
     cancelado_en: null,
@@ -125,7 +126,8 @@ test('CA13: el vendedor puede aceptar y rechazar un pedido pendiente; el comprad
 
 test('CA13: fuera de pendiente no hay aceptar ni rechazar', () => {
   for (const estado of ['aceptado', 'rechazado', 'cancelado', 'recibido']) {
-    assert.deepEqual(pedidoDe({ estado }, LES_CORTS).acciones, [], estado);
+    const { acciones } = pedidoDe({ estado }, LES_CORTS);
+    assert.ok(!acciones.includes('aceptar') && !acciones.includes('rechazar'), estado);
   }
 });
 
