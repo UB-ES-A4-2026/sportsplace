@@ -1,4 +1,4 @@
-import { Package } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpToLine, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { listarPedidos } from '../api/pedidos.js';
@@ -15,6 +15,26 @@ import {
 } from '../pedidos/bandeja.js';
 import useContadorPedidos from '../pedidos/useContadorPedidos.js';
 import '../pedidos/pedidos.css';
+
+// Clase .s2-estado--… de tokens.css para cada color de estado de bandeja.js (el texto sigue siendo el del CA).
+const CLASE_ESTADO = { amarillo: 'pendiente', verde: 'aceptado', rojo: 'rechazado', gris: 'cancelado', azul: 'recibido' };
+
+// Diseño con vida (#361): la pestaña «Recibidos (2 pendientes)» se ve como «Recibidos» y una pastilla naranja
+// «2 pendientes». Es solo presentación del mismo texto: los paréntesis siguen dentro, ocultos a la vista, para que el
+// nombre accesible no cambie (lo usan los E2E de US-109).
+function TextoPestana({ valor, pendientes }) {
+  if (valor !== 'recibidos') return TEXTOS.realizados;
+  const contador = textoPestanaRecibidos(pendientes).slice(TEXTOS.recibidos.length).trim(); // «(2 pendientes)» o «»
+  if (!contador) return TEXTOS.recibidos;
+  return (
+    <>
+      {TEXTOS.recibidos}{' '}
+      <span className="pedidos-pastilla">
+        <span className="pedidos-parentesis">(</span>{contador.slice(1, -1)}<span className="pedidos-parentesis">)</span>
+      </span>
+    </>
+  );
+}
 
 // US-109 (T33-4): /pedidos con las pestañas «Recibidos» y «Realizados», 20 por página.
 export default function PedidosPage() {
@@ -56,7 +76,7 @@ export default function PedidosPage() {
 
   return (
     <section className="pedidos-pagina">
-      {/* Diseño S2: el título y las pestañas segmentadas van en la misma fila. */}
+      {/* Diseño con vida (#361): el título y, debajo, las pestañas grandes con su flecha (↓ Recibidos, ↑ Realizados). */}
       <div className="pedidos-cabecera">
         <h1>{TEXTOS.titulo}</h1>
 
@@ -73,13 +93,16 @@ export default function PedidosPage() {
               className="pedidos-pestana"
               onClick={() => cambiarPestana(valor)}
             >
-              {valor === 'recibidos' ? textoPestanaRecibidos(pendientes) : TEXTOS.realizados}
+              {valor === 'recibidos'
+                ? <ArrowDownToLine size={22} strokeWidth={2.8} aria-hidden="true" />
+                : <ArrowUpToLine size={22} strokeWidth={2.8} aria-hidden="true" />}
+              <TextoPestana valor={valor} pendientes={pendientes} />
             </button>
           ))}
         </div>
       </div>
 
-      <div id="panel-pedidos" role="tabpanel" aria-labelledby={`pestana-${pestana}`}>
+      <div id="panel-pedidos" className="pedidos-panel" role="tabpanel" aria-labelledby={`pestana-${pestana}`}>
         {!actual && <p className="intro-text" role="status">{TEXTOS.cargando}</p>}
         {actual?.error && (
           <p className="intro-text" role="alert">
@@ -109,6 +132,7 @@ function Bandeja({ lista, pestana, pagina, irAPagina }) {
     const vacio = vacioDe(pestana);
     return (
       <div className="pedidos-vacio">
+        <span className="pedidos-vacio-icono" aria-hidden="true"><Package size={44} strokeWidth={2} /></span>
         <p className="intro-text">{vacio.texto}</p>
         {vacio.enlace && <Link to={vacio.enlace.ruta} className="boton-enlace">{vacio.enlace.texto}</Link>}
       </div>
@@ -126,8 +150,8 @@ function Bandeja({ lista, pestana, pagina, irAPagina }) {
             <th scope="col"><span className="sr-only">Foto</span></th>
             <th scope="col">{anuncio}</th>
             <th scope="col">{centro}</th>
-            <th scope="col">{unidades}</th>
-            <th scope="col">{total}</th>
+            <th scope="col" className="pedidos-num">{unidades}</th>
+            <th scope="col" className="pedidos-num">{total}</th>
             <th scope="col">{estado}</th>
             <th scope="col">{fecha}</th>
           </tr>
@@ -140,21 +164,22 @@ function Bandeja({ lista, pestana, pagina, irAPagina }) {
               onClick={() => navigate(fila.ruta)}>
               <td className="pedidos-foto">
                 {fila.foto
-                  ? <img src={fila.foto} alt="" width="56" height="56" loading="lazy" />
+                  ? <img src={fila.foto} alt="" width="48" height="48" loading="lazy" />
                   : <span className="pedidos-sin-foto" aria-hidden="true"><Package size={22} strokeWidth={1.8} /></span>}
               </td>
               <td className="pedidos-anuncio" data-columna={anuncio}>
                 <Link to={fila.ruta} onClick={(evento) => evento.stopPropagation()}>{fila.anuncio}</Link>
                 {fila.entrega && <span className="pedidos-entrega">{fila.entrega}</span>}
               </td>
-              <td data-columna={centro}>{fila.centro}</td>
-              <td data-columna={unidades}>{fila.unidades}</td>
-              <td data-columna={total}>{fila.total}</td>
-              <td data-columna={estado}>
-                <span className={`etiqueta-pedido etiqueta-pedido-${fila.estado.color}`}>{fila.estado.etiqueta}</span>
-                {fila.pagado && <span className="etiqueta-pedido etiqueta-pedido-pagado">{TEXTOS.pagado}</span>}
+              <td className="pedidos-centro" data-columna={centro}>{fila.centro}</td>
+              <td className="pedidos-num pedidos-unidades" data-columna={unidades}>{fila.unidades}</td>
+              <td className={fila.total === TEXTOS.donacion ? 'pedidos-num pedidos-total pedidos-donacion' : 'pedidos-num pedidos-total'}
+                data-columna={total}>{fila.total}</td>
+              <td className="pedidos-estado" data-columna={estado}>
+                <span className={`s2-estado s2-estado--${CLASE_ESTADO[fila.estado.color] ?? 'cancelado'}`}>{fila.estado.etiqueta}</span>
+                {fila.pagado && <span className="s2-pagado">{TEXTOS.pagado}</span>}
               </td>
-              <td data-columna={fecha}>{fila.fecha}</td>
+              <td className="pedidos-fecha" data-columna={fecha}>{fila.fecha}</td>
             </tr>
           ))}
         </tbody>
