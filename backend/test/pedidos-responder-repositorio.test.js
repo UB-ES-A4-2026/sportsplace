@@ -122,10 +122,13 @@ test('US-79 CA9: rechazar un pedido que ya no está pendiente da 409 con el esta
     assert.equal(database.estado.rollback, true);
   }
 
-  // Si el pedido cambia entre la lectura y el UPDATE, el WHERE no lo toca: 409 y se revierte.
-  const carrera = fakeDatabase([[filaBloqueada()], { rows: [], rowCount: 0 }]);
+  // Si el pedido cambia entre la lectura y el UPDATE, el WHERE no lo toca: 409 con
+  // el estado releído después del UPDATE (no el leído antes) y se revierte (#368).
+  const carrera = fakeDatabase([[filaBloqueada()], { rows: [], rowCount: 0 }, [{ estado: 'cancelado' }]]);
   const error = await rechaza(createPedidosRepository(carrera).rechazar(VENDEDOR, PEDIDO, motivo), 409, 'TRANSICION_NO_PERMITIDA');
-  assert.deepEqual(error.details, { estado_actual: 'pendiente' });
+  assert.deepEqual(error.details, { estado_actual: 'cancelado' });
+  assert.match(carrera.log[2].sql, /^SELECT estado FROM public\.pedidos WHERE id = \$1$/);
+  assert.deepEqual(carrera.log[2].values, [PEDIDO]);
   assert.equal(carrera.estado.rollback, true);
 });
 
