@@ -1,4 +1,4 @@
-import { ClipboardList, Menu, Package, Plus, Search, X } from 'lucide-react';
+import { Box, Menu, Plus, Search, SquareMenu, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useAuth } from '../auth/useAuth.js';
@@ -37,12 +37,13 @@ export default function Layout() {
 
   return (
     <>
-      <header className="cabecera">
+      {/* Sin sesión (portada, registro, /entrar) la barra es más baja: solo lleva «Registro» y «Entrar». */}
+      <header className={usuario ? 'cabecera' : 'cabecera cabecera-publica'}>
         <div className="cabecera-contenido">
           {/* US-96 CA1: con sesión, el logo lleva al catálogo. Mientras se comprueba la sesión guardada (al recargar o
               entrar por una URL) ya apunta a /catalogo; si la sesión no vale, la ruta privada lleva a /entrar. */}
           <Link to={usuario || cargando ? '/catalogo' : '/'} className="brand">
-            <span className="brand-mark" aria-hidden="true"><IconoDeporte nombre="baloncesto" tamano={22} color="#fff" grosor={2.2} /></span>
+            <span className="brand-mark" aria-hidden="true"><IconoDeporte nombre="baloncesto" tamano={26} color="#fff" grosor={2.2} /></span>
             <span>Sportsplace</span>
           </Link>
           {usuario && (
@@ -57,12 +58,12 @@ export default function Layout() {
               <>
                 <div className="menu-enlaces">
                   {/* US-96 CA1: «Catálogo», marcado como activo (aria-current) en /catalogo. */}
-                  <NavLink to="/catalogo"><Search size={19} aria-hidden="true" />Catálogo</NavLink>
-                  {/* US-18 CA1: «Mis anuncios», subrayado en cualquier ruta que empiece por /mis-anuncios. */}
-                  <NavLink to="/mis-anuncios"><ClipboardList size={19} aria-hidden="true" />Mis anuncios</NavLink>
+                  <NavLink to="/catalogo"><Search size={22} strokeWidth={2.4} aria-hidden="true" />Catálogo</NavLink>
+                  {/* US-18 CA1: «Mis anuncios», marcado en cualquier ruta que empiece por /mis-anuncios. */}
+                  <NavLink to="/mis-anuncios"><SquareMenu size={22} strokeWidth={2.2} aria-hidden="true" />Mis anuncios</NavLink>
                   {/* US-109 CA1 y CA9: «Pedidos» → /pedidos?pestana=recibidos, con el número de recibidos pendientes. */}
                   <NavLink to={ENLACE_CABECERA}>
-                    <Package size={19} aria-hidden="true" />
+                    <Box size={22} strokeWidth={2.2} aria-hidden="true" />
                     {TEXTOS_PEDIDOS.enlaceCabecera}
                     {contador && (
                       <span className="contador-pedidos">
@@ -73,7 +74,7 @@ export default function Layout() {
                 </div>
                 <div className="menu-acciones">
                   {/* US-12 CA1: botón primario «Publicar anuncio», a la derecha y antes del menú del centro. */}
-                  <Link to="/anuncios/nuevo" className="boton-cabecera s2-boton"><Plus size={19} strokeWidth={2.6} aria-hidden="true" />Publicar anuncio</Link>
+                  <Link to="/anuncios/nuevo" className="boton-cabecera s2-boton"><Plus size={22} strokeWidth={3} aria-hidden="true" />Publicar anuncio</Link>
                   {/* US-07 CA1: menú del centro (nombre ▾) con «Mi perfil» y «Cerrar sesión». */}
                   <MenuCentro />
                 </div>
