@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react';
+import { CalendarDays, Info, MapPin, MessageSquare, Navigation } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { formatearFecha } from '../anuncios/ficha.js';
@@ -47,13 +47,21 @@ export default function PerfilPage() {
 function DatosDelCentro({ centro }) {
   return (
     <>
-      {/* Diseño con vida (#361): cabecera del perfil con las iniciales del centro (decorativas). */}
-      <div className="perfil-portada">
+      {/* Diseño con vida (#361): la franja de campo del perfil público (/centros/:id), en una tarjeta, con las iniciales
+          del centro (decorativas), el nombre y sus datos en pastillas. */}
+      <div className="perfil-portada s2-campo">
+        <span className="s2-campo-circulo" aria-hidden="true" />
+        <span className="s2-campo-area s2-campo-area--der" aria-hidden="true" />
         <div className="perfil-portada-datos">
           <span className="perfil-avatar" aria-hidden="true">{inicialesDe(centro.nombre)}</span>
           <div className="perfil-portada-texto">
             <h2 className="perfil-nombre">{centro.nombre}</h2>
-            <p className="perfil-localidad"><MapPin size={16} aria-hidden="true" />{centro.localidad}</p>
+            <div className="perfil-meta">
+              <p className="perfil-localidad"><MapPin size={18} strokeWidth={2.6} aria-hidden="true" />{centro.localidad}</p>
+              <p className="perfil-desde">
+                <CalendarDays size={18} strokeWidth={2.6} aria-hidden="true" />En Sportsplace desde {formatearFecha(centro.creado_en)}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -68,7 +76,9 @@ function DatosDelCentro({ centro }) {
 
       <div className="perfil-rejilla">
         <section className="perfil-bloque" aria-labelledby="titulo-sobre-nosotros">
-          <h3 id="titulo-sobre-nosotros">Sobre nosotros</h3>
+          <h3 id="titulo-sobre-nosotros">
+            <span className="perfil-bloque-icono" aria-hidden="true"><Info size={20} strokeWidth={2.6} /></span>Sobre nosotros
+          </h3>
           {/* CA15: React escapa el texto (<b>hola</b> se ve literal); los saltos de línea se respetan con CSS. */}
           {centro.descripcion
             ? <p className="perfil-descripcion">{centro.descripcion}</p>
@@ -76,7 +86,9 @@ function DatosDelCentro({ centro }) {
         </section>
 
         <section className="perfil-bloque" aria-labelledby="titulo-contacto">
-          <h3 id="titulo-contacto">Contacto</h3>
+          <h3 id="titulo-contacto">
+            <span className="perfil-bloque-icono" aria-hidden="true"><MessageSquare size={20} strokeWidth={2.6} /></span>Contacto
+          </h3>
           <dl className="perfil-contacto">
             <dt>Teléfono</dt>
             <dd>{centro.telefono ?? TEXTOS_PERFIL.sinDato}</dd>
@@ -94,7 +106,9 @@ function DatosDelCentro({ centro }) {
         {/* US-68: zona (localidad y provincia) y dirección completa, que solo ve el propio centro (CA14). */}
         {!faltaCodigoPostal(centro) && (
           <section className="perfil-bloque" aria-labelledby="titulo-ubicacion">
-            <h3 id="titulo-ubicacion">Ubicación</h3>
+            <h3 id="titulo-ubicacion">
+              <span className="perfil-bloque-icono" aria-hidden="true"><Navigation size={20} strokeWidth={2.6} /></span>Ubicación
+            </h3>
             <p className="perfil-ubicacion">{textoZona(centro)}</p>
             <p className="perfil-ubicacion">{textoDireccion(centro)}</p>
             <Link to="/perfil/ubicacion" className="boton-enlace boton-enlace-secundario">{TEXTOS_UBICACION.editar}</Link>
@@ -102,7 +116,6 @@ function DatosDelCentro({ centro }) {
         )}
       </div>
 
-      <p className="perfil-desde">En Sportsplace desde {formatearFecha(centro.creado_en)}</p>
       <div className="perfil-acciones">
         <Link to="/perfil/editar" className="boton-enlace">Editar perfil</Link>
         {/* US-10 CA4: la vista que tienen los demás centros de este perfil. */}
