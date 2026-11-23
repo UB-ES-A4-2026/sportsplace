@@ -1,14 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { datosDelPedido, TEXTOS } from './detalle.js';
 import {
   baldosasDelPedido,
-  cifrasDelPedido,
   colorDelEstado,
+  contactoEnElPanel,
   esVendedor,
-  etiquetaDelPapel,
-  lugarDelContacto,
-  mensajeDelComprador,
+  notaDelContacto,
   panelDelVendedor,
   pasosDelSeguimiento,
   puedeCobrar,
@@ -16,7 +13,7 @@ import {
   TEXTOS_VISTA,
 } from './vistas.js';
 
-// Los mockups de Lucía: Gràcia pide 4 balones de A1 (8,50 €) a Les Corts, que tiene 12; el vendedor lo ve.
+// La imagen de referencia de Lucía: Gràcia pide 4 balones de A1 (8,50 €) a Les Corts, que tiene 12; el vendedor lo ve.
 const PEDIDO = {
   id: 'p1',
   anuncio: { id: 'a1', titulo: 'Balones de baloncesto talla 7', foto_principal_url: null, estado: 'activo', unidades_disponibles: 12 },
@@ -35,12 +32,10 @@ const PEDIDO = {
 const COMPRADOR = { ...PEDIDO, mi_papel: 'comprador', acciones: [] };
 const CONTACTO = { email: 'gracia@example.com', telefono: '934000000' };
 
-test('papel: «Pedido recibido» para el vendedor y «Pedido realizado» para el comprador', () => {
+test('papel: vendedor o comprador según mi_papel', () => {
   assert.equal(esVendedor(PEDIDO), true);
   assert.equal(esVendedor(COMPRADOR), false);
   assert.equal(esVendedor(null), false);
-  assert.deepEqual(etiquetaDelPapel(PEDIDO), { texto: 'Pedido recibido', clase: 'recibido' });
-  assert.deepEqual(etiquetaDelPapel(COMPRADOR), { texto: 'Pedido realizado', clase: 'realizado' });
 });
 
 test('color según el estado; uno desconocido, en gris', () => {
@@ -49,7 +44,7 @@ test('color según el estado; uno desconocido, en gris', () => {
 });
 
 describe('panel del vendedor', () => {
-  test('pendiente con acciones: «¿Aceptas este pedido?»; solo «Rechazar» (faltan unidades) también', () => {
+  test('pendiente con acciones: la frase con «Rechazar» y «Aceptar»; solo «Rechazar» (faltan unidades) también', () => {
     assert.equal(panelDelVendedor(PEDIDO), 'decidir');
     const faltan = { ...PEDIDO, anuncio: { ...PEDIDO.anuncio, unidades_disponibles: 3 }, acciones: ['rechazar'] };
     assert.equal(panelDelVendedor(faltan), 'decidir');
@@ -67,45 +62,27 @@ describe('panel del vendedor', () => {
   });
 });
 
-describe('lugar del contacto (US-108 CA7: una sola vez en la pantalla)', () => {
-  test('sin contacto (pendiente o sin datos), en ningún sitio', () => {
-    assert.equal(lugarDelContacto(PEDIDO), null);
-    assert.equal(lugarDelContacto({ ...PEDIDO, estado: 'aceptado' }), null);
-    assert.equal(lugarDelContacto({ ...PEDIDO, comprador: { ...PEDIDO.comprador, ...CONTACTO } }), null);
+describe('contacto en el panel (US-108 CA7: una sola vez en la pantalla)', () => {
+  test('sin contacto (pendiente, rechazado o sin datos), no sale', () => {
+    assert.equal(contactoEnElPanel(PEDIDO), false);
+    assert.equal(contactoEnElPanel({ ...PEDIDO, estado: 'aceptado' }), false);
+    assert.equal(contactoEnElPanel({ ...PEDIDO, comprador: { ...PEDIDO.comprador, ...CONTACTO } }), false);
+    assert.equal(contactoEnElPanel({ ...PEDIDO, estado: 'rechazado', comprador: { ...PEDIDO.comprador, ...CONTACTO } }), false);
   });
 
-  test('aceptado: en el panel, para los dos', () => {
-    assert.equal(lugarDelContacto({ ...PEDIDO, estado: 'aceptado', comprador: { ...PEDIDO.comprador, ...CONTACTO } }), 'panel');
-    assert.equal(lugarDelContacto({ ...COMPRADOR, estado: 'aceptado', vendedor: { ...PEDIDO.vendedor, ...CONTACTO } }), 'panel');
-  });
-
-  test('recibido: en el panel del comprador y en la tarjeta «Comprador» del vendedor', () => {
-    assert.equal(lugarDelContacto({ ...COMPRADOR, estado: 'recibido', vendedor: { ...PEDIDO.vendedor, ...CONTACTO } }), 'panel');
-    assert.equal(lugarDelContacto({ ...PEDIDO, estado: 'recibido', comprador: { ...PEDIDO.comprador, ...CONTACTO } }), 'tarjeta');
+  test('aceptado y recibido: en el panel, para los dos', () => {
+    for (const estado of ['aceptado', 'recibido']) {
+      assert.equal(contactoEnElPanel({ ...PEDIDO, estado, comprador: { ...PEDIDO.comprador, ...CONTACTO } }), true);
+      assert.equal(contactoEnElPanel({ ...COMPRADOR, estado, vendedor: { ...PEDIDO.vendedor, ...CONTACTO } }), true);
+    }
   });
 });
 
-describe('cifras de US-34', () => {
-  test('te piden 4, tienes 12 y quedarán 8', () => {
-    assert.deepEqual(cifrasDelPedido(PEDIDO), [
-      { clave: 'piden', valor: '4', texto: 'te piden', falta: false },
-      { clave: 'disponibles', valor: '12', texto: 'tienes disponibles', falta: false },
-      { clave: 'quedaran', valor: '8', texto: 'quedarán en el anuncio', falta: false },
-    ]);
-    assert.equal(cifrasDelPedido({ ...PEDIDO, unidades: 12 })[2].valor, '0');
-  });
-
-  test('faltan unidades: las disponibles en rojo y «—» con «no te llegan»', () => {
-    const cifras = cifrasDelPedido({ ...PEDIDO, unidades: 10, anuncio: { ...PEDIDO.anuncio, unidades_disponibles: 8 } });
-    assert.deepEqual(cifras.map(({ valor }) => valor), ['10', '8', '—']);
-    assert.equal(cifras[1].falta, true);
-    assert.equal(cifras[2].texto, 'no te llegan');
-  });
-
-  test('sin las disponibles del anuncio, sin cifras', () => {
-    assert.equal(cifrasDelPedido({ ...PEDIDO, anuncio: { ...PEDIDO.anuncio, unidades_disponibles: undefined } }), null);
-    assert.equal(cifrasDelPedido(null), null);
-  });
+test('nota del contacto: solo mientras el pedido está pendiente, para los dos', () => {
+  assert.equal(notaDelContacto(PEDIDO), 'El email y el teléfono se ven cuando el pedido está aceptado.');
+  assert.equal(notaDelContacto(COMPRADOR), TEXTOS_VISTA.notaContacto);
+  for (const estado of ['aceptado', 'recibido', 'rechazado', 'cancelado']) assert.equal(notaDelContacto({ ...PEDIDO, estado }), null);
+  assert.equal(notaDelContacto(null), null);
 });
 
 test('cobro (US-80) y recepción (US-42) solo con su acción', () => {
@@ -157,32 +134,45 @@ describe('seguimiento del comprador en 3 pasos', () => {
   });
 });
 
-describe('datos del pedido en baldosas', () => {
-  test('venta: cuatro baldosas con el total destacado y sin el mensaje', () => {
-    const { baldosas, sueltas } = baldosasDelPedido(datosDelPedido(PEDIDO));
-    assert.deepEqual(baldosas.map(({ etiqueta, valor, destacada }) => `${etiqueta}: ${valor}${destacada ? ' (destacada)' : ''}`), [
-      'Unidades: 4', 'Precio por unidad: 8,50 €', 'Total: 34,00 € (destacada)', 'Forma de pago: Transferencia bancaria',
+describe('datos del pedido en baldosas (rejilla de 3 columnas)', () => {
+  const resumen = (pedido) => baldosasDelPedido(pedido)
+    .map(({ etiqueta, valor, tipo, ancho, vacio }) => `${etiqueta ?? '—'}: ${valor} (${tipo}, ${ancho}${vacio ? ', vacío' : ''})`);
+
+  test('venta: unidades, precio y total en la primera fila; forma de pago y el mensaje (2 columnas) en la segunda', () => {
+    assert.deepEqual(resumen(PEDIDO), [
+      'Unidades: 4 unidades (dato, 1)',
+      'Precio por unidad: 8,50 € (dato, 1)',
+      'Total: 34,00 € (total, 1)',
+      'Forma de pago: Transferencia bancaria (dato, 1)',
+      'Mensaje del comprador: ¿Podríais tenerlo antes del sábado? Gracias. (mensaje, 2)',
     ]);
-    assert.deepEqual(sueltas, []);
+    assert.deepEqual(baldosasDelPedido(PEDIDO).map(({ clave }) => clave),
+      ['Unidades', 'Precio por unidad', 'Total', 'Forma de pago', 'mensaje']);
   });
 
-  test('donación: «Donación: sin coste» aparte', () => {
-    const donacion = { ...PEDIDO, modalidad: 'donacion', precio_unitario_centimos: null, total_centimos: 0, metodo_pago: null };
-    const { baldosas, sueltas } = baldosasDelPedido(datosDelPedido(donacion));
-    assert.deepEqual(baldosas.map(({ etiqueta }) => etiqueta), ['Unidades']);
-    assert.deepEqual(sueltas, ['Donación: sin coste']);
+  test('1 unidad, en singular', () => {
+    assert.equal(baldosasDelPedido({ ...PEDIDO, unidades: 1 })[0].valor, '1 unidad');
   });
-});
 
-test('mensaje del comprador: bocadillo, o «Sin mensaje»', () => {
-  assert.deepEqual(mensajeDelComprador(PEDIDO), { texto: '¿Podríais tenerlo antes del sábado? Gracias.', vacio: false });
-  assert.deepEqual(mensajeDelComprador({ ...PEDIDO, mensaje: '' }), { texto: TEXTOS.sinMensaje, vacio: true });
-  assert.deepEqual(mensajeDelComprador({ ...PEDIDO, mensaje: null }), { texto: 'Sin mensaje', vacio: true });
+  test('venta sin forma de pago: el mensaje ocupa toda la segunda fila', () => {
+    assert.equal(baldosasDelPedido({ ...PEDIDO, metodo_pago: null }).at(-1).ancho, 3);
+  });
+
+  test('donación: «Donación: sin coste» sin etiqueta y en verde (2 columnas); «Sin mensaje» a todo el ancho', () => {
+    const donacion = { ...PEDIDO, modalidad: 'donacion', precio_unitario_centimos: null, total_centimos: 0, metodo_pago: null, mensaje: null };
+    assert.deepEqual(resumen(donacion), [
+      'Unidades: 4 unidades (dato, 1)',
+      '—: Donación: sin coste (total, 2)',
+      'Mensaje del comprador: Sin mensaje (mensaje, 3, vacío)',
+    ]);
+  });
 });
 
 test('textos de presentación (los decide Lucía)', () => {
-  assert.equal(TEXTOS_VISTA.aceptas, '¿Aceptas este pedido?');
   assert.equal(TEXTOS_VISTA.contactar('Escola de Bàsquet Gràcia'), 'Ya puedes contactar con Escola de Bàsquet Gràcia:');
   // Los E2E buscan «Material recibido.» (la frase de CA5) con exact: true: el paso no lleva punto.
   assert.notEqual(TEXTOS_VISTA.pasoRecibido, 'Material recibido.');
+  // «Aceptado», «Rechazado» y «Cancelado» del paso 2 llevan además el estado para el lector («Aceptado (hecho)»): en
+  // pantalla no compiten con la etiqueta de estado, que es la que buscan los E2E con exact: true.
+  assert.equal(TEXTOS_VISTA.estadoPaso.hecho, 'hecho');
 });
