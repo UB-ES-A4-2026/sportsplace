@@ -68,7 +68,7 @@
 
   /* Estructura: grosor de los bordes de tarjetas y botones, campos, radio de las etiquetas y «pisada» de los botones. */
   --s2-borde: 3px;
-  --s2-campo-borde: #84948a; /* borde de campos y desplegables: 3,2:1 sobre blanco */
+  --s2-campo-borde: #7f8f85; /* borde de campos y desplegables: 3,4:1 sobre blanco y 3,2:1 sobre el fondo verde claro */
   --s2-campo-grosor: 2px;
   --s2-radio-etiqueta: 999px;
   --s2-pisada-naranja: inset 0 -4px 0 var(--s2-naranja-700);
