@@ -45,7 +45,10 @@
 .pagina-pedido > .enlace-volver { grid-row: 1; grid-column: 1; align-self: center; }
 .pagina-pedido > h1 { grid-row: 1; grid-column: 2; align-self: center; }
 .pagina-pedido > .pedido-estado { grid-row: 1; grid-column: 3 / 5; align-self: center; justify-self: start; }
-.pagina-pedido > .pedido-frase, .pagina-pedido > .pedido-acciones, .pagina-pedido > .pedido-motivo { grid-column: 1 / 4; }
+.pagina-pedido > .pedido-frase, .pagina-pedido > .pedido-motivo { grid-column: 1 / 4; }
+/* «Aceptar», «Rechazar» y «Marcar como cobrado» van abajo y a todo el ancho, donde están en el DOM: así el tabulador
+   llega a ellos en el mismo orden en que se ven (WCAG 2.4.3). */
+.pagina-pedido > .pedido-acciones { grid-column: 1 / -1; }
 
 /* Fila de arriba. */
 .pagina.pagina-pedido .enlace-volver {
@@ -80,7 +83,7 @@
   margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; color: var(--s2-aviso); background: var(--s2-aviso-50);
   font-size: 15px; font-weight: 900; line-height: 1.4;
 }
-.pedido-acciones .pedido-acciones-vendedor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pedido-acciones .pedido-acciones-vendedor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 620px; }
 .pedido-acciones .pedido-acciones-vendedor button {
   --pisada: var(--s2-pisada-verde);
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 58px; margin: 0; padding: 0 18px;
@@ -169,14 +172,9 @@
 .pedido-historial li:first-child::before { background: var(--s2-estado-pendiente-punto); }
 .pedido-historial li:last-child:not(:first-child)::before { background: var(--pedido-punto); }
 
-/* Escritorio: la frase ocupa el alto de su fila (junto al anuncio) y, con «Aceptar» y «Rechazar», forma un solo panel
-   con ellos (en el mockup, «¿Aceptas este pedido?»). */
+/* Escritorio: la frase ocupa el alto de su fila, junto al anuncio. */
 @media (min-width: 1000px) {
   .pagina-pedido .pedido-frase { display: grid; align-content: center; align-self: stretch; }
-  .pagina-pedido:has(.pedido-acciones-vendedor) .pedido-frase {
-    align-self: stretch; padding-bottom: 8px; border-bottom: 0; border-radius: 20px 20px 0 0; font-size: 17px; font-weight: 800;
-  }
-  .pagina-pedido .pedido-acciones:has(.pedido-acciones-vendedor) { margin-top: -12px; padding-top: 8px; border-top: 0; border-radius: 0 0 20px 20px; }
 }
 
 /* Una columna, en el orden del DOM. */
