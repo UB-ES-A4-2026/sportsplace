@@ -105,9 +105,9 @@ export function datosDelOtroCentro(pedido) {
   };
 }
 
-// US-40: sección «Entrega». Devuelve { metodo, lineas, aviso, escribir }:
-// - Envío: «Método: Envío a tu dirección» (comprador) o «… a la dirección del comprador» (vendedor) y la dirección en
-//   4 líneas (persona · dirección y piso · CP localidad (provincia) · teléfono) más «Indicaciones: …» si las hay.
+// US-40: sección «Entrega». Devuelve { metodo, lineas, indicaciones, aviso, escribir }:
+// - Envío: «Método: Envío a tu dirección» (comprador) o «… a la dirección del comprador» (vendedor), la dirección en
+//   4 líneas (persona · dirección y piso · CP localidad (provincia) · teléfono) y, aparte, «Indicaciones: …» si las hay.
 // - Recogida: «Método: Recogida en el centro vendedor». El comprador ve «Dirección de recogida: …» en aceptado o
 //   recibido (CA15); en pendiente, el aviso de espera; sin dirección del vendedor, el aviso de CA14 con «Escribir al
 //   vendedor». El vendedor y los pedidos rechazados o cancelados no ven nada más.
@@ -122,16 +122,16 @@ export function datosDeEntrega(pedido) {
       `${d.codigo_postal ?? ''} ${d.localidad ?? ''}${d.provincia ? ` (${d.provincia})` : ''}`.trim(),
       d.telefono_contacto,
     ].filter(Boolean);
-    if (d.indicaciones) lineas.push(`Indicaciones: ${d.indicaciones}`);
     return {
       metodo: comprador ? 'Método: Envío a tu dirección' : 'Método: Envío a la dirección del comprador',
       lineas,
+      indicaciones: d.indicaciones ? `Indicaciones: ${d.indicaciones}` : null,
       aviso: null,
       escribir: false,
     };
   }
   if (entrega.metodo === 'recogida') {
-    const resultado = { metodo: 'Método: Recogida en el centro vendedor', lineas: [], aviso: null, escribir: false };
+    const resultado = { metodo: 'Método: Recogida en el centro vendedor', lineas: [], indicaciones: null, aviso: null, escribir: false };
     if (!comprador) return resultado;
     if (pedido.estado === 'pendiente') return { ...resultado, aviso: TEXTOS.esperaRecogida };
     if (['aceptado', 'recibido'].includes(pedido.estado)) {

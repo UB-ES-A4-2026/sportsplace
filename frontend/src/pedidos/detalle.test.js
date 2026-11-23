@@ -147,14 +147,16 @@ describe('datosDeEntrega (US-40)', () => {
     localidad: 'Barcelona', provincia: 'Barcelona', telefono_contacto: '612345678', indicaciones: 'Entrada por el pabellón',
   };
 
-  test('envío: método según el papel y la dirección en 4 líneas más indicaciones', () => {
+  test('envío: método según el papel, la dirección en 4 líneas y las indicaciones aparte', () => {
     const pedido = { ...PEDIDO, entrega: { metodo: 'envio', direccion_envio: envio, direccion_recogida: null } };
     assert.deepEqual(datosDeEntrega(pedido), {
       metodo: 'Método: Envío a tu dirección',
-      lineas: ['Marta Puig', 'Carrer de Verdi 12', '08012 Barcelona (Barcelona)', '612345678', 'Indicaciones: Entrada por el pabellón'],
+      lineas: ['Marta Puig', 'Carrer de Verdi 12', '08012 Barcelona (Barcelona)', '612345678'],
+      indicaciones: 'Indicaciones: Entrada por el pabellón',
       aviso: null,
       escribir: false,
     });
+    assert.equal(datosDeEntrega({ ...pedido, entrega: { metodo: 'envio', direccion_envio: { ...envio, indicaciones: null } } }).indicaciones, null);
     assert.equal(datosDeEntrega({ ...pedido, mi_papel: 'vendedor' }).metodo, 'Método: Envío a la dirección del comprador');
     assert.equal(datosDeEntrega({ ...pedido, entrega: { metodo: 'envio', direccion_envio: { ...envio, piso_puerta: '2º 1ª' } } }).lineas[1],
       'Carrer de Verdi 12, 2º 1ª');
@@ -162,7 +164,7 @@ describe('datosDeEntrega (US-40)', () => {
 
   test('recogida pendiente: el comprador espera; el vendedor solo ve el método (CA15)', () => {
     assert.deepEqual(datosDeEntrega(PEDIDO), {
-      metodo: 'Método: Recogida en el centro vendedor', lineas: [], aviso: TEXTOS.esperaRecogida, escribir: false,
+      metodo: 'Método: Recogida en el centro vendedor', lineas: [], indicaciones: null, aviso: TEXTOS.esperaRecogida, escribir: false,
     });
     assert.deepEqual(datosDeEntrega({ ...PEDIDO, mi_papel: 'vendedor' }).aviso, null);
   });
@@ -179,9 +181,13 @@ describe('datosDeEntrega (US-40)', () => {
   test('recogida rechazada o cancelada: solo el método', () => {
     for (const estado of ['rechazado', 'cancelado']) {
       assert.deepEqual(datosDeEntrega({ ...PEDIDO, estado }), {
-        metodo: 'Método: Recogida en el centro vendedor', lineas: [], aviso: null, escribir: false,
+        metodo: 'Método: Recogida en el centro vendedor', lineas: [], indicaciones: null, aviso: null, escribir: false,
       });
     }
+  });
+
+  test('sin método de entrega, sin sección', () => {
+    assert.equal(datosDeEntrega({ ...PEDIDO, entrega: { metodo: null } }), null);
   });
 });
 
