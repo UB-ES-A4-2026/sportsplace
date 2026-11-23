@@ -75,11 +75,16 @@ async function rechaza(promesa, status, code) {
 test('US-33: si el UPDATE condicional no cambia el pedido, se revierte la reserva', async () => {
   const respuestas = aceptacion().slice(0, 5);
   respuestas[4] = { rows: [], rowCount: 0 };
+  respuestas.push([{ estado: 'cancelado' }]);
   const database = fakeDatabase(respuestas);
-  await rechaza(createAceptarPedido(database)({ pedidoId, centroId: lesCorts, comprobar: sinComprobar }),
-    409, 'TRANSICION_NO_PERMITIDA');
+  const aceptar = createAceptarPedido(database)({ pedidoId, centroId: lesCorts, comprobar: sinComprobar });
+  await rechaza(aceptar, 409, 'TRANSICION_NO_PERMITIDA');
+  // El 409 lleva el estado releído después del UPDATE, no el leído antes (#373).
+  await aceptar.catch((error) => assert.deepEqual(error.details, { estado_actual: 'cancelado' }));
   assert.deepEqual(database.estado, { commit: false, rollback: true });
-  assert.equal(database.log.length, 5);
+  assert.equal(database.log.length, 6);
+  assert.equal(database.log[5].sql, 'SELECT estado FROM public.pedidos WHERE id = $1');
+  assert.deepEqual(database.log[5].values, [pedidoId]);
 });
 
 test('US-34 CA1: aceptar resta las unidades del anuncio en la misma transacción que el cambio a aceptado', async () => {
