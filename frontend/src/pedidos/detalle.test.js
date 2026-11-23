@@ -107,15 +107,37 @@ describe('datosDelPedido (punto 5, CA6, US-35 CA6)', () => {
 
 describe('datosDelOtroCentro (punto 6, CA7)', () => {
   test('pendiente: solo nombre y localidad del vendedor', () => {
-    assert.deepEqual(datosDelOtroCentro(PEDIDO), { titulo: 'Vendedor', lineas: ['Club Esportiu Les Corts', 'Barcelona'] });
+    assert.deepEqual(datosDelOtroCentro(PEDIDO), {
+      titulo: 'Vendedor', nombre: 'Club Esportiu Les Corts', localidad: 'Barcelona', contacto: null,
+    });
   });
 
   test('aceptado: email y teléfono cuando la API los manda', () => {
-    const pedido = { ...PEDIDO, estado: 'aceptado', mi_papel: 'vendedor', comprador: { ...PEDIDO.comprador, email: 'gracia@example.com', telefono: '612345678' } };
+    const pedido = { ...PEDIDO, estado: 'aceptado', mi_papel: 'vendedor', comprador: { ...PEDIDO.comprador, email: 'gracia@example.com', telefono: '612 345 678' } };
     assert.deepEqual(datosDelOtroCentro(pedido), {
       titulo: 'Comprador',
-      lineas: ['Escola de Bàsquet Gràcia', 'Barcelona', 'Email: gracia@example.com', 'Teléfono: 612345678'],
+      nombre: 'Escola de Bàsquet Gràcia',
+      localidad: 'Barcelona',
+      contacto: { email: 'gracia@example.com', telefono: '612 345 678', enlaceEmail: 'mailto:gracia@example.com', enlaceTelefono: 'tel:612345678' },
     });
+  });
+
+  test('recibido con solo uno de los dos; sin ninguno, sin contacto', () => {
+    const conEmail = { ...PEDIDO, estado: 'recibido', vendedor: { ...PEDIDO.vendedor, email: 'lescorts@example.com', telefono: null } };
+    assert.deepEqual(datosDelOtroCentro(conEmail).contacto,
+      { email: 'lescorts@example.com', telefono: null, enlaceEmail: 'mailto:lescorts@example.com', enlaceTelefono: null });
+    const conTelefono = { ...PEDIDO, estado: 'aceptado', vendedor: { ...PEDIDO.vendedor, telefono: '+34 932 000 000' } };
+    assert.deepEqual(datosDelOtroCentro(conTelefono).contacto,
+      { email: null, telefono: '+34 932 000 000', enlaceEmail: null, enlaceTelefono: 'tel:+34932000000' });
+    assert.equal(datosDelOtroCentro({ ...PEDIDO, estado: 'aceptado' }).contacto, null);
+  });
+
+  test('CA7: en pendiente, rechazado o cancelado nunca se enseña el contacto', () => {
+    const vendedor = { ...PEDIDO.vendedor, email: 'lescorts@example.com', telefono: '932000000', localidad: null };
+    for (const estado of ['pendiente', 'rechazado', 'cancelado']) {
+      assert.deepEqual(datosDelOtroCentro({ ...PEDIDO, estado, vendedor }),
+        { titulo: 'Vendedor', nombre: 'Club Esportiu Les Corts', localidad: null, contacto: null });
+    }
   });
 });
 

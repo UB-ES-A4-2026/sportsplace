@@ -3,7 +3,7 @@
 // se decide qué panel sale y con qué datos. Funciones puras para probarlas sin navegador; las usa PedidoPage.
 import { botonesDelVendedor } from './acciones.js';
 import { accionesDeCierre } from './cierre.js';
-import { TEXTOS } from './detalle.js';
+import { datosDelOtroCentro, TEXTOS } from './detalle.js';
 
 // Textos de presentación que no están en los CA (los decide Lucía en la revisión; ninguno sustituye a un texto de un CA).
 export const TEXTOS_VISTA = {
@@ -31,6 +31,8 @@ export const TEXTOS_VISTA = {
   // Estado de cada paso, solo para el lector de pantalla: «Pedido enviado (hecho)».
   estadoPaso: { hecho: 'hecho', espera: 'en espera', mal: 'no', futuro: 'todavía no' },
   recibirPregunta: '¿Ya tienes el material en tu centro?',
+  // Comprador con el pedido pendiente, bajo «Esperando la respuesta de …» (no en la tarjeta «Vendedor»: CA7).
+  esperaContacto: 'Cuando lo acepte, aquí verás su email y su teléfono para quedar.',
 };
 
 export const esVendedor = (pedido) => pedido?.mi_papel === 'vendedor';
@@ -59,6 +61,14 @@ export function panelDelVendedor(pedido) {
     return botones.aceptar || botones.rechazar ? 'decidir' : 'situacion';
   }
   return ['aceptado', 'recibido', 'rechazado', 'cancelado'].includes(pedido.estado) ? pedido.estado : 'situacion';
+}
+
+// Dónde va el email y el teléfono del otro centro (US-108 CA7): en el panel de arriba, salvo para el vendedor de un
+// pedido recibido, que los tiene en la tarjeta «Comprador» (su panel azul solo dice «Material recibido.»). Así salen
+// una sola vez en la pantalla. null si no hay contacto.
+export function lugarDelContacto(pedido) {
+  if (!datosDelOtroCentro(pedido).contacto) return null;
+  return esVendedor(pedido) && pedido.estado === 'recibido' ? 'tarjeta' : 'panel';
 }
 
 // US-34 en grande: «te piden · tienes disponibles · quedarán en el anuncio». Si faltan unidades, las disponibles van

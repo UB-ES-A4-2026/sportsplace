@@ -82,13 +82,27 @@ export function datosDelPedido(pedido) {
   return filas;
 }
 
-// Punto 6 y CA7: el otro centro; email y teléfono solo cuando la API los manda (aceptado o recibido).
+// Punto 6 y CA7: «Comprador» o «Vendedor» (el otro centro) con su nombre y localidad; email y teléfono solo en
+// aceptado o recibido y solo si la API los manda. `contacto` es null si no hay ninguno de los dos.
 export function datosDelOtroCentro(pedido) {
   const centro = otroCentro(pedido);
-  const lineas = [centro.nombre, centro.localidad].filter(Boolean);
-  if (centro.email) lineas.push(`Email: ${centro.email}`);
-  if (centro.telefono) lineas.push(`Teléfono: ${centro.telefono}`);
-  return { titulo: pedido.mi_papel === 'comprador' ? 'Vendedor' : 'Comprador', lineas };
+  const email = centro.email || null;
+  const telefono = centro.telefono || null;
+  const conContacto = ['aceptado', 'recibido'].includes(pedido.estado) && Boolean(email || telefono);
+  return {
+    titulo: pedido.mi_papel === 'comprador' ? 'Vendedor' : 'Comprador',
+    nombre: centro.nombre,
+    localidad: centro.localidad || null,
+    contacto: conContacto
+      ? {
+        email,
+        telefono,
+        enlaceEmail: email && `mailto:${email}`,
+        // El enlace lleva solo las cifras (y el «+»); el texto, el teléfono tal cual lo manda la API.
+        enlaceTelefono: telefono && `tel:${telefono.replace(/[^\d+]/g, '')}`,
+      }
+      : null,
+  };
 }
 
 // US-40: sección «Entrega». Devuelve { metodo, lineas, aviso, escribir }:

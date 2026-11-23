@@ -7,6 +7,7 @@ import {
   colorDelEstado,
   esVendedor,
   etiquetaDelPapel,
+  lugarDelContacto,
   mensajeDelComprador,
   panelDelVendedor,
   pasosDelSeguimiento,
@@ -32,6 +33,7 @@ const PEDIDO = {
   acciones: ['aceptar', 'rechazar'],
 };
 const COMPRADOR = { ...PEDIDO, mi_papel: 'comprador', acciones: [] };
+const CONTACTO = { email: 'gracia@example.com', telefono: '934000000' };
 
 test('papel: «Pedido recibido» para el vendedor y «Pedido realizado» para el comprador', () => {
   assert.equal(esVendedor(PEDIDO), true);
@@ -62,6 +64,24 @@ describe('panel del vendedor', () => {
     for (const estado of ['aceptado', 'recibido', 'rechazado', 'cancelado']) {
       assert.equal(panelDelVendedor({ ...PEDIDO, estado, acciones: [] }), estado);
     }
+  });
+});
+
+describe('lugar del contacto (US-108 CA7: una sola vez en la pantalla)', () => {
+  test('sin contacto (pendiente o sin datos), en ningún sitio', () => {
+    assert.equal(lugarDelContacto(PEDIDO), null);
+    assert.equal(lugarDelContacto({ ...PEDIDO, estado: 'aceptado' }), null);
+    assert.equal(lugarDelContacto({ ...PEDIDO, comprador: { ...PEDIDO.comprador, ...CONTACTO } }), null);
+  });
+
+  test('aceptado: en el panel, para los dos', () => {
+    assert.equal(lugarDelContacto({ ...PEDIDO, estado: 'aceptado', comprador: { ...PEDIDO.comprador, ...CONTACTO } }), 'panel');
+    assert.equal(lugarDelContacto({ ...COMPRADOR, estado: 'aceptado', vendedor: { ...PEDIDO.vendedor, ...CONTACTO } }), 'panel');
+  });
+
+  test('recibido: en el panel del comprador y en la tarjeta «Comprador» del vendedor', () => {
+    assert.equal(lugarDelContacto({ ...COMPRADOR, estado: 'recibido', vendedor: { ...PEDIDO.vendedor, ...CONTACTO } }), 'panel');
+    assert.equal(lugarDelContacto({ ...PEDIDO, estado: 'recibido', comprador: { ...PEDIDO.comprador, ...CONTACTO } }), 'tarjeta');
   });
 });
 
