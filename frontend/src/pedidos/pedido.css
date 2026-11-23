@@ -1,12 +1,15 @@
-/* /pedidos/:id (US-108, US-33, US-79, US-34, US-80, US-42 y US-40). Diseño con vida (#361), mockups «PedidoRecibido»
-   (vendedor) y «PedidoRealizado» (comprador) de Lucía. Arriba, «← Volver a pedidos», la etiqueta del papel, el título y
-   el estado en pastilla; debajo, dos columnas: lo que toca hacer a la izquierda y las tarjetas de datos a la derecha
-   (360 px). En móvil, una columna en el orden del DOM, que es el visual.
+/* /pedidos/:id (US-108, US-33, US-79, US-34, US-80, US-42 y US-40). Diseño con vida (#361), con la maquetación de la
+   imagen de referencia de Lucía (vendedor con el pedido pendiente):
+   - arriba, en una fila, «← Volver a pedidos» (botón blanco), el título y el estado en pastilla con su icono;
+   - debajo, dos columnas que empiezan a la misma altura: a la izquierda (ancha) el panel de la situación del color del
+     estado y la tarjeta del anuncio con «Datos del pedido» en baldosas de 3 columnas; a la derecha (360 px) las
+     tarjetas del otro centro, la entrega y el historial.
+   En móvil, una columna en el orden del DOM, que es el visual.
    styles.css (con su copia de tokens.css) se carga después: cada regla que le compite lleva una clase más que la suya. */
 @import '../diseno/tokens.css';
 
 /* ------------------------------------------------------------------ colores del estado */
-/* Los usan la pastilla, el panel del vendedor y el seguimiento del comprador. Por defecto, gris (cancelado). */
+/* Los usan la pastilla, el panel de la situación y el seguimiento. Por defecto, gris (cancelado). */
 .pagina.pagina-pedido {
   --pedido-claro: color-mix(in srgb, var(--s2-estado-cancelado-fondo) 50%, var(--s2-superficie));
   --pedido-fondo: var(--s2-estado-cancelado-fondo);
@@ -15,7 +18,7 @@
 }
 .pagina-pedido.pedido--pendiente {
   --pedido-claro: var(--s2-amarillo-50); --pedido-fondo: var(--s2-estado-pendiente-fondo);
-  --pedido-texto: var(--s2-estado-pendiente-texto); --pedido-borde: var(--s2-amarillo);
+  --pedido-texto: var(--s2-estado-pendiente-texto); --pedido-borde: color-mix(in srgb, var(--s2-amarillo) 75%, var(--s2-superficie));
 }
 .pagina-pedido.pedido--aceptado {
   --pedido-claro: var(--s2-teal-50); --pedido-fondo: var(--s2-estado-aceptado-fondo);
@@ -34,173 +37,178 @@
 
 /* ------------------------------------------------------------------ página y columnas */
 .pagina.pagina-pedido {
-  display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 1192px; margin: 0 auto; padding: 14px 0 0;
+  display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 1192px; margin: 0 auto; padding: 10px 0 0;
   color: var(--s2-tinta);
 }
-.pagina-pedido .pedido-columnas { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; align-items: start; }
-.pagina-pedido .pedido-columna { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pagina-pedido .pedido-columnas { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px 16px; align-items: start; }
+.pagina-pedido .pedido-columna { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
 /* ------------------------------------------------------------------ fila de arriba */
 .pagina-pedido .pedido-cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
-.pagina-pedido .pedido-cabecera .enlace-volver { margin: 0; padding: 0 14px 0 10px; border-radius: 12px; white-space: nowrap; }
-.pagina-pedido .pedido-papel {
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--s2-radio-etiqueta);
-  color: var(--s2-superficie); font-size: 14px; font-weight: 900; line-height: 1.3; white-space: nowrap;
+.pagina-pedido .pedido-cabecera .enlace-volver {
+  gap: 8px; margin: 0; padding: 0 14px 0 10px; border-radius: var(--s2-radio-s); font-size: 15.5px; white-space: nowrap;
 }
-.pagina-pedido .pedido-papel--recibido { background: var(--s2-tinta); }
-.pagina-pedido .pedido-papel--realizado { background: var(--s2-estado-recibido-punto); }
-.pagina-pedido h1 { margin: 0; font-size: 25px; font-weight: 900; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere; }
+.pagina-pedido .enlace-volver svg { flex: none; }
+.pagina-pedido h1 { margin: 0; font-size: 26px; font-weight: 900; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere; }
 .pagina-pedido .pedido-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
-/* El estado en pastilla, siempre con su texto (nunca solo el color). */
+/* El estado en pastilla, siempre con su texto (nunca solo el color) y un icono decorativo. */
 .pedido-estado .pedido-etiqueta-estado {
-  padding: 4px 12px; border: 2px solid var(--pedido-borde); border-radius: var(--s2-radio-etiqueta); color: var(--pedido-texto);
-  background: var(--pedido-fondo); font-size: 15px; font-weight: 900; line-height: 1.3; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px 5px 12px; border: 2px solid var(--pedido-borde);
+  border-radius: var(--s2-radio-etiqueta); color: var(--pedido-texto); background: var(--pedido-fondo); font-size: 15.5px;
+  font-weight: 900; line-height: 1.3; white-space: nowrap;
 }
 .pedido-estado .etiqueta-pagado {
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 2px solid var(--s2-teal-800);
-  color: var(--s2-superficie); background: var(--s2-teal-800); font-size: 15px; font-weight: 900; line-height: 1.3;
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px 5px 12px; border: 2px solid var(--s2-teal-800);
+  color: var(--s2-superficie); background: var(--s2-teal-800); font-size: 15.5px; font-weight: 900; line-height: 1.3;
 }
+.pedido-estado svg { flex: none; }
 
 /* ------------------------------------------------------------------ tarjetas blancas */
 .pagina-pedido .pedido-tarjeta {
-  padding: 12px 16px; border: 2px solid var(--s2-linea); border-radius: 18px; background: var(--s2-superficie);
+  padding: 12px 16px; border: 2px solid var(--s2-linea); border-radius: var(--s2-radio); background: var(--s2-superficie);
 }
-.pagina-pedido .pedido-tarjeta-titulo { margin: 0 0 8px; font-size: 16px; font-weight: 900; line-height: 1.3; letter-spacing: 0; }
+.pagina-pedido .pedido-tarjeta-titulo { margin: 0 0 8px; font-size: 17px; font-weight: 900; line-height: 1.3; letter-spacing: 0; }
 
-/* «Datos del pedido»: el anuncio y los datos en baldosas (el total, en verde). */
-.pagina-pedido .pedido-anuncio { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.pedido-anuncio img, .pedido-anuncio .pedido-anuncio-sin-foto {
-  flex: none; width: 44px; height: 44px; border-radius: 12px; object-fit: cover; background: var(--s2-fondo-2);
+/* Anuncio: foto pequeña (o icono sobre el tinte), título enlazado y modalidad. */
+.pagina-pedido .pedido-anuncio { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.pagina-pedido .pedido-anuncio-miniatura {
+  display: flex; align-items: center; justify-content: center; flex: none; width: 60px; height: 48px; overflow: hidden;
+  border-radius: 10px; background: var(--s2-naranja-100);
 }
-.pedido-anuncio .pedido-anuncio-sin-foto {
-  display: flex; align-items: center; justify-content: center; color: var(--s2-gris); font-size: 10px; font-weight: 800;
-  line-height: 1.1; text-align: center;
+.pedido-anuncio-miniatura img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pedido-anuncio-miniatura .pedido-anuncio-icono {
+  display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
+  color: var(--s2-superficie); background: var(--s2-naranja-600);
 }
-.pagina-pedido .pedido-anuncio-textos { display: flex; flex-direction: column; min-width: 0; }
-.pagina-pedido .pedido-anuncio-titulo { margin: 0; font-size: 15px; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
+.pagina-pedido .pedido-anuncio-textos { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pagina-pedido .pedido-anuncio-titulo { margin: 0; font-size: 17px; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
 .pagina-pedido a.pedido-anuncio-titulo { color: var(--s2-teal-700); text-decoration: underline; text-underline-offset: 3px; }
 .pagina-pedido a.pedido-anuncio-titulo:hover { color: var(--s2-teal-800); }
-.pagina-pedido .pedido-anuncio-modalidad { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 800; }
-.pagina-pedido .pedido-baldosas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
-.pagina-pedido .pedido-baldosa { margin: 0; padding: 6px 10px; border-radius: 10px; background: var(--s2-fondo); }
-.pedido-baldosa dt { color: var(--s2-gris); font-size: 13px; font-weight: 800; line-height: 1.3; }
-.pedido-baldosa dd { margin: 0; font-size: 15px; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
-.pagina-pedido .pedido-baldosa--total { color: var(--s2-teal-800); background: var(--s2-teal-100); }
-.pedido-baldosa--total dt, .pedido-baldosa--total dd { color: var(--s2-teal-800); }
-.pedido-baldosa--total dd { font-size: 18px; }
-.pagina-pedido .pedido-baldosa--suelta { margin-top: 6px; font-size: 15px; font-weight: 900; }
+.pagina-pedido .pedido-anuncio-modalidad { margin: 0; color: var(--s2-gris); font-size: 14.5px; font-weight: 700; line-height: 1.3; }
+.pagina-pedido .pedido-datos .pedido-tarjeta-titulo { margin-bottom: 12px; }
 
-/* «Comprador» / «Vendedor»: el nombre en negrita y la localidad en gris, en la misma línea. */
-.pagina-pedido .pedido-centro { margin: 0; font-size: 15px; font-weight: 900; line-height: 1.4; overflow-wrap: anywhere; }
-.pagina-pedido .pedido-centro-localidad { color: var(--s2-gris); font-weight: 700; }
-.pagina-pedido .pedido-contacto-en-linea {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; margin: 0; font-size: 14px; font-weight: 800; overflow-wrap: anywhere;
+/* «Datos del pedido»: baldosas grises de 3 columnas (etiqueta pequeña arriba y valor en negrita); el total, en verde, y
+   el mensaje del comprador entre comillas, en las columnas que quedan de su fila. */
+.pagina-pedido .pedido-baldosas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.pagina-pedido .pedido-baldosa {
+  display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; margin: 0; padding: 8px 12px;
+  border-radius: 10px; background: var(--s2-fondo);
 }
-/* Cada enlace, de 44 px de alto como cualquier control. */
-.pedido-contacto-en-linea a { display: inline-flex; align-items: center; min-height: var(--s2-toque); }
+.pagina-pedido .pedido-baldosa--ancho-2 { grid-column: span 2; }
+.pagina-pedido .pedido-baldosa--ancho-3 { grid-column: 1 / -1; }
+.pedido-baldosa dt { color: var(--s2-gris); font-size: 13px; font-weight: 700; line-height: 1.3; }
+.pedido-baldosa dd { margin: 0; font-size: 16px; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
+.pagina-pedido .pedido-baldosa--total { background: var(--s2-teal-100); }
+.pedido-baldosa--total dt, .pedido-baldosa--total dd { color: var(--s2-teal-800); }
+.pedido-baldosa--total dd { font-size: 19.5px; line-height: 1.25; }
+.pedido-baldosa--mensaje dd { font-weight: 700; white-space: pre-line; }
+.pedido-baldosa .pedido-baldosa-cita { quotes: '«' '»'; }
+.pedido-baldosa .pedido-baldosa-vacia { color: var(--s2-gris); }
 
-/* «Entrega»: el método en negrita, la dirección, el aviso de US-40 en amarillo y «Recibido el …» de US-42 en azul. */
-.pagina-pedido .pedido-entrega-metodo { margin: 0 0 4px; font-size: 14px; font-weight: 900; line-height: 1.4; }
-.pagina-pedido .pedido-entrega-linea { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+/* «Comprador» / «Vendedor»: círculo con las iniciales, el nombre en negrita y la localidad debajo, y la nota pequeña. */
+.pagina-pedido .pedido-centro { display: flex; align-items: center; gap: 10px; }
+.pagina-pedido .pedido-avatar {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 42px; height: 42px; border-radius: 50%;
+  color: var(--s2-superficie); background: var(--s2-estado-recibido-punto); font-size: 15px; font-weight: 900;
+}
+.pagina-pedido .pedido-avatar--vendedor { background: var(--s2-teal-700); }
+.pagina-pedido .pedido-centro-textos { min-width: 0; }
+.pagina-pedido .pedido-centro-nombre { margin: 0; font-size: 16px; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
+.pagina-pedido .pedido-centro-localidad { margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; line-height: 1.3; }
+.pagina-pedido .pedido-centro-nota { margin: 8px 0 0; color: var(--s2-gris); font-size: 13px; font-weight: 700; line-height: 1.38; }
+
+/* «Entrega»: el método en negrita, la dirección en un recuadro gris, las indicaciones en pequeño, el aviso de US-40 en
+   amarillo y «Recibido el …» de US-42 en azul. */
+.pagina-pedido .pedido-entrega-metodo { margin: 0; font-size: 14.5px; font-weight: 900; line-height: 1.3; }
+.pagina-pedido .pedido-entrega-direccion {
+  margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--s2-fondo);
+}
+.pedido-entrega-direccion p { margin: 0; font-size: 15px; font-weight: 700; line-height: 20px; overflow-wrap: anywhere; }
+.pagina-pedido .pedido-entrega-indicaciones {
+  margin: 8px 0 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere;
+}
 .pagina-pedido .pedido-entrega-aviso {
-  margin: 6px 0 0; padding: 8px 12px; border-left: 4px solid var(--s2-amarillo); border-radius: 10px; color: var(--s2-aviso);
+  margin: 8px 0 0; padding: 8px 12px; border-left: 4px solid var(--s2-amarillo); border-radius: 10px; color: var(--s2-aviso);
   background: var(--s2-amarillo-50); font-size: 13px; font-weight: 800; line-height: 1.4;
 }
 .pagina-pedido .pedido-entrega-escribir { display: inline-flex; align-items: center; min-height: var(--s2-toque); font-size: 14px; font-weight: 900; }
 .pagina-pedido .pedido-entrega-recibido {
-  display: flex; align-items: center; gap: 6px; margin: 6px 0 0; color: var(--s2-estado-recibido-texto); font-size: 14px; font-weight: 900;
+  display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--s2-estado-recibido-texto); font-size: 14.5px;
+  font-weight: 900;
 }
 
 /* «Historial»: un punto del color de cada línea (el texto ya dice qué es). */
 .pagina-pedido .pedido-historial { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.pagina-pedido .pedido-historial-linea { display: flex; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 800; line-height: 1.4; }
+.pagina-pedido .pedido-historial-linea { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; font-weight: 800; line-height: 20px; }
+/* El punto, a la altura de la primera línea (una línea larga, como «Marcado como pagado el …», pasa a dos). */
 .pedido-historial-linea::before {
-  content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--s2-teal-700); transform: translateY(-1px);
+  content: ''; flex: none; width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: var(--s2-teal-700);
 }
 .pedido-historial-linea--pendiente::before { background: var(--s2-estado-pendiente-punto); }
 .pedido-historial-linea--rechazado::before { background: var(--s2-estado-rechazado-punto); }
 .pedido-historial-linea--cancelado::before { background: var(--s2-estado-cancelado-punto); }
 .pedido-historial-linea--pagado::before { background: var(--s2-teal-800); }
 
-/* «Mensaje del comprador» como bocadillo: a la izquierda con las iniciales (vendedor) o a la derecha en azul (comprador). */
-.pagina-pedido .pedido-mensaje { display: flex; align-items: flex-start; gap: 12px; }
-.pagina-pedido .pedido-avatar {
-  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 42px; height: 42px; border-radius: 50%;
-  color: var(--s2-superficie); background: var(--s2-estado-recibido-punto); font-size: 15px; font-weight: 900;
-}
-.pagina-pedido .pedido-mensaje-cuerpo { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
-.pagina-pedido .pedido-mensaje .pedido-tarjeta-titulo { margin-bottom: 4px; }
-.pagina-pedido .pedido-bocadillo {
-  margin: 0; padding: 10px 14px; border-radius: 4px 16px 16px 16px; background: var(--s2-fondo-2); font-size: 16px;
-  font-weight: 700; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere;
-}
-.pagina-pedido .pedido-mensaje--propio .pedido-bocadillo {
-  align-self: flex-end; max-width: 80%; border-radius: 16px 4px 16px 16px; background: var(--s2-estado-recibido-fondo);
-}
-.pagina-pedido .pedido-mensaje-vacio { margin: 0; color: var(--s2-gris); font-size: 15px; font-weight: 700; }
-
-/* ------------------------------------------------------------------ panel de arriba (vendedor) */
+/* ------------------------------------------------------------------ panel de la situación */
+/* Del color del estado: la frase a la izquierda y lo que toca hacer a la derecha, en la misma fila. */
 .pagina-pedido .pedido-panel {
-  display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; border: var(--s2-borde) solid var(--pedido-borde);
-  border-radius: 20px; background: var(--pedido-claro);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 11px 15px;
+  border: 2px solid var(--pedido-borde); border-radius: var(--s2-radio); background: var(--pedido-claro);
 }
+.pagina-pedido .pedido-panel-textos { display: flex; flex: 1 1 260px; flex-direction: column; gap: 2px; min-width: 0; }
 .pagina-pedido .pedido-panel-titulo {
-  display: flex; align-items: center; gap: 8px; margin: 0; color: var(--pedido-texto); font-size: 22px; font-weight: 900;
-  line-height: 1.25; letter-spacing: 0;
+  display: flex; align-items: flex-start; gap: 8px; margin: 0; color: var(--pedido-texto); font-size: 19px; font-weight: 900;
+  line-height: 28px; letter-spacing: 0;
 }
-.pedido-panel-titulo svg { flex: none; }
-.pagina-pedido .pedido-panel-frase { margin: 2px 0 0; color: var(--pedido-texto); font-size: 16px; font-weight: 800; line-height: 1.4; }
-.pagina-pedido .pedido-panel-texto { margin: -4px 0 0; color: var(--pedido-texto); font-size: 15px; font-weight: 800; line-height: 1.4; }
+/* El icono, a la altura de la primera línea de la frase. */
+.pedido-panel-titulo svg { flex: none; margin-top: 3px; }
+.pagina-pedido .pedido-panel-texto { margin: 0; color: var(--pedido-texto); font-size: 15px; font-weight: 800; line-height: 1.4; }
+/* «Ya puedes contactar con …:», alineado con el texto de la frase (después de su icono de 22 px). */
+.pedido-panel-titulo + .pedido-panel-texto { padding-left: 30px; }
 
-/* US-34 en grande: te piden · tienes disponibles · quedarán. */
-.pagina-pedido .pedido-cifras {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none;
-}
-.pagina-pedido .pedido-cifra {
-  display: flex; flex-direction: column; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--s2-superficie);
-  text-align: center;
-}
-.pedido-cifra .pedido-cifra-valor { font-size: 30px; font-weight: 900; line-height: 1.1; }
-.pedido-cifra .pedido-cifra-texto { color: var(--s2-gris); font-size: 14px; font-weight: 800; line-height: 1.3; }
-.pagina-pedido .pedido-cifra--falta { background: var(--s2-estado-rechazado-fondo); }
-.pedido-cifra--falta .pedido-cifra-valor { color: var(--s2-peligro); }
-
-/* US-34: aviso amarillo de que faltan unidades (más intenso que el panel, para que se vea sobre él). */
+/* Pendiente: «Rechazar» y «Aceptar» a la derecha de la frase; si faltan unidades, el aviso de US-34 bajo la frase. */
+.pagina-pedido .pedido-panel--decidir { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; }
+.pedido-panel--decidir .pedido-panel-titulo { grid-column: 1; grid-row: 1; }
+.pedido-panel--decidir .pedido-aviso-stock { grid-column: 1; grid-row: 2; }
+.pedido-panel--decidir .pedido-acciones-vendedor { grid-column: 2; grid-row: 1; }
+.pedido-panel--faltan .pedido-acciones-vendedor { grid-row: 1 / span 2; }
 .pedido-panel .pedido-aviso-stock {
-  display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; border: 0; border-radius: 10px;
-  color: var(--s2-aviso); background: color-mix(in srgb, var(--s2-amarillo) 50%, var(--s2-superficie));
+  display: flex; align-items: center; gap: 8px; width: fit-content; max-width: 100%; margin: 0; padding: 6px 12px; border: 0;
+  border-radius: 10px; color: var(--s2-aviso); background: color-mix(in srgb, var(--s2-amarillo) 45%, var(--s2-superficie));
   font-size: 15px; font-weight: 900; line-height: 1.4;
 }
 .pedido-aviso-stock svg { flex: none; }
-
-/* «Rechazar» y «Aceptar» (US-79 y US-33): grandes, en dos columnas. */
-.pedido-panel .pedido-acciones-vendedor { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 10px; }
-.pagina-pedido .pedido-acciones-vendedor .pedido-boton-responder {
-  min-height: 58px; padding: 0 16px; border-radius: 16px; font-size: 19px; white-space: normal;
+.pedido-panel .pedido-acciones-vendedor { display: flex; gap: 10px; }
+.pagina-pedido .pedido-acciones-vendedor .pedido-boton-responder { min-height: var(--s2-toque-l); padding: 0 22px; font-size: 17px; }
+/* «Rechazar», con el borde rojo de 2 px de la referencia (el de .s2-boton-peligro es de 3 px). */
+.pedido-acciones-vendedor .s2-boton-peligro.pedido-boton-responder { box-shadow: inset 0 0 0 2px var(--s2-peligro); }
+.pedido-acciones-vendedor .s2-boton-peligro.pedido-boton-responder:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--s2-peligro), 0 0 0 7px var(--s2-amarillo);
 }
 
-/* Email y teléfono del otro centro (US-108 CA7): botones grandes, azul y verde. */
-.pagina-pedido .pedido-contacto {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px;
-}
+/* Email y teléfono del otro centro (US-108 CA7): botones azul y verde, con pisada, a la derecha de la frase. */
+.pagina-pedido .pedido-contacto { display: flex; flex-wrap: wrap; gap: 10px; }
 .pagina-pedido .pedido-contacto-boton {
-  min-height: 54px; padding: 8px 16px; font-size: 16px; text-align: center; white-space: normal; overflow-wrap: anywhere;
-  box-shadow: none;
+  min-height: var(--s2-toque-l); padding: 0 18px; font-size: 16px; text-align: center; white-space: normal; overflow-wrap: anywhere;
 }
 .pagina-pedido .pedido-contacto-email,
 .pagina-pedido .pedido-contacto-email:hover { background: var(--s2-estado-recibido-punto); }
+.pagina-pedido .pedido-contacto-email { box-shadow: inset 0 -4px 0 var(--s2-estado-recibido-texto); }
+.pagina-pedido .pedido-contacto-email:active { box-shadow: inset 0 -2px 0 var(--s2-estado-recibido-texto); }
+.pagina-pedido .pedido-contacto-email:focus-visible { box-shadow: inset 0 -4px 0 var(--s2-estado-recibido-texto), 0 0 0 7px var(--s2-amarillo); }
 .pagina-pedido .pedido-contacto-telefono,
 .pagina-pedido .pedido-contacto-telefono:hover { background: var(--s2-teal-700); }
-.pagina-pedido .pedido-contacto-boton:active { box-shadow: none; }
-.pagina-pedido .pedido-contacto-boton:focus-visible { box-shadow: 0 0 0 7px var(--s2-amarillo); }
+.pagina-pedido .pedido-contacto-telefono { box-shadow: var(--s2-pisada-verde); }
+.pagina-pedido .pedido-contacto-telefono:active { box-shadow: inset 0 -2px 0 var(--s2-teal-800); }
+.pagina-pedido .pedido-contacto-telefono:focus-visible { box-shadow: var(--s2-pisada-verde), 0 0 0 7px var(--s2-amarillo); }
 
-/* «Motivo» (US-79) dentro del panel; el comprador tiene «Buscar material parecido» a la derecha. */
+/* «Motivo» (US-79) bajo la frase, a todo el ancho; el comprador tiene «Buscar material parecido» a la derecha. */
 .pagina-pedido .pedido-motivo-bloque {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px;
+  display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px;
 }
 .pagina-pedido .pedido-motivo-textos { flex: 1 1 240px; min-width: 0; }
-.pagina-pedido .pedido-motivo-titulo { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 800; line-height: 1.3; }
-.pedido-motivo-bloque .pedido-motivo-codigo { margin: 0; color: var(--s2-tinta); font-size: 17px; font-weight: 900; line-height: 1.35; }
+.pagina-pedido .pedido-motivo-titulo { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 700; line-height: 1.3; }
+.pedido-motivo-bloque .pedido-motivo-codigo { margin: 0; color: var(--s2-tinta); font-size: 16px; font-weight: 900; line-height: 1.35; }
 .pedido-motivo-bloque .pedido-motivo-texto {
   margin: 2px 0 0; color: var(--s2-tinta); font-size: 15px; font-weight: 700; line-height: 1.4; white-space: pre-line;
   overflow-wrap: anywhere;
@@ -214,30 +222,34 @@
   color: var(--s2-superficie); background: var(--s2-teal-800);
 }
 .pagina-pedido .pedido-cobro-textos { flex: 1 1 220px; min-width: 0; }
-.pagina-pedido .pedido-cobro .pedido-tarjeta-titulo { margin: 0; font-size: 17px; }
+.pagina-pedido .pedido-cobro .pedido-tarjeta-titulo { margin: 0; }
 .pagina-pedido .pedido-cobro-textos p { margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; line-height: 1.4; }
-.pagina-pedido .pedido-boton-cobrar { box-shadow: none; }
 .pagina-pedido .pedido-boton-cobrar,
 .pagina-pedido .pedido-boton-cobrar:hover:not(:disabled) { background: var(--s2-teal-800); }
-.pagina-pedido .pedido-boton-cobrar:active { box-shadow: none; }
-.pagina-pedido .pedido-boton-cobrar:focus-visible { box-shadow: 0 0 0 7px var(--s2-amarillo); }
+.pagina-pedido .pedido-boton-cobrar { box-shadow: inset 0 -4px 0 var(--s2-teal-900); }
+.pagina-pedido .pedido-boton-cobrar:active { box-shadow: inset 0 -2px 0 var(--s2-teal-900); }
+.pagina-pedido .pedido-boton-cobrar:focus-visible { box-shadow: inset 0 -4px 0 var(--s2-teal-900), 0 0 0 7px var(--s2-amarillo); }
 
 /* ------------------------------------------------------------------ seguimiento (comprador) */
-.pagina-pedido .pedido-seguimiento { gap: 14px; background: var(--s2-superficie); }
+/* Blanco con el borde del estado: los 3 pasos con su barra verde y, debajo, la situación en un recuadro de color. */
+.pagina-pedido .pedido-seguimiento {
+  display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 12px; padding: 14px 16px;
+  background: var(--s2-superficie);
+}
 .pagina-pedido .pedido-pasos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
 .pagina-pedido .pedido-paso {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
 }
-/* La línea hasta el paso siguiente, por detrás de los círculos: verde (hecho), roja (rechazado) o gris (por llegar). */
+/* La barra hasta el paso siguiente, por detrás de los círculos: verde (hecho), roja (rechazado) o gris (por llegar). */
 .pedido-paso.pedido-tramo--hecho { --pedido-tramo: var(--s2-teal-700); }
 .pedido-paso.pedido-tramo--mal { --pedido-tramo: var(--s2-peligro); }
 .pedido-paso.pedido-tramo--futuro { --pedido-tramo: var(--s2-linea); }
 .pedido-tramo--hecho::after, .pedido-tramo--mal::after, .pedido-tramo--futuro::after {
-  content: ''; position: absolute; top: 25px; left: 50%; width: 100%; height: 6px; background: var(--pedido-tramo);
+  content: ''; position: absolute; top: 23px; left: 50%; width: 100%; height: 6px; border-radius: 3px; background: var(--pedido-tramo);
 }
 .pedido-paso .pedido-paso-circulo {
   position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; box-sizing: border-box;
-  width: 56px; height: 56px; border: 4px solid; border-radius: 50%; font-size: 20px; font-weight: 900; line-height: 1;
+  width: 52px; height: 52px; border: 4px solid; border-radius: 50%; font-size: 19px; font-weight: 900; line-height: 1;
 }
 .pedido-paso .pedido-paso-texto { font-size: 16px; font-weight: 900; line-height: 1.25; }
 .pedido-paso--hecho .pedido-paso-circulo { color: var(--s2-superficie); border-color: var(--s2-teal-700); background: var(--s2-teal-700); }
@@ -252,20 +264,22 @@
 .pedido-paso--futuro .pedido-paso-circulo { color: var(--s2-gris); border-color: var(--s2-campo-borde); background: var(--s2-superficie); }
 .pedido-paso--futuro .pedido-paso-texto { color: var(--s2-gris); }
 
-/* Debajo de los pasos, la frase de CA5 en un recuadro del color del estado, con lo que toca hacer. */
+/* Debajo de los pasos, la frase de CA5 en un recuadro del color del estado; el contacto, a su derecha. */
 .pagina-pedido .pedido-situacion {
-  display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--pedido-claro);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 10px 14px;
+  border-radius: var(--s2-radio-s); background: var(--pedido-claro);
 }
-.pagina-pedido .pedido-situacion-frase { margin: 0; color: var(--pedido-texto); font-size: 19px; font-weight: 900; line-height: 1.3; }
-.pagina-pedido .pedido-situacion-ayuda { margin: -4px 0 0; color: var(--s2-gris); font-size: 15px; font-weight: 700; line-height: 1.4; }
+.pagina-pedido .pedido-situacion-frase {
+  flex: 1 1 260px; min-width: 0; margin: 0; color: var(--pedido-texto); font-size: 19px; font-weight: 900; line-height: 28px;
+}
 
 /* US-42: «¿Ya tienes el material en tu centro?» y «He recibido el material» (azul con pisada). */
 .pagina-pedido .pedido-recibir {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin-top: 2px;
+  display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
   padding-top: 10px; border-top: 2px solid color-mix(in srgb, var(--s2-teal-500) 30%, var(--s2-superficie));
 }
 .pagina-pedido .pedido-recibir p { margin: 0; color: var(--pedido-texto); font-size: 15px; font-weight: 800; line-height: 1.4; }
-.pagina-pedido .pedido-boton-recibir { min-height: 54px; font-size: 18px; box-shadow: inset 0 -4px 0 var(--s2-estado-recibido-texto); }
+.pagina-pedido .pedido-boton-recibir { font-size: 17px; box-shadow: inset 0 -4px 0 var(--s2-estado-recibido-texto); }
 .pagina-pedido .pedido-boton-recibir,
 .pagina-pedido .pedido-boton-recibir:hover:not(:disabled) { background: var(--s2-estado-recibido-punto); }
 .pagina-pedido .pedido-boton-recibir:active { box-shadow: inset 0 -2px 0 var(--s2-estado-recibido-texto); }
@@ -278,16 +292,23 @@
   .pagina-pedido .pedido-columnas { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 599px) {
-  .pagina.pagina-pedido { padding-top: 6px; }
+  .pagina.pagina-pedido { padding-top: 4px; }
   .pagina-pedido h1 { font-size: 22px; }
-  .pagina-pedido .pedido-panel { padding: 14px; }
-  .pagina-pedido .pedido-panel-titulo { font-size: 20px; }
-  .pedido-cifra .pedido-cifra-valor { font-size: 26px; }
-  .pagina-pedido .pedido-cifra { padding: 8px 6px; }
-  .pedido-panel .pedido-acciones-vendedor { grid-auto-flow: row; }
-  .pagina-pedido .pedido-situacion-frase { font-size: 17px; }
+  .pagina-pedido .pedido-panel-titulo, .pagina-pedido .pedido-situacion-frase { font-size: 17px; line-height: 1.4; }
+  /* Pendiente: la frase, el aviso y los dos botones debajo, a todo el ancho. */
+  .pagina-pedido .pedido-panel--decidir { grid-template-columns: minmax(0, 1fr); }
+  .pedido-panel--decidir .pedido-acciones-vendedor,
+  .pedido-panel--faltan .pedido-acciones-vendedor { grid-column: 1; grid-row: auto; }
+  .pedido-panel .pedido-acciones-vendedor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pagina-pedido .pedido-acciones-vendedor .pedido-boton-responder { padding: 0 12px; }
+  .pagina-pedido .pedido-contacto, .pagina-pedido .pedido-contacto-boton { width: 100%; }
+  /* Baldosas en 2 columnas; el mensaje, a todo el ancho. */
+  .pagina-pedido .pedido-baldosas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pagina-pedido .pedido-baldosa--ancho-2 { grid-column: span 1; }
+  .pagina-pedido .pedido-baldosa--mensaje { grid-column: 1 / -1; }
   .pedido-paso .pedido-paso-texto { font-size: 14px; }
   .pagina-pedido .pedido-recibir .pedido-acciones-cierre, .pagina-pedido .pedido-boton-recibir { width: 100%; }
+  .pagina-pedido .pedido-cobro .pedido-acciones-cierre, .pagina-pedido .pedido-boton-cobrar { width: 100%; }
 }
 @media (forced-colors: active) {
   .pedido-tramo--hecho::after, .pedido-tramo--mal::after, .pedido-tramo--futuro::after { background: CanvasText; }
