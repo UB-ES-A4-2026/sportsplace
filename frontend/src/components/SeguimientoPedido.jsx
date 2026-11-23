@@ -1,19 +1,21 @@
 import { Check, Clock, X } from 'lucide-react';
 import { datosDelOtroCentro, fraseDeSituacion } from '../pedidos/detalle.js';
-import { lugarDelContacto, pasosDelSeguimiento, puedeRecibir, TEXTOS_VISTA } from '../pedidos/vistas.js';
+import { contactoEnElPanel, pasosDelSeguimiento, puedeRecibir, TEXTOS_VISTA } from '../pedidos/vistas.js';
 import AccionesCierrePedido from './AccionesCierrePedido.jsx';
 import ContactoPedido from './ContactoPedido.jsx';
 import SeccionMotivo from './SeccionMotivo.jsx';
 
 const ICONOS = { hecho: Check, espera: Clock, mal: X };
 
-// Vista del comprador de /pedidos/:id («PedidoRealizado» de Lucía): seguimiento en 3 pasos (Pedido enviado →
-// Respuesta del vendedor → Material recibido) y, debajo, la frase de CA5 con lo que toca según el estado: el email y
-// el teléfono del vendedor (US-108 CA7), «He recibido el material» (US-42) o el motivo y «Buscar material parecido» (US-79).
+// Vista del comprador de /pedidos/:id: el panel de arriba a la izquierda es el seguimiento en 3 pasos (Pedido enviado →
+// Respuesta del vendedor → Material recibido), con círculos y una barra verde, y debajo la frase de CA5 con lo que toca
+// según el estado, como en el panel del vendedor: el email y el teléfono del vendedor a la derecha de la frase (US-108
+// CA7) y «He recibido el material» (US-42), o el motivo y «Buscar material parecido» (US-79).
 // Los pasos son un <ol> con aria-current="step" en el actual; el estado de cada paso («hecho», «en espera»…) solo lo
 // oye el lector de pantalla, dentro del mismo texto del paso (así ningún texto de la pantalla sale dos veces).
 export default function SeguimientoPedido({ pedido, acciones }) {
   const otro = datosDelOtroCentro(pedido);
+  const conContacto = contactoEnElPanel(pedido);
 
   return (
     <section className="pedido-panel pedido-seguimiento" aria-labelledby="titulo-seguimiento">
@@ -25,7 +27,7 @@ export default function SeguimientoPedido({ pedido, acciones }) {
           return (
             <li key={paso.numero} className={clases.filter(Boolean).join(' ')} aria-current={paso.actual ? 'step' : undefined}>
               <span className="pedido-paso-circulo" aria-hidden="true">
-                {Icono ? <Icono size={26} strokeWidth={3.2} /> : paso.numero}
+                {Icono ? <Icono size={24} strokeWidth={3.2} /> : paso.numero}
               </span>
               <span className="pedido-paso-texto">
                 {paso.texto}
@@ -36,10 +38,9 @@ export default function SeguimientoPedido({ pedido, acciones }) {
         })}
       </ol>
 
-      <div className="pedido-situacion">
+      <div className={`pedido-situacion${conContacto ? ' pedido-situacion--contacto' : ''}`}>
         <p className="pedido-situacion-frase">{fraseDeSituacion(pedido)}</p>
-        {pedido.estado === 'pendiente' && <p className="pedido-situacion-ayuda">{TEXTOS_VISTA.esperaContacto}</p>}
-        {lugarDelContacto(pedido) === 'panel' && <ContactoPedido contacto={otro.contacto} />}
+        {conContacto && <ContactoPedido contacto={otro.contacto} />}
         {puedeRecibir(pedido) && (
           <div className="pedido-recibir">
             <p>{TEXTOS_VISTA.recibirPregunta}</p>
