@@ -197,14 +197,27 @@ test('US-42 CA12: vendedor, estado distinto de aceptado e incidencia abierta', a
   assert.equal(consultas.length, casos.length);
 });
 
+// Con el estado releído después del UPDATE, no el leído antes (#373).
 test('US-42 CA14: si el UPDATE no cambia ninguna fila se responde 409 TRANSICION_NO_PERMITIDA', async (t) => {
-  const { llamar, consultas } = await escenario(t, [detalle({}, GRACIA)], []);
+  const { llamar, consultas } = await escenario(t, [detalle({}, GRACIA)], [], [{ estado: 'recibido' }]);
   const respuesta = await llamar('recibir', 'token-gracia');
   assert.equal(respuesta.status, 409);
   const { error } = await respuesta.json();
   assert.equal(error.code, 'TRANSICION_NO_PERMITIDA');
-  assert.deepEqual(error.details, { estado_actual: 'aceptado' });
-  assert.equal(consultas.length, 2);
+  assert.deepEqual(error.details, { estado_actual: 'recibido' });
+  assert.equal(consultas.length, 3);
+  assert.equal(consultas[2].sql, 'SELECT estado FROM public.pedidos WHERE id = $1');
+  assert.deepEqual(consultas[2].valores, [PEDIDO]);
+});
+
+test('US-80 CA5: si la marca de cobrado no cambia ninguna fila, 409 con el estado real del pedido', async (t) => {
+  const { llamar, consultas } = await escenario(t, [detalle({}, LES_CORTS)], [], [{ estado: 'cancelado' }]);
+  const respuesta = await llamar('marcar-pagado', 'token-lescorts');
+  assert.equal(respuesta.status, 409);
+  const { error } = await respuesta.json();
+  assert.equal(error.code, 'TRANSICION_NO_PERMITIDA');
+  assert.deepEqual(error.details, { estado_actual: 'cancelado' });
+  assert.equal(consultas.length, 3);
 });
 
 test('Reglas comunes: 401, 403 EMAIL_NO_CONFIRMADO y 404 para ajeno o id inválido', async (t) => {

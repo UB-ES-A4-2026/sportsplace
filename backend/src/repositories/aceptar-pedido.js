@@ -101,7 +101,11 @@ export function createAceptarPedido(database) {
            WHERE id = $1 AND estado = 'pendiente'`,
           [pedidoId],
         );
-        if (rowCount === 0) throw transicionNoPermitida(fila.estado);
+        if (rowCount === 0) {
+          // Con el FOR UPDATE no debería pasar; si pasa, se informa del estado real (#373).
+          const { rows: [actual] } = await client.query('SELECT estado FROM public.pedidos WHERE id = $1', [pedidoId]);
+          throw transicionNoPermitida(actual?.estado ?? fila.estado);
+        }
 
         // US-34 CA4: los pendientes que ya no caben se rechazan por el sistema.
         const { rows: rechazados } = await client.query(
