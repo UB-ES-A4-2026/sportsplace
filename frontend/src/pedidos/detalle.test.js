@@ -9,6 +9,7 @@ import {
   etiquetaDelEstado,
   fraseDeSituacion,
   historial,
+  lineasDelHistorial,
   resultadoDeLaCarga,
   rutaDeVuelta,
   TEXTOS,
@@ -176,6 +177,16 @@ describe('historial (punto 8, CA6)', () => {
     assert.deepEqual(historial({ ...PEDIDO, estado: 'rechazado', respondido_en: '2026-10-21T09:00:00Z' })[1], 'Rechazado el 21/10/2026 11:00');
     assert.deepEqual(historial({ ...PEDIDO, estado: 'cancelado', cancelado_en: '2026-10-21T09:00:00Z', cerrado_por: 'vendedor' })[1],
       'Cancelado el 21/10/2026 11:00 por vendedor');
+  });
+
+  test('cada línea con su tipo para el color del punto', () => {
+    const pedido = { ...PEDIDO, estado: 'aceptado', respondido_en: '2026-10-21T09:00:00Z', pagado_en: '2026-10-22T16:15:00Z' };
+    assert.deepEqual(lineasDelHistorial(pedido).map(({ tipo }) => tipo), ['pendiente', 'aceptado', 'pagado']);
+    assert.deepEqual(lineasDelHistorial({ ...PEDIDO, estado: 'rechazado', respondido_en: '2026-10-21T09:00:00Z' }).map(({ tipo }) => tipo),
+      ['pendiente', 'rechazado']);
+    assert.deepEqual(lineasDelHistorial({ ...PEDIDO, estado: 'cancelado', cancelado_en: '2026-10-21T09:00:00Z' })[1],
+      { tipo: 'cancelado', texto: 'Cancelado el 21/10/2026 11:00 por comprador' });
+    assert.deepEqual(lineasDelHistorial({ ...PEDIDO, creado_en: null }), []);
   });
 });
 

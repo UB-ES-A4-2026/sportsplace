@@ -16,6 +16,7 @@ export const TEXTOS = {
   esperaRecogida: 'Verás la dirección de recogida cuando el vendedor acepte el pedido.', // US-40 CA15
   sinDireccion: 'El vendedor aún no ha indicado su dirección. Escríbele para acordarla.', // US-40 CA14
   escribirVendedor: 'Escribir al vendedor',
+  mensajeComprador: 'Mensaje del comprador',
 };
 
 // E06 «Etiquetas de estado en la web».
@@ -77,7 +78,7 @@ export function datosDelPedido(pedido) {
   } else {
     filas.push({ etiqueta: null, valor: TEXTOS.donacion });
   }
-  filas.push({ etiqueta: 'Mensaje del comprador', valor: pedido.mensaje || TEXTOS.sinMensaje });
+  filas.push({ etiqueta: TEXTOS.mensajeComprador, valor: pedido.mensaje || TEXTOS.sinMensaje });
   return filas;
 }
 
@@ -132,22 +133,28 @@ export function datosDeEntrega(pedido) {
   return null;
 }
 
-// Punto 8: «Historial», en orden de fechas, con hora de Madrid (CA6).
-export function historial(pedido) {
+// Punto 8: «Historial», en orden de fechas, con hora de Madrid (CA6). Cada línea lleva su `tipo` para el color del
+// punto que la acompaña (pendiente, aceptado, rechazado, cancelado o pagado); el texto ya dice qué es.
+export function lineasDelHistorial(pedido) {
   const lineas = [];
-  if (pedido.creado_en) lineas.push(`Pedido el ${formatearFechaHora(pedido.creado_en)}`);
+  if (pedido.creado_en) lineas.push({ tipo: 'pendiente', texto: `Pedido el ${formatearFechaHora(pedido.creado_en)}` });
   if (pedido.respondido_en && ['aceptado', 'recibido'].includes(pedido.estado)) {
-    lineas.push(`Aceptado el ${formatearFechaHora(pedido.respondido_en)}`);
+    lineas.push({ tipo: 'aceptado', texto: `Aceptado el ${formatearFechaHora(pedido.respondido_en)}` });
   }
   if (pedido.respondido_en && pedido.estado === 'rechazado') {
-    lineas.push(`Rechazado el ${formatearFechaHora(pedido.respondido_en)}`);
+    lineas.push({ tipo: 'rechazado', texto: `Rechazado el ${formatearFechaHora(pedido.respondido_en)}` });
   }
   if (pedido.cancelado_en) {
-    lineas.push(`Cancelado el ${formatearFechaHora(pedido.cancelado_en)} por ${pedido.cerrado_por === 'vendedor' ? 'vendedor' : 'comprador'}`);
+    const quien = pedido.cerrado_por === 'vendedor' ? 'vendedor' : 'comprador';
+    lineas.push({ tipo: 'cancelado', texto: `Cancelado el ${formatearFechaHora(pedido.cancelado_en)} por ${quien}` });
   }
-  if (pedido.pagado_en) lineas.push(`Marcado como pagado el ${formatearFechaHora(pedido.pagado_en)}`);
+  if (pedido.pagado_en) lineas.push({ tipo: 'pagado', texto: `Marcado como pagado el ${formatearFechaHora(pedido.pagado_en)}` });
   // «Recibido el …» va en la sección «Entrega» (US-42), no en el historial.
   return lineas;
+}
+
+export function historial(pedido) {
+  return lineasDelHistorial(pedido).map(({ texto }) => texto);
 }
 
 // CA3 y CA4: 404 → «no existe o no tienes acceso»; el resto (red, 500, 503) → «No se ha podido cargar.» + «Reintentar».
