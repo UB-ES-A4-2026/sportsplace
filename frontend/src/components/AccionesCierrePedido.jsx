@@ -1,15 +1,22 @@
 import { useState } from 'react';
+import { Check, PackageCheck } from 'lucide-react';
 import { ErrorApi } from '../api/cliente.js';
 import { marcarPedidoPagado, recibirPedido } from '../api/cierrePedido.js';
 import { accionesDeCierre, resultadoDelFallo } from '../pedidos/cierre.js';
 import DialogoConfirmacion from './DialogoConfirmacion.jsx';
 
 const PETICION = { marcar_pagado: marcarPedidoPagado, recibir: recibirPedido };
+// Aspecto de cada botón (diseño con vida): «Marcar como cobrado» verde oscuro y «He recibido el material» azul.
+const ASPECTO = {
+  marcar_pagado: { clase: 'pedido-boton-cobrar', Icono: Check },
+  recibir: { clase: 'pedido-boton-recibir', Icono: PackageCheck },
+};
 
 // T42-2: botones de cierre de /pedidos/:id, según `pedido.acciones` (US-108 CA9).
 // - US-80: «Marcar como cobrado» (vendedor) → «¿Has cobrado este pedido?» → «Guardando…» → «Pedido marcado como cobrado.».
 // - US-42: «He recibido el material» (comprador) → «¿Confirmas que has recibido el material?» → «Pedido marcado como
-//   recibido.». Va al final de la sección «Entrega»: la pantalla puede pintar cada botón donde toque con `solo`.
+//   recibido.». La pantalla pinta cada botón donde toca con `solo`: el de US-80 en su tarjeta de cobro y el de US-42
+//   en el seguimiento del comprador, bajo el contacto del vendedor.
 // Props, como AccionesPedidoVendedor (US-33):
 // - `onActualizado(pedido)`: el pedido que devuelve la API (etiqueta «Pagado», estado «Recibido», historial).
 // - `onAviso({ tipo: 'exito', texto })`.
@@ -47,11 +54,16 @@ export default function AccionesCierrePedido({ pedido, solo, onActualizado, onAv
   return (
     <>
       <div className="pedido-acciones-cierre">
-        {opciones.map((opcion) => (
-          <button key={opcion.accion} type="button" disabled={enviando} onClick={() => setConfirmando(opcion)}>
-            {opcion.texto}
-          </button>
-        ))}
+        {opciones.map((opcion) => {
+          const { clase, Icono } = ASPECTO[opcion.accion];
+          return (
+            <button key={opcion.accion} type="button" className={`s2-boton ${clase}`} disabled={enviando}
+              onClick={() => setConfirmando(opcion)}>
+              <Icono size={22} strokeWidth={2.8} aria-hidden="true" />
+              {opcion.texto}
+            </button>
+          );
+        })}
       </div>
       <DialogoConfirmacion
         abierto={confirmando !== null}
