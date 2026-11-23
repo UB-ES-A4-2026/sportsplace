@@ -49,13 +49,16 @@ export function fraseDeSituacion(pedido) {
       ? `${comprador.nombre} te ha pedido este material. Acepta o rechaza el pedido.`
       : `Esperando la respuesta de ${vendedor.nombre}.`;
   }
-  if (estado === 'aceptado') return 'Pedido aceptado. Acordad la entrega y el pago.';
+  // T32-7 (decisión de la PO, 17/11): en una donación no hay pago que acordar.
+  if (estado === 'aceptado') {
+    return pedido.modalidad === 'donacion' ? 'Pedido aceptado. Acordad la entrega.' : 'Pedido aceptado. Acordad la entrega y el pago.';
+  }
   if (estado === 'rechazado') return `${vendedor.nombre} ha rechazado el pedido.`;
   if (estado === 'cancelado') {
     const quien = pedido.cerrado_por === 'vendedor' ? vendedor.nombre : comprador.nombre;
     return `Pedido cancelado por ${quien}.`;
   }
-  if (estado === 'recibido') return 'Material recibido. Pedido cerrado.';
+  if (estado === 'recibido') return 'Material recibido.'; // T32-7
   return null;
 }
 
@@ -143,7 +146,7 @@ export function historial(pedido) {
     lineas.push(`Cancelado el ${formatearFechaHora(pedido.cancelado_en)} por ${pedido.cerrado_por === 'vendedor' ? 'vendedor' : 'comprador'}`);
   }
   if (pedido.pagado_en) lineas.push(`Marcado como pagado el ${formatearFechaHora(pedido.pagado_en)}`);
-  if (pedido.recibido_en) lineas.push(`Recibido el ${formatearFechaHora(pedido.recibido_en)}`);
+  // «Recibido el …» va en la sección «Entrega» (US-42), no en el historial.
   return lineas;
 }
 

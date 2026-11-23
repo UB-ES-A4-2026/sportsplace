@@ -25,7 +25,7 @@ export default function FilaAnuncio({ anuncio, children }) {
           {' · '}
           <span>{textoUnidades(anuncio.unidades_disponibles)}</span>
           {' · '}
-          {/* US-14 CA6 y CA7: «8,50 € / unidad» o la etiqueta «Donación · Gratis». */}
+          {/* US-14 CA6 y CA7: «8,50 € / unidad» o la etiqueta «Gratis · Donación». */}
           <PrecioAnuncio anuncio={anuncio} />
         </p>
         <p className="fila-estado">

@@ -192,6 +192,30 @@ test('US-40 · E2E-1 · envío con la dirección del centro prerrellenada', asyn
   for (const linea of lineas) await expect(main.getByText(linea).first()).toBeVisible();
 });
 
+// T32-8: el perfil admite el teléfono con +34 y espacios; al prerrellenar el envío se copia con 9 cifras.
+test('US-40 · CA3 · el teléfono del perfil con +34 y espacios se copia normalizado', async ({ page, request, cuentas }) => {
+  await conApi(request, cuentas);
+  await ponerUbicacion(centros.b.id, { ...DATOS_B, telefono: '+34 612 34 56 78' });
+  const a1 = await nuevoAnuncio();
+  await alFormulario(page, cuentas, a1);
+
+  await campoUnidades(page).fill('4');
+  await elegirPago(page);
+  await opcionEnvio(page).check();
+  await expect(campo(page, 'Teléfono de contacto')).toHaveValue('612345678');
+
+  await campo(page, 'Persona de contacto').fill('Marta Puig');
+  await campo(page, 'Provincia').selectOption('Barcelona');
+  await boton(page, 'Enviar pedido').click();
+  await expect(page.getByText('Introduce un teléfono español de 9 cifras.')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/pedidos\/[0-9a-f-]{36}$/);
+  const [pedido] = await pedidosDe(db, a1);
+  expect(pedido.direccion_envio).toMatchObject({ telefono_contacto: '612345678' });
+  // El perfil del centro conserva el teléfono tal como estaba.
+  const { rows: [perfil] } = await db.query('SELECT telefono FROM public.centros WHERE id = $1', [centros.b.id]);
+  expect(perfil.telefono).toBe('+34 612 34 56 78');
+});
+
 test('US-40 · E2E-2 · recogida: la dirección del vendedor sale al aceptar', async ({ page, request, cuentas }) => {
   await conApi(request, cuentas);
   const a1 = await nuevoAnuncio();
@@ -376,7 +400,8 @@ test('US-40 · CA14, CA15, CA16 y CA20 · quién ve cada dirección según el es
   const estados = [
     [{ estado: 'pendiente' }, false],
     [{ estado: 'aceptado', respondido_en: new Date().toISOString() }, true],
-    [{ estado: 'recibido', respondido_en: new Date().toISOString() }, true],
+    // recibido_en lo exige la migración de US-42 (pedidos_recibido_con_fecha).
+    [{ estado: 'recibido', respondido_en: new Date().toISOString(), recibido_en: new Date().toISOString() }, true],
     [{ estado: 'rechazado', respondido_en: new Date().toISOString(), cerrado_por: 'vendedor', motivo_codigo: 'sin_unidades' }, false],
     [{ estado: 'cancelado', cancelado_en: new Date().toISOString(), cerrado_por: 'comprador', motivo_codigo: 'ya_no_necesario' }, false],
   ];

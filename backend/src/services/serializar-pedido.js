@@ -35,7 +35,7 @@ function aEntrega(fila, vendedor, papel) {
 
 // Fila de `pedidos` con su anuncio y sus dos centros → objeto `pedido` de la API
 // («Objeto `pedido` en la API», E06). Las columnas que traen historias posteriores
-// (respondido_en, motivo, pagado_en, cancelado_en…) salen null mientras no existan.
+// (respondido_en, motivo, cancelado_en…) salen null mientras no existan.
 // `mi_papel` y `acciones` dependen del centro que consulta (US-108 CA10, CA13).
 export function aPedido({ fila, anuncio, comprador, vendedor }, centroId) {
   const conContacto = CON_CONTACTO.has(fila.estado);
@@ -63,6 +63,7 @@ export function aPedido({ fila, anuncio, comprador, vendedor }, centroId) {
     motivo_texto: valor(fila.motivo_texto),
     cerrado_por: valor(fila.cerrado_por),
     pagado_en: fecha(fila.pagado_en),
+    recibido_en: fecha(fila.recibido_en), // US-42 CA11
     creado_en: fecha(fila.creado_en),
     respondido_en: fecha(fila.respondido_en),
     cancelado_en: fecha(fila.cancelado_en),
@@ -70,6 +71,7 @@ export function aPedido({ fila, anuncio, comprador, vendedor }, centroId) {
   };
   pedido.mi_papel = papelEn(pedido, centroId);
   pedido.entrega = aEntrega(fila, vendedor, pedido.mi_papel);
-  pedido.acciones = accionesPermitidas(pedido, centroId);
+  // US-42 CA1: la incidencia abierta quita «recibir» sin salir en el objeto.
+  pedido.acciones = accionesPermitidas({ ...pedido, incidencia_abierta: fila.incidencia_abierta === true }, centroId);
   return pedido;
 }

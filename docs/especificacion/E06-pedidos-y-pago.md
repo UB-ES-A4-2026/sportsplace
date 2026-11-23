@@ -144,7 +144,7 @@ Como responsable de un centro deportivo que necesita material, quiero pedir un n
 
 *Navegación*
 - CA1. En `/anuncios/:id` el botón «Pedir» se ve solo si el anuncio es de otro centro, está `activo` y el centro no tiene un pedido `pendiente` en él.
-- CA2. Si el anuncio es propio, no se ve «Pedir» (en su lugar están las acciones de E03). Si el anuncio está `reservado`, se ve deshabilitado con el texto «No disponible».
+- CA2. Si el anuncio es propio, no se ve «Pedir» (en su lugar están las acciones de E03). Si el anuncio está `reservado`, se ve deshabilitado con el texto «Reservado».
 - CA3. Con pedido pendiente propio, se ve «Ya tienes un pedido pendiente en este anuncio.» y «Ver mi pedido» lleva a `/pedidos/:id` de ese pedido.
 - CA4. «Pedir» lleva a `/anuncios/:id/pedir`. Sin sesión, la ruta redirige a `/entrar` y, tras entrar, vuelve a `/anuncios/:id/pedir`.
 - CA5. Al abrir `/anuncios/:id/pedir` de un anuncio propio, no activo o inexistente, la web muestra «Este anuncio no está disponible para pedidos.» con el enlace «Volver al catálogo» → `/catalogo`.
@@ -227,7 +227,7 @@ Como responsable de un centro que participa en un pedido (como comprador o como 
 
 *Comportamiento*
 - CA4. La pantalla muestra «Cargando…» mientras carga y «No se ha podido cargar. » + «Reintentar» si falla.
-- CA5. Frase de situación según estado y papel: pendiente/comprador «Esperando la respuesta de <vendedor>.»; pendiente/vendedor «<comprador> te ha pedido este material. Acepta o rechaza el pedido.»; aceptado «Pedido aceptado. Acordad la entrega y el pago.»; rechazado «<vendedor> ha rechazado el pedido.»; cancelado «Pedido cancelado por <centro>.»; recibido «Material recibido. Pedido cerrado.»
+- CA5. Frase de situación según estado y papel: pendiente/comprador «Esperando la respuesta de <vendedor>.»; pendiente/vendedor «<comprador> te ha pedido este material. Acepta o rechaza el pedido.»; aceptado «Pedido aceptado. Acordad la entrega y el pago.» (en una donación, «Pedido aceptado. Acordad la entrega.»); rechazado «<vendedor> ha rechazado el pedido.»; cancelado «Pedido cancelado por <centro>.»; recibido «Material recibido.»
 - CA6. Importes con formato «1.234,50 €»; fechas «dd/mm/aaaa hh:mm» hora de Madrid.
 - CA7. El email y el teléfono del otro centro se muestran solo en `aceptado` y `recibido`; en otro estado la sección muestra solo nombre y localidad.
 - CA8. Si el anuncio está `retirado`, el título se muestra sin enlace con «(anuncio retirado)».
@@ -436,7 +436,7 @@ Como responsable de un centro que compra material, quiero indicar al pedir si pa
 **Historia**
 Como responsable de un centro que vende o dona material, quiero que al aceptar un pedido sus unidades dejen de estar disponibles, para no prometer el mismo material a dos centros.
 1. Acepto un pedido de 4 balones (US-33) en un anuncio con 12: el anuncio pasa a 8 disponibles.
-2. Si acepto pedidos hasta dejarlo en 0, el anuncio se muestra como «No disponible» y los pedidos pendientes que quedaban se rechazan solos con el motivo «Se han agotado las unidades del anuncio».
+2. Si acepto pedidos hasta dejarlo en 0, el anuncio se muestra como «Reservado» y los pedidos pendientes que quedaban se rechazan solos con el motivo «Se han agotado las unidades del anuncio».
 3. Si un pedido aceptado se cancela, sus unidades vuelven al anuncio.
 
 **Pantallas para el boceto**
@@ -446,7 +446,7 @@ Como responsable de un centro que vende o dona material, quiero que al aceptar u
 **Criterios de aceptación**
 - CA1. Aceptar resta `unidades` de `anuncios.unidades_disponibles` en la misma transacción que el cambio a `aceptado`.
 - CA2. La transacción bloquea la fila del anuncio (`SELECT ... FOR UPDATE`) antes de comprobar las unidades; si `unidades` > disponibles → no cambia nada y responde `409 UNIDADES_INSUFICIENTES`, «Solo quedan N unidades disponibles.», `details.unidades_disponibles`.
-- CA3. Si tras restar quedan 0, el anuncio pasa de `activo` a `reservado` (se ve «No disponible» en el catálogo, US-17) en la misma transacción. Si estaba `pausado`, sigue `pausado`.
+- CA3. Si tras restar quedan 0, el anuncio pasa de `activo` a `reservado` (se ve «Reservado» en el catálogo, US-17) en la misma transacción. Si estaba `pausado`, sigue `pausado`.
 - CA4. En la misma transacción, todos los pedidos `pendiente` del anuncio con `unidades` > nuevas disponibles pasan a `rechazado`, `motivo_codigo='anuncio_sin_stock'`, `cerrado_por='sistema'`, `respondido_en`=ahora. Los que caben siguen pendientes.
 - CA5. El comprador de un pedido rechazado por sistema ve «Rechazado», motivo «Se han agotado las unidades del anuncio» y la frase «El pedido se ha rechazado automáticamente porque ya no quedan unidades suficientes.»
 - CA6. Cancelar un pedido `aceptado` (US-39) suma sus unidades a `unidades_disponibles`; si el anuncio estaba `reservado` vuelve a `activo`. Cancelar o rechazar un `pendiente` no toca unidades.
@@ -460,7 +460,7 @@ Como responsable de un centro que vende o dona material, quiero que al aceptar u
 **Flujos e2e**
 - E2E-1. A1 con 12; Les Corts acepta el pedido de 4 de Gràcia → A1 con 8, `activo`.
 - E2E-2 (últimas unidades). A1 con 5; pendientes: Gràcia 4, Sabadell 4, Gràcia-bis no (un pendiente por centro). Les Corts acepta Gràcia → A1 con 1; el de Sabadell pasa a `rechazado` por sistema; Sabadell lo ve con el motivo automático.
-- E2E-3 (agotar). A1 con 4; acepta pedido de 4 → A1 `reservado`, 0; en el catálogo aparece «No disponible» y «Pedir» deshabilitado.
+- E2E-3 (agotar). A1 con 4; acepta pedido de 4 → A1 `reservado`, 0; en el catálogo aparece «Reservado» y «Pedir» deshabilitado.
 - E2E-4 (devolver). Gràcia cancela ese pedido aceptado (US-39) → A1 vuelve a 4 y `activo`.
 - E2E-5 (carrera). Dos peticiones paralelas de aceptar en E2E-2 → una `200`, otra `409`; disponibles = 1.
 

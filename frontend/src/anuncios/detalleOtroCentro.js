@@ -8,13 +8,13 @@ export const RUTA_CATALOGO = '/catalogo';
 
 export const TEXTOS = {
   volver: '← Volver al catálogo',
-  reservado: 'No disponible: este material está reservado.',
+  reservado: 'Reservado',
   noDisponible: 'Este anuncio no existe o ya no está disponible.',
   irAlCatalogo: 'Ir al catálogo',
   detalles: 'Detalles',
   // US-32 CA1-CA3 (T32-3): «Pedir» sustituye al «Pedir material» provisional de US-24.
   pedir: 'Pedir',
-  noDisponibleParaPedir: 'No disponible',
+  noDisponibleParaPedir: 'Reservado',
   pedidoPendiente: 'Ya tienes un pedido pendiente en este anuncio.',
   verMiPedido: 'Ver mi pedido',
   escribir: 'Escribir al centro',
@@ -86,7 +86,7 @@ export function botonesDelDetalle(anuncio, { pedidos = false, mensajes = false }
 
 // US-32 CA1-CA3 (T32-3): qué se ve en el sitio de «Pedir».
 // - Con un pedido pendiente propio: «Ya tienes un pedido pendiente en este anuncio.» y «Ver mi pedido» (CA3).
-// - Reservado: «Pedir» deshabilitado con «No disponible» (CA2).
+// - Reservado: «Pedir» deshabilitado con «Reservado» (CA2).
 // - Activo: «Pedir», que lleva a /anuncios/:id/pedir (CA1, CA4).
 // Los anuncios propios no llegan aquí: se ven con la ficha de propietario de E03 (CA2).
 export function accionDePedir(anuncio) {

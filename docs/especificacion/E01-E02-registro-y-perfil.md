@@ -519,12 +519,12 @@ Como titular del Club Natació Exemple, quiero quitar el acceso a Marta, que ha 
 
 **Historia**
 Como responsable del CE Hospitalet, que quiere pedir unos balones, quiero ver el perfil del Club Natació Exemple antes de pedir, para decidir si me fío.
-1. En el detalle de un anuncio `/anuncios/:id` pulso el nombre del centro «Club Natació Exemple» (en el bloque «Lo ofrece») → `/centros/:id`.
+1. En el detalle de un anuncio `/anuncios/:id` pulso el nombre del centro «Club Natació Exemple» (en el bloque «Ofrecido por») → `/centros/:id`.
 2. Veo su nombre, zona «Barcelona (Barcelona)», «En Sportsplace desde 09/10/2026», la descripción, el contacto y sus anuncios activos.
 3. Pulso uno de sus anuncios → vuelvo a `/anuncios/:id` de ese anuncio.
 
 **Pantallas para el boceto**
-- `/anuncios/:id` (US-24): el nombre del centro en «Lo ofrece» es un enlace a `/centros/:centro_id`.
+- `/anuncios/:id` (US-24): el nombre del centro en «Ofrecido por» es un enlace a `/centros/:centro_id`.
 - `/centros/:id`: «Perfil de centro». Cabecera con el nombre; «Zona: <localidad> (<provincia>)»; «En Sportsplace desde dd/mm/aaaa»; [hueco para la puntuación de US-45]; bloque «Sobre nosotros»; bloque «Contacto» (teléfono, email de contacto, web como enlace externo; solo los que existan; si no hay ninguno, «Este centro no ha indicado datos de contacto.»); sección «Anuncios activos (n)» con rejilla de tarjetas de US-21, paginada de 20 en 20.
 - Si es mi propio centro: banda «Así ven tu perfil los demás centros.» con el botón «Editar perfil» (→ `/perfil/editar`).
 
@@ -538,7 +538,7 @@ Como responsable del CE Hospitalet, que quiere pedir unos balones, quiero ver el
 
 *Comportamiento*
 - CA5. Se muestran los campos públicos: `nombre`, `localidad`, `provincia`, `descripcion`, `telefono`, `email_contacto`, `web`, `creado_en` (como «En Sportsplace desde»).
-- CA6. Los anuncios listados son solo los `activo` y `reservado` (este como «No disponible») del centro, ordenados por publicación descendente, 20 por página.
+- CA6. Los anuncios listados son solo los `activo` y `reservado` (este como «Reservado») del centro, ordenados por publicación descendente, 20 por página.
 - CA7. Sin anuncios: «Este centro no tiene anuncios activos ahora mismo.».
 - CA8. La web se abre en pestaña nueva con `rel="noopener noreferrer"`; el email de contacto como `mailto:`; el teléfono como `tel:`.
 - CA9. Si el centro está eliminado (US-11) o no existe → página «Centro no encontrado» con el texto «Este centro no existe o ya no está en Sportsplace.» y el botón «Ir al catálogo».
@@ -572,7 +572,7 @@ Como responsable del CE Hospitalet, que quiere pedir unos balones, quiero ver el
 - T10-3 · QA: automatizar E2E-1 a E2E-5.
 
 **Decisiones pendientes**
-- ¿Mostrar los anuncios `reservado`? Propuesta: sí, como «No disponible» (coherente con el catálogo).
+- ¿Mostrar los anuncios `reservado`? Propuesta: sí, como «Reservado» (coherente con el catálogo).
 
 ---
 

@@ -24,7 +24,7 @@ const TEXTOS = {
   irAlCatalogo: 'Ir al catálogo',
   bandaPropia: 'Así ven tu perfil los demás centros.',
   verComoMeVen: 'Ver cómo ven mi perfil',
-  noDisponible: 'No disponible',
+  noDisponible: 'Reservado',
   cargando: 'Cargando…',
   error: 'No se ha podido cargar.',
 };
@@ -188,6 +188,8 @@ test('US-10 · E2E-1 · camino feliz: perfil con zona, descripción, contacto y 
   await expect(tarjetas(page).locator('.tarjeta-centro-titulo'))
     .toHaveText(['Anuncio a3 del club', 'Anuncio a2 del club', 'Anuncio a1 del club']);
   await expect(main.getByText('Anuncio pausado del club')).toHaveCount(0);
+  // T14-6: los anuncios de la plantilla son donaciones y la tarjeta dice «Gratis · Donación».
+  await expect(tarjetas(page).getByText('Gratis · Donación', { exact: true })).toHaveCount(3);
 
   // CA14: nada privado en la pantalla.
   for (const privado of [CLUB.email, CLUB.direccion, CLUB.codigo_postal]) {

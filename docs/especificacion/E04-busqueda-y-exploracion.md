@@ -14,7 +14,7 @@ Historias: US-96 (nueva), US-21, US-22, US-73, US-74, US-23, US-75, US-24, US-25
 | Estado | ¿Aparece en `/catalogo`? | Cómo se muestra |
 |---|---|---|
 | `activo` | Sí | Normal. |
-| `reservado` | Sí | Con la etiqueta naranja «No disponible». |
+| `reservado` | Sí | Con la etiqueta naranja «Reservado». |
 | `pausado` | No | — |
 | `entregado` | No | — |
 | `retirado` | No | — |
@@ -83,7 +83,7 @@ Como responsable de un centro deportivo que necesita material, quiero ver en una
   5. Rejilla de tarjetas: 4 columnas ≥ 1200 px, 3 ≥ 900 px, 2 ≥ 600 px, 1 por debajo.
   6. Paginación: «Anterior» · «Página X de Y» · «Siguiente».
 - **Tarjeta de anuncio**, de arriba abajo (todo el bloque es un enlace a `/anuncios/:id`):
-  1. Foto principal, proporción 4:3, recortada (`object-fit: cover`). Si el anuncio no tiene foto, un recuadro gris con el texto «Sin foto». Encima, arriba a la izquierda, la etiqueta naranja «No disponible» si está `reservado`; arriba a la derecha, el corazón de favorito (US-25).
+  1. Foto principal, proporción 4:3, recortada (`object-fit: cover`). Si el anuncio no tiene foto, un recuadro gris con el texto «Sin foto». Encima, arriba a la izquierda, la etiqueta naranja «Reservado» si está `reservado`; arriba a la derecha, el corazón de favorito (US-25).
   2. Título, en negrita, máximo 2 líneas y «…» si no cabe.
   3. Precio: «12,50 € / unidad» si es venta; «Gratis · Donación» en verde si es donación.
   4. «Estado del material · N unidades» (por ejemplo «Buen estado · 12 unidades»; «1 unidad» en singular).
@@ -101,7 +101,7 @@ Como responsable de un centro deportivo que necesita material, quiero ver en una
 *Comportamiento*
 - CA4. El catálogo muestra solo anuncios en estado `activo` o `reservado`, de centros distintos al de la sesión y con `unidades_disponibles` > 0.
 - CA5. Orden por defecto: `publicado_en` (fecha de la primera publicación; si E03 no la tiene, `creado_en`) de más reciente a más antiguo; a igual fecha, por `id` ascendente, para que el orden sea estable entre páginas.
-- CA6. Los anuncios `reservado` no se separan ni van al final: ocupan su sitio según el orden, con la etiqueta «No disponible».
+- CA6. Los anuncios `reservado` no se separan ni van al final: ocupan su sitio según el orden, con la etiqueta «Reservado».
 - CA7. Se muestran 20 tarjetas por página. Con 41 anuncios hay 3 páginas: 20, 20 y 1.
 - CA8. «Anterior» está deshabilitado en la página 1 y «Siguiente» en la última. Con 20 anuncios o menos no se muestra la paginación.
 - CA9. Al cambiar de página, la URL pasa a `?pagina=N` (la página 1 no se escribe) y la vista sube al principio de la rejilla.
@@ -146,7 +146,7 @@ Como responsable de un centro deportivo que necesita material, quiero ver en una
 
 **Flujos e2e**
 - E2E-1 (camino feliz). Datos: centro A «CE Montjuïc» (Barcelona) con 3 anuncios activos publicados el 18, 19 y 20/10/2026; centro B «Club Natació Sabadell» con sesión. 1) B pulsa «Catálogo». 2) Ve «3 anuncios» y las tarjetas en orden 20/10, 19/10, 18/10, cada una con «CE Montjuïc · Barcelona». 3) Pulsa la primera → llega a `/anuncios/<id del 20/10>`.
-- E2E-2 (estados). A tiene además un anuncio `reservado`, uno `pausado`, uno `entregado` y uno `retirado`. B ve 4 tarjetas; la reservada lleva «No disponible». Los otros tres no aparecen.
+- E2E-2 (estados). A tiene además un anuncio `reservado`, uno `pausado`, uno `entregado` y uno `retirado`. B ve 4 tarjetas; la reservada lleva «Reservado». Los otros tres no aparecen.
 - E2E-3 (propios). B publica un anuncio activo. En `/catalogo` de B no aparece; en `/catalogo` de A sí.
 - E2E-4 (paginación). Con 41 anuncios de A: B ve 20, pulsa «Siguiente» (URL `?pagina=2`), ve 20, pulsa «Siguiente», ve 1 y «Siguiente» deshabilitado. Escribe `/catalogo?pagina=9` → ve la página 3 y la URL queda `?pagina=3`.
 - E2E-5 (vacío y error). Sin anuncios de otros centros → texto de CA14. Con la API parada → «No se ha podido cargar. »; al arrancarla y pulsar «Reintentar», carga.
@@ -468,7 +468,7 @@ Como responsable de un centro que solo puede recoger material en su comarca, qui
 ## (3) US-24 · Ver el detalle completo de un anuncio de otro centro
 
 **Épica:** E04 · **Prioridad:** Must · **Puntos:** 3 · **Sprint:** 2 · **Depende de:** US-96, US-12, US-13, US-14
-**Cambios respecto al backlog original:** Se reutiliza la ruta `/anuncios/:id` de E03, que hasta ahora solo veía el propietario: esta historia añade la vista para los demás centros. Los botones «Escribir al centro» y «Pedir material» solo se muestran; su acción es de US-28 y US-32.
+**Cambios respecto al backlog original:** Se reutiliza la ruta `/anuncios/:id` de E03, que hasta ahora solo veía el propietario: esta historia añade la vista para los demás centros. Los botones «Escribir al centro» y «Pedir» solo se muestran; su acción es de US-28 y US-32.
 
 **Historia**
 Como responsable de compras de un centro, quiero ver toda la información de un anuncio, para decidir si el material me interesa antes de escribir o pedirlo.
@@ -482,11 +482,11 @@ Como responsable de compras de un centro, quiero ver toda la información de un 
   - Arriba: enlace «← Volver al catálogo».
   - Columna izquierda: galería. Foto grande (la principal primero, luego en el orden de `orden`), flechas «‹» «›» a los lados y debajo las miniaturas (la activa con borde). Sin fotos: recuadro «Sin foto».
   - Columna derecha, en este orden:
-    1. Etiqueta naranja «No disponible: este material está reservado.» (solo si `reservado`).
+    1. Etiqueta naranja «Reservado» (solo si `reservado`).
     2. Título (h1).
     3. Precio grande: «12,50 € / unidad» o «Gratis · Donación».
     4. Lista «Detalles»: Categoría · Deporte · Estado del material · Unidades disponibles · Publicado el dd/mm/aaaa.
-    5. Botón principal «Pedir material» [Depende de US-32] y botón secundario «Escribir al centro» [Depende de US-28].
+    5. Botón principal «Pedir» [Depende de US-32] y botón secundario «Escribir al centro» [Depende de US-28].
     6. Corazón «Guardar en favoritos» (US-25).
     7. Bloque «Ofrecido por»: nombre del centro (enlace a `/centros/:id` [Depende de US-10]; sin US-10, texto sin enlace), localidad, distancia (US-23) y valoración media [Depende de US-45].
   - Debajo, a todo el ancho: «Descripción» con el texto completo, respetando los saltos de línea.
@@ -499,7 +499,7 @@ Como responsable de compras de un centro, quiero ver toda la información de un 
 
 *Comportamiento*
 - CA3. Un anuncio `activo` de otro centro se ve completo con los botones habilitados.
-- CA4. Un anuncio `reservado` se ve con la etiqueta de la pantalla y «Pedir material» deshabilitado; «Escribir al centro» sigue habilitado.
+- CA4. Un anuncio `reservado` se ve con la etiqueta de la pantalla y «Pedir» deshabilitado; «Escribir al centro» sigue habilitado.
 - CA5. Un anuncio `pausado`, `entregado`, `retirado`, con 0 unidades o inexistente muestra «Este anuncio no existe o ya no está disponible.» y el botón «Ir al catálogo».
 - CA6. Galería: la primera foto es la principal; las flechas avanzan y retroceden en bucle (de la última a la primera); al pulsar una miniatura se muestra esa foto; con 1 foto no hay flechas ni miniaturas. Las flechas del teclado ← → cambian de foto.
 - CA7. Cada foto tiene `alt` «Foto N de M: <título>».
@@ -530,7 +530,7 @@ Como responsable de compras de un centro, quiero ver toda la información de un 
 
 **Flujos e2e**
 - E2E-1 (camino feliz). Anuncio de A «Balones de fútbol talla 5», venta 12,50 €, 12 unidades, Buen estado, 3 fotos. B, desde `/catalogo?categoria=balones&pagina=2`, pulsa la tarjeta → ve todo en el orden descrito; pulsa «›» dos veces → foto 3; «›» → foto 1; pulsa «← Volver al catálogo» → `/catalogo?categoria=balones&pagina=2`.
-- E2E-2 (reservado). A marca el anuncio como reservado → B ve «No disponible: este material está reservado.» y «Pedir material» deshabilitado.
+- E2E-2 (reservado). A marca el anuncio como reservado → B ve «Reservado» y «Pedir» deshabilitado.
 - E2E-3 (no disponible). A lo pausa → B recarga y ve «Este anuncio no existe o ya no está disponible.»; API 404. Igual con `/anuncios/1234` (id no válido).
 - E2E-4 (propio). A abre `/anuncios/<su id>` → ve la ficha de propietario de E03.
 - E2E-5 (seguridad). Descripción con `<script>alert(1)</script>` → se ve como texto, no se ejecuta.
@@ -571,7 +571,7 @@ Como responsable de compras de un centro, quiero guardar anuncios que me interes
 - CA4. El estado del corazón es el mismo en catálogo, detalle y `/favoritos` (`es_favorito` de la API).
 - CA5. Los anuncios propios no muestran corazón.
 - CA6. `/favoritos` lista los favoritos del centro, del guardado más reciente al más antiguo, 20 por página.
-- CA7. Disponibilidad en `/favoritos`: `activo` → tarjeta normal; `reservado` → etiqueta «No disponible»; `pausado`, `entregado` o con 0 unidades → foto en gris, etiqueta «Ya no está disponible» y la tarjeta **no** es un enlace; `retirado` → no se muestra (y se borra el favorito, por la retirada lógica).
+- CA7. Disponibilidad en `/favoritos`: `activo` → tarjeta normal; `reservado` → etiqueta «Reservado»; `pausado`, `entregado` o con 0 unidades → foto en gris, etiqueta «Ya no está disponible» y la tarjeta **no** es un enlace; `retirado` → no se muestra (y se borra el favorito, por la retirada lógica).
 - CA8. Un favorito no disponible conserva el corazón lleno para poder quitarlo.
 - CA9. Si un anuncio pausado vuelve a `activo`, vuelve a verse normal en `/favoritos`.
 - CA10. Los favoritos son del centro: cualquier usuario de ese centro [US-08] ve los mismos.
@@ -740,7 +740,7 @@ Como responsable de un centro, quiero ver en un mapa dónde está el material qu
 **Pantallas para el boceto**
 - `/catalogo`, línea de resultados: selector «Lista» · «Mapa» a la derecha del orden.
 - Vista mapa: búsqueda y filtros arriba (iguales); debajo, mapa de 600 px de alto (70 % de la altura de la pantalla en móvil). Marcador azul con un número (anuncios del centro) por centro; mi centro, marcador verde con el texto «Tu centro» y sin número.
-- Ventana del marcador: nombre del centro, localidad, distancia (US-23), y lista de sus anuncios (miniatura, título con enlace y precio o «Gratis · Donación»; «No disponible» si reservado), con scroll si hay más de 5.
+- Ventana del marcador: nombre del centro, localidad, distancia (US-23), y lista de sus anuncios (miniatura, título con enlace y precio o «Gratis · Donación»; «Reservado» si reservado), con scroll si hay más de 5.
 - Bajo el mapa, si procede: «N anuncios no aparecen en el mapa porque su centro no ha indicado la ubicación.» con el enlace «Ver en la lista».
 
 **Criterios de aceptación**

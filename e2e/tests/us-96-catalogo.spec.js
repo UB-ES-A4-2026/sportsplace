@@ -110,12 +110,12 @@ test('US-96 · E2E-2 · estados', async ({ page, cuentas }) => {
 
   await entrarAlCatalogo(page, cuentas);
   await expect(page.getByText('4 anuncios', { exact: true })).toBeVisible();
-  // CA6: el reservado ocupa su sitio según la fecha, con «No disponible».
+  // CA6: el reservado ocupa su sitio según la fecha, con «Reservado».
   await expect(tarjetas(page)).toHaveText([
     /Anuncio activo nuevo de A/, /Anuncio reservado de A/, /Anuncio activo de A/, /Anuncio activo viejo de A/,
   ]);
-  await expect(tarjeta(page, 'Anuncio reservado de A').getByText('No disponible', { exact: true })).toBeVisible();
-  await expect(tarjeta(page, 'Anuncio activo de A').getByText('No disponible', { exact: true })).toHaveCount(0);
+  await expect(tarjeta(page, 'Anuncio reservado de A').getByText('Reservado', { exact: true })).toBeVisible();
+  await expect(tarjeta(page, 'Anuncio activo de A').getByText('Reservado', { exact: true })).toHaveCount(0);
   for (const titulo of ['pausado', 'entregado', 'retirado', 'agotado']) {
     await expect(page.getByText(`Anuncio ${titulo} de A`)).toHaveCount(0);
   }
