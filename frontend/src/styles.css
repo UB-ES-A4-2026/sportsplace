@@ -217,6 +217,9 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .foto-estrella { left: 6px; }
 .foto-quitar { right: 6px; color: var(--s2-peligro); }
 
+/* /pedidos/:id · cierre del pedido (T42-2: US-80 y US-42) */
+.pedido-acciones-cierre { display: flex; flex-wrap: wrap; gap: 10px; }
+.pedido-acciones-cierre button { margin-top: 0; }
 /* /pedidos/:id · acciones del vendedor (T33-5: US-33, US-79 y US-34) */
 .pedido-acciones-vendedor { display: flex; flex-wrap: wrap; gap: 10px; }
 .pedido-acciones-vendedor button { margin-top: 0; }

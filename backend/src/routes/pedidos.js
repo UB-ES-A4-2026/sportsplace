@@ -44,11 +44,24 @@ export function pedidosRouter() {
     response.json({ pedido });
   });
 
+  // US-80 CA4: marca de cobro. US-42 CA11: recepción, sin cuerpo.
+  router.post('/:id/marcar-pagado', async (request, response) => {
+    const pedido = await getPedidos(request).marcarPagado(request.usuario.id, request.params.id);
+    response.json({ pedido });
+  });
+
+  router.post('/:id/recibir', async (request, response) => {
+    const pedido = await getPedidos(request).recibir(request.usuario.id, request.params.id);
+    response.json({ pedido });
+  });
+
   router.all('/', methodNotAllowed(['GET', 'POST']));
   router.all('/contador', methodNotAllowed(['GET']));
   router.all('/:id', methodNotAllowed(['GET']));
   router.all('/:id/aceptar', methodNotAllowed(['POST']));
   router.all('/:id/rechazar', methodNotAllowed(['POST']));
+  router.all('/:id/marcar-pagado', methodNotAllowed(['POST']));
+  router.all('/:id/recibir', methodNotAllowed(['POST']));
 
   return router;
 }

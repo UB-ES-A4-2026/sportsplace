@@ -146,7 +146,7 @@ export function historial(pedido) {
     lineas.push(`Cancelado el ${formatearFechaHora(pedido.cancelado_en)} por ${pedido.cerrado_por === 'vendedor' ? 'vendedor' : 'comprador'}`);
   }
   if (pedido.pagado_en) lineas.push(`Marcado como pagado el ${formatearFechaHora(pedido.pagado_en)}`);
-  if (pedido.recibido_en) lineas.push(`Recibido el ${formatearFechaHora(pedido.recibido_en)}`);
+  // «Recibido el …» va en la sección «Entrega» (US-42), no en el historial.
   return lineas;
 }
 
