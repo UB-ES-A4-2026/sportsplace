@@ -9,7 +9,7 @@ import { anuncioAdmiteConversacion, resultadoDelFallo, TEXTOS, textoDeAyuda } fr
 import '../mensajes/mensajes.css';
 
 // CA13: Ctrl+Enter (o Cmd+Enter) ya envía en el cuadro; el diseño con vida (#361) lo dice debajo, a la izquierda del pie.
-const AYUDA_ATAJO = 'Ctrl + Enter también envía.';
+const AYUDA_ATAJO = 'Ctrl o ⌘ + Enter también envía.'; // texto decidido por Lucía (QA de #372): en Mac es ⌘
 
 // US-28 T28-3: /mensajes/nueva?anuncio=:id · primer mensaje sobre un anuncio de otro centro.
 export default function MensajeNuevoPage() {
