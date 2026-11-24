@@ -51,6 +51,13 @@ const TRANSICIONES = Object.freeze({
     RETURNING id`,
 });
 
+// E06: si el UPDATE condicional no cambia nada, el 409 lleva el estado real
+// del pedido, releído en la misma transacción, no el leído antes (#368, #373).
+async function estadoReal(client, id, porDefecto) {
+  const { rows: [actual] } = await client.query('SELECT estado FROM public.pedidos WHERE id = $1', [id]);
+  return actual?.estado ?? porDefecto;
+}
+
 function pedidoPendiente(id) {
   return new ApiError(409, 'PEDIDO_YA_PENDIENTE', 'Ya tienes un pedido pendiente en este anuncio.', { pedido_id: id });
 }
@@ -154,7 +161,7 @@ export function createPedidosRepository(database, { urlFoto = () => null } = {})
         const incidenciaAbierta = rows[0].fila.incidencia_abierta === true;
         comprobarTransicion({ ...pedido, incidencia_abierta: incidenciaAbierta }, rows[0].centro_id, accion);
         const { rows: actualizados } = await client.query(TRANSICIONES[accion], [id]);
-        if (actualizados.length === 0) throw transicionNoPermitida(pedido.estado);
+        if (actualizados.length === 0) throw transicionNoPermitida(await estadoReal(client, id, pedido.estado));
         const { rows: despues } = await client.query(SELECT_DETALLE, [usuarioId, id]);
         return aDetalle(despues);
       });
@@ -256,11 +263,7 @@ export function createPedidosRepository(database, { urlFoto = () => null } = {})
           );
           if (rowCount === 0) {
             // Con el FOR UPDATE no debería pasar; si pasa, se informa del estado real.
-            const { rows: [actual] } = await client.query(
-              'SELECT estado FROM public.pedidos WHERE id = $1',
-              [id],
-            );
-            throw transicionNoPermitida(actual?.estado ?? fila.estado);
+            throw transicionNoPermitida(await estadoReal(client, id, fila.estado));
           }
           return aDetalle((await client.query(SELECT_DETALLE, [usuarioId, id])).rows);
         });

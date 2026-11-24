@@ -446,7 +446,7 @@ Como responsable de un centro que vende o dona material, quiero que al aceptar u
 **Criterios de aceptación**
 - CA1. Aceptar resta `unidades` de `anuncios.unidades_disponibles` en la misma transacción que el cambio a `aceptado`.
 - CA2. La transacción bloquea la fila del anuncio (`SELECT ... FOR UPDATE`) antes de comprobar las unidades; si `unidades` > disponibles → no cambia nada y responde `409 UNIDADES_INSUFICIENTES`, «Solo quedan N unidades disponibles.», `details.unidades_disponibles`.
-- CA3. Si tras restar quedan 0, el anuncio pasa de `activo` a `reservado` (se ve «Reservado» en el catálogo, US-17) en la misma transacción. Si estaba `pausado`, sigue `pausado`.
+- CA3. Si tras restar quedan 0, el anuncio pasa de `activo` a `reservado` en la misma transacción y deja de verse en el catálogo y en su ficha para los demás centros (US-96 CA4). Si estaba `pausado`, sigue `pausado`.
 - CA4. En la misma transacción, todos los pedidos `pendiente` del anuncio con `unidades` > nuevas disponibles pasan a `rechazado`, `motivo_codigo='anuncio_sin_stock'`, `cerrado_por='sistema'`, `respondido_en`=ahora. Los que caben siguen pendientes.
 - CA5. El comprador de un pedido rechazado por sistema ve «Rechazado», motivo «Se han agotado las unidades del anuncio» y la frase «El pedido se ha rechazado automáticamente porque ya no quedan unidades suficientes.»
 - CA6. Cancelar un pedido `aceptado` (US-39) suma sus unidades a `unidades_disponibles`; si el anuncio estaba `reservado` vuelve a `activo`. Cancelar o rechazar un `pendiente` no toca unidades.
@@ -460,7 +460,7 @@ Como responsable de un centro que vende o dona material, quiero que al aceptar u
 **Flujos e2e**
 - E2E-1. A1 con 12; Les Corts acepta el pedido de 4 de Gràcia → A1 con 8, `activo`.
 - E2E-2 (últimas unidades). A1 con 5; pendientes: Gràcia 4, Sabadell 4, Gràcia-bis no (un pendiente por centro). Les Corts acepta Gràcia → A1 con 1; el de Sabadell pasa a `rechazado` por sistema; Sabadell lo ve con el motivo automático.
-- E2E-3 (agotar). A1 con 4; acepta pedido de 4 → A1 `reservado`, 0; en el catálogo aparece «Reservado» y «Pedir» deshabilitado.
+- E2E-3 (agotar). A1 con 4; acepta pedido de 4 → A1 `reservado`, 0; el anuncio ya no aparece en el catálogo de B.
 - E2E-4 (devolver). Gràcia cancela ese pedido aceptado (US-39) → A1 vuelve a 4 y `activo`.
 - E2E-5 (carrera). Dos peticiones paralelas de aceptar en E2E-2 → una `200`, otra `409`; disponibles = 1.
 
