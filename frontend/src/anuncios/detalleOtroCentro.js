@@ -72,6 +72,12 @@ export function precioDelDetalle({ modalidad, precio_unitario_centimos: centimos
   return `${formatearEuros(centimos)} / unidad`;
 }
 
+// Diseño con vida (#361): el importe grande y «/ unidad» pequeño. Juntos dicen lo mismo que precioDelDetalle.
+export function partesDelPrecio(anuncio) {
+  if (anuncio.modalidad === 'donacion') return { importe: precioDelDetalle(anuncio), sufijo: null };
+  return { importe: formatearEuros(anuncio.precio_unitario_centimos), sufijo: '/ unidad' };
+}
+
 // CA3, CA4 y CA10: «Escribir al centro» depende de US-28 y, mientras no exista, se ve deshabilitado con «Disponible
 // próximamente». La pantalla ya no usa `pedir` de aquí: «Pedir» lo decide accionDePedir (US-32). Con un anuncio
 // reservado, `pedir` queda deshabilitado

@@ -1,0 +1,83 @@
+/* US-03 · /entrar. Diseño con vida (#361), con aire de Apple: pantalla partida a todo el ancho; a la izquierda la foto
+   del entrenamiento con el lema (decorativos) y a la derecha un formulario estrecho y centrado, con mucho aire, campos
+   altos con la etiqueta flotando dentro (sigue siendo una <label>), un botón oscuro a todo el ancho y una entrada suave.
+   En móvil solo queda el formulario. Los textos, roles y nombres accesibles son los de siempre (E2E). */
+@import '../diseno/tokens.css';
+
+.page:has(.pagina-entrar) { padding-bottom: 0; }
+.pagina.pagina-entrar {
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); max-width: none; min-height: calc(100dvh - 69px);
+  margin: -8px calc(50% - 50vw) 0; padding: 0;
+}
+
+/* Mitad visual: la misma foto que la portada del catálogo, con un velo verde abajo para el lema. */
+.entrar-visual {
+  display: flex; align-items: flex-end; padding: 56px 56px 64px;
+  background:
+    linear-gradient(180deg, rgb(11 61 31 / 0%) 30%, rgb(11 61 31 / 82%) 100%),
+    url('../assets/portada-catalogo.webp') 58% 50% / cover no-repeat var(--s2-teal-900);
+}
+.entrar-lema {
+  max-width: 13ch; margin: 0; color: #fff; font-size: clamp(38px, 4.2vw, 60px); font-weight: 900; line-height: 1.02;
+  letter-spacing: -0.03em; text-wrap: balance;
+}
+
+/* Mitad del formulario */
+.entrar-panel { display: grid; place-items: center; padding: 56px 32px; background: var(--s2-superficie); }
+.entrar-contenido { width: min(400px, 100%); animation: entrar-aparece 520ms var(--s2-curva) both; }
+@keyframes entrar-aparece { from { opacity: 0; transform: translateY(12px); } }
+.entrar-marca {
+  display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 26px; border-radius: 50%; background: var(--s2-naranja-600);
+}
+.pagina-entrar h1 { margin: 0; font-size: 44px; font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; }
+.entrar-intro { margin: 12px 0 0; color: var(--s2-gris); font-size: 17px; font-weight: 600; line-height: 1.5; }
+
+.formulario.entrar-formulario { gap: 14px; max-width: none; margin-top: 32px; }
+
+/* Campos de 60 px con la etiqueta dentro: grande mientras el campo está vacío y sin foco; pequeña arriba al escribir. */
+.entrar-formulario .campo { position: relative; gap: 0; }
+.entrar-formulario .campo label {
+  position: absolute; top: 19px; left: 17px; z-index: 1; color: var(--s2-gris); font-size: 17px; font-weight: 600; line-height: 1.2;
+  pointer-events: none; transform-origin: left top; transition: transform 180ms var(--s2-curva), color 180ms var(--s2-curva);
+}
+.pagina-entrar .entrar-formulario .campo input:not([type="checkbox"]) {
+  height: 60px; min-height: 60px; padding: 24px 16px 6px; border-radius: 12px; font-size: 17px; font-weight: 600;
+}
+.entrar-formulario .campo:has(input:focus) label,
+.entrar-formulario .campo:has(input:not(:placeholder-shown)) label,
+.entrar-formulario .campo:has(input:-webkit-autofill) label { color: var(--s2-tinta-2); transform: translateY(-11px) scale(0.76); }
+.entrar-formulario .campo:has(input[aria-invalid="true"]) label { color: var(--s2-peligro); }
+.entrar-formulario .campo-error { margin: 6px 2px 0; }
+
+.entrar-formulario .formulario-enlace { margin: -2px 0 0; font-size: 15px; font-weight: 700; text-align: right; }
+
+.pagina-entrar .entrar-boton {
+  --pisada: 0 0 transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; justify-self: stretch; min-height: 56px; margin-top: 10px;
+  border-radius: 12px; background: var(--s2-tinta); font-size: 17px; font-weight: 800; transition: background-color 180ms var(--s2-curva);
+}
+.pagina-entrar .entrar-boton:hover { background: var(--s2-teal-900); }
+.pagina-entrar .entrar-boton svg { flex: none; transition: transform 180ms var(--s2-curva); }
+.pagina-entrar .entrar-boton:hover svg { transform: translateX(3px); }
+
+.entrar-alerta { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 12px; font-size: 15px; }
+.entrar-alerta svg { flex: none; margin-top: 1px; }
+
+.pagina-entrar .entrar-pie {
+  margin: 30px 0 0; padding-top: 22px; border-top: 1px solid var(--s2-linea); color: var(--s2-gris); font-size: 15px; font-weight: 600;
+  text-align: center;
+}
+.pagina-entrar .entrar-pie a { font-weight: 800; }
+
+@media (max-width: 900px) {
+  .pagina.pagina-entrar { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .entrar-visual { display: none; }
+  .entrar-panel { place-items: start center; padding: 36px 16px 32px; }
+  .pagina-entrar h1 { font-size: 38px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrar-contenido { animation: none; }
+  .entrar-formulario .campo label, .pagina-entrar .entrar-boton svg { transition: none; }
+  .pagina-entrar .entrar-boton:hover svg { transform: none; }
+}

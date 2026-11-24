@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Send } from 'lucide-react';
+import { LockKeyhole, Send } from 'lucide-react';
 import { contador, esAtajoDeEnvio, MAXIMO_CARACTERES, puedeEnviar, TEXTOS } from '../mensajes/conversacion.js';
 
 // US-28 CA7-CA13: área de texto con contador «n/2000» (rojo desde 1900) y «Enviar». Ctrl/Cmd+Enter envía; mientras
@@ -17,7 +17,7 @@ export default function CuadroMensaje({ valor, onCambiar, onEnviar, enviando, fi
 
   return (
     <form className="cuadro-mensaje" onSubmit={enviar}>
-      {ayuda && <p id={idAyuda} className="campo-ayuda">{ayuda}</p>}
+      {ayuda && <p id={idAyuda} className="campo-ayuda"><LockKeyhole size={16} aria-hidden="true" />{ayuda}</p>}
       <textarea
         rows={filas}
         maxLength={MAXIMO_CARACTERES}

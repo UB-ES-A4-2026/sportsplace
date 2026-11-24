@@ -1,197 +1,284 @@
 /* E03 · Publicación de material. Estilos del formulario de anuncio, la ficha y los avisos.
-   Van en su propio archivo para no chocar con los cambios de styles.css de otras historias. */
+   Van en su propio archivo para no chocar con los cambios de styles.css de otras historias.
+   Diseño con vida (#361, mockups de Lucía): datos y listas en tarjetas blancas con borde de 3 px y esquinas redondas,
+   estados en pastilla y títulos en negrita gruesa. El detalle de otro centro sigue el mockup «Anuncio». */
 
 /* Formulario de anuncio (US-12, reutilizable) */
-.pagina-anuncio { padding-top: 48px; }
-.pagina-anuncio h1 { font-size: clamp(30px, 4vw, 38px); font-weight: 780; line-height: 1.1; letter-spacing: -0.035em; }
+.pagina-anuncio { padding-top: 40px; }
+.pagina-anuncio h1 { font-size: clamp(28px, 3.4vw, 36px); font-weight: 900; line-height: 1.12; letter-spacing: -0.01em; }
 .formulario-anuncio { margin-top: 28px; }
 .formulario-anuncio textarea,
-.formulario-anuncio select { width: 100%; padding: 11px 12px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); font: inherit; color: inherit; background: var(--s2-superficie); box-shadow: var(--s2-sombra-1); transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva); }
+.formulario-anuncio select {
+  width: 100%; min-height: var(--s2-toque); padding: 10px 12px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde);
+  border-radius: var(--s2-radio-s); font: inherit; color: inherit; background: var(--s2-superficie);
+  transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
+}
 .formulario-anuncio textarea { resize: vertical; line-height: 1.5; }
 .formulario-anuncio textarea:focus-visible,
-.formulario-anuncio select:focus-visible { outline: 0; border-color: var(--s2-teal-500); box-shadow: var(--s2-foco); }
+.formulario-anuncio select:focus-visible { outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
 .formulario-anuncio [aria-invalid="true"] { border-color: var(--s2-peligro); }
 .campo-pie { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.contador { flex-shrink: 0; margin-left: auto; color: var(--s2-gris); font-size: 13px; font-variant-numeric: tabular-nums; }
-.contador-excedido { color: var(--s2-peligro); font-weight: 650; }
-.formulario-botones { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.contador { flex-shrink: 0; margin-left: auto; color: var(--s2-gris); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.contador-excedido { color: var(--s2-peligro); font-weight: 800; }
+.formulario-botones { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; padding-top: 20px; border-top: 1px solid var(--s2-linea); }
 .formulario .formulario-botones button { margin-top: 0; }
 @media (max-width: 560px) {
   .formulario-botones { flex-direction: column-reverse; }
   .formulario .formulario-botones button { width: 100%; }
 }
 
-/* Avisos tras una acción: esquina superior derecha, 4 s (guía común) */
-.aviso { position: fixed; top: 20px; right: 20px; z-index: 20; max-width: min(380px, calc(100vw - 40px)); padding: 12px 16px; border-radius: var(--s2-radio); font-size: 14px; font-weight: 650; line-height: 1.5; box-shadow: var(--s2-sombra-3); }
-.aviso-exito { color: #067647; background: #ecfdf3; }
-.aviso-error { color: var(--s2-peligro); background: var(--s2-peligro-50); }
+/* Avisos tras una acción: esquina superior derecha, 4 s (guía común). Franja de color a la izquierda. Van justo debajo
+   de la cabecera y por encima de ella (la cabecera fija tiene z-index 30 y tapaba el aviso). */
+.aviso {
+  position: fixed; top: 84px; right: 20px; z-index: 40; max-width: min(380px, calc(100vw - 40px)); padding: 12px 16px;
+  border: 1px solid var(--s2-linea); border-left-width: 4px; border-radius: var(--s2-radio); background: var(--s2-superficie);
+  font-size: 15px; font-weight: 700; line-height: 1.5; box-shadow: var(--s2-sombra-3);
+}
+.aviso-exito { color: var(--s2-estado-aceptado-texto); border-left-color: var(--s2-teal-700); }
+.aviso-error { color: var(--s2-peligro); border-left-color: var(--s2-peligro); }
 @media (max-width: 560px) { .aviso { top: 12px; right: 12px; left: 12px; max-width: none; } }
 
 /* Ficha propia del anuncio (US-12 T12-4) */
-.enlace-volver { display: inline-block; margin-bottom: 18px; font-size: 14px; font-weight: 650; text-decoration: none; }
-.enlace-volver:hover { text-decoration: underline; }
-.ficha-cabecera { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; }
+.enlace-volver {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--s2-toque); margin-bottom: 8px;
+  font-size: 15px; font-weight: 800; text-decoration: none;
+}
+.pagina .enlace-volver { color: var(--s2-teal-700); }
+.enlace-volver:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ficha-cabecera { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
 .ficha-cabecera h1 { overflow-wrap: anywhere; }
-/* Estado del anuncio: píldora con un punto del color del estado (como los pedidos del Figma). */
-.etiqueta-estado { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 9px; border-radius: 999px; font-size: 13px; font-weight: 650; line-height: 18px; white-space: nowrap; }
-.etiqueta-estado::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.etiqueta-verde { color: #067647; background: #ecfdf3; }
-.etiqueta-gris { color: var(--s2-tinta-2); background: var(--s2-linea-2); }
-.etiqueta-naranja { color: var(--s2-aviso); background: var(--s2-aviso-50); }
-.etiqueta-azul { color: #1d4f91; background: #eaf2ff; }
-.etiqueta-morado { color: #5b2d91; background: #f3edfb; }
-/* Tabla de datos y descripción en tarjetas, como el detalle del Figma (03-US-24). */
+/* Estado del anuncio: punto del color del estado y texto (nunca solo el color). En la ficha y en «Mis anuncios», en
+   pastilla con su fondo, como .s2-estado de tokens.css. */
+.etiqueta-estado {
+  display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 800; line-height: 1.3; white-space: nowrap;
+}
+.etiqueta-estado::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.etiqueta-verde { color: var(--s2-estado-aceptado-texto); }
+.etiqueta-gris { color: var(--s2-estado-cancelado-texto); }
+.etiqueta-naranja { color: var(--s2-naranja-700); }
+.etiqueta-azul { color: var(--s2-estado-recibido-texto); }
+.etiqueta-morado { color: var(--s2-estado-borrador-texto); }
+.ficha-cabecera .etiqueta-estado, .fila-estado .etiqueta-estado {
+  gap: 6px; padding: 3px 12px; border-radius: var(--s2-radio-etiqueta); font-weight: 900; line-height: 1.4;
+}
+.ficha-cabecera .etiqueta-verde, .fila-estado .etiqueta-verde { background: var(--s2-estado-aceptado-fondo); }
+.ficha-cabecera .etiqueta-gris, .fila-estado .etiqueta-gris { background: var(--s2-estado-cancelado-fondo); }
+.ficha-cabecera .etiqueta-naranja, .fila-estado .etiqueta-naranja { background: var(--s2-naranja-100); }
+.ficha-cabecera .etiqueta-azul, .fila-estado .etiqueta-azul { background: var(--s2-estado-recibido-fondo); }
+.ficha-cabecera .etiqueta-morado, .fila-estado .etiqueta-morado { background: var(--s2-linea-2); }
+/* Tabla de datos en una tarjeta blanca: etiqueta en gris y dato en negrita, filas separadas por una línea suave. */
 .ficha-datos {
-  width: 100%; margin-top: 24px; padding: 8px 22px; border: 1px solid var(--s2-linea); border-collapse: separate; border-spacing: 0;
-  border-radius: var(--s2-radio-l); background: var(--s2-superficie); box-shadow: var(--s2-sombra-2); font-size: 15px;
+  width: 100%; margin-top: 20px; overflow: hidden; border: var(--s2-borde) solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  border-collapse: separate; border-spacing: 0; background: var(--s2-superficie); font-size: 16px;
 }
-.ficha-datos th, .ficha-datos td { padding: 11px 0; border-bottom: 1px solid var(--s2-linea-2); text-align: left; vertical-align: top; }
+.ficha-datos th, .ficha-datos td { padding: 12px 18px; border-bottom: 2px solid var(--s2-linea-2); text-align: left; vertical-align: top; }
 .ficha-datos tr:last-child th, .ficha-datos tr:last-child td { border-bottom: 0; }
-.ficha-datos th { width: 50%; padding-right: 16px; color: var(--s2-gris); font-weight: 500; }
-.ficha-datos td { color: var(--s2-tinta); font-weight: 600; }
-.ficha .ficha-descripcion {
-  padding: 20px 22px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
-  box-shadow: var(--s2-sombra-2);
-}
-.ficha .ficha-precio .precio-anuncio-grande { color: var(--s2-teal-800); font-size: 28px; font-weight: 780; letter-spacing: -0.02em; }
+.ficha-datos th { width: 50%; color: var(--s2-gris); font-weight: 800; }
+.ficha-datos td { color: var(--s2-tinta); font-weight: 900; }
+.ficha .ficha-precio .precio-anuncio-grande { color: var(--s2-teal-800); font-size: 32px; font-weight: 900; letter-spacing: 0; }
 .ficha .galeria { margin-top: 18px; }
-.ficha .galeria-grande { border-radius: var(--s2-radio-l); box-shadow: var(--s2-sombra-2); }
-.ficha-descripcion { margin-top: 28px; }
-.ficha-descripcion h2 { margin-bottom: 10px; font-size: 17px; }
-.ficha-descripcion p { margin: 0; color: var(--s2-tinta-2); line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
-.ficha-fechas { margin: 24px 0 0; color: var(--s2-gris); font-size: 13px; }
+.ficha .galeria-grande { border-radius: var(--s2-radio-l); background: var(--s2-fondo-2); }
+.ficha-descripcion { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--s2-linea); }
+.ficha-descripcion h2 { margin-bottom: 8px; font-size: 17px; font-weight: 800; }
+.ficha-descripcion p { margin: 0; color: var(--s2-tinta-2); font-size: 16px; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
+/* En la ficha propia, la descripción también va en tarjeta. */
+.ficha .ficha-descripcion {
+  margin-top: 16px; padding: 18px 20px; border: var(--s2-borde) solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  background: var(--s2-superficie);
+}
+.ficha .ficha-descripcion h2 { margin: 0 0 6px; font-size: 18px; font-weight: 900; letter-spacing: 0; }
+.ficha .ficha-descripcion p { color: var(--s2-tinta); font-weight: 600; line-height: 1.55; }
+.ficha-fechas { margin: 16px 0 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
 .ficha-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; }
 .ficha-acciones > button { margin-top: 0; }
 .ficha-acciones:empty { display: none; }
 /* Enlace con forma de botón: misma altura que un botón (44 px; 34 px en las filas) para que queden alineados. */
-.boton-enlace { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 22px; padding: 13px 18px; line-height: 18px; border-radius: var(--s2-radio); color: #fff; background: linear-gradient(180deg, var(--s2-teal-600), var(--s2-teal-700)); font-size: 14px; font-weight: 650; text-decoration: none; }
+.boton-enlace {
+  --pisada: var(--s2-pisada-verde);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 22px; padding: 13px 18px;
+  line-height: 18px; border-radius: var(--s2-radio); color: #fff; background: var(--s2-teal-700); box-shadow: var(--pisada);
+  font-size: 15px; font-weight: 800; text-decoration: none; transition: background-color 150ms;
+}
 .pagina .boton-enlace { color: #fff; }
-.boton-enlace:hover { background: linear-gradient(180deg, var(--s2-teal-700), var(--s2-teal-800)); }
-.boton-enlace:focus-visible { outline: 3px solid rgb(21 151 168 / 45%); outline-offset: 2px; }
+.boton-enlace:hover { background: var(--s2-teal-800); }
+.boton-enlace:focus-visible { outline: 3px solid var(--s2-tinta); outline-offset: 2px; box-shadow: var(--pisada), 0 0 0 7px var(--s2-amarillo); }
 
 /* Mis anuncios (US-18 T18-2), al ancho de la cabecera */
 .pagina.pagina-mis-anuncios { max-width: none; }
 .mis-anuncios-cabecera { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; }
-.mis-anuncios-cabecera .boton-enlace { margin-top: 0; }
-.mis-anuncios-total { margin: 18px 0 0; color: var(--s2-gris); font-size: 14px; font-weight: 600; }
+/* «Publicar anuncio» es la acción principal: naranja, como en la cabecera. */
+.mis-anuncios-cabecera .boton-enlace { --pisada: var(--s2-pisada-naranja); margin-top: 0; background: var(--s2-naranja-600); }
+.mis-anuncios-cabecera .boton-enlace:hover { background: var(--s2-naranja-700); }
+.mis-anuncios-total { margin: 14px 0 0; color: var(--s2-gris); font-size: 15px; font-weight: 700; }
 .mis-anuncios-vacio { margin-top: 24px; }
-/* La lista va en una tarjeta blanca, con una línea suave entre anuncios. */
+/* La lista va en una tarjeta blanca con borde; los anuncios se separan con una línea suave. */
 .lista-anuncios {
-  display: grid; gap: 0; margin: 18px 0 0; padding: 4px 20px; list-style: none; border: 1px solid var(--s2-linea);
-  border-radius: var(--s2-radio-l); background: var(--s2-superficie); box-shadow: var(--s2-sombra-2);
+  display: grid; gap: 0; margin: 16px 0 0; padding: 0 20px; list-style: none; border: var(--s2-borde) solid var(--s2-linea);
+  border-radius: var(--s2-radio-l); background: var(--s2-superficie);
 }
-.fila-anuncio { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--s2-linea-2); }
+.fila-anuncio { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 18px; padding: 16px 0; border-bottom: 2px solid var(--s2-linea-2); }
 .fila-anuncio:last-child { border-bottom: 0; }
-.fila-miniatura { width: 64px; height: 64px; }
-.fila-miniatura img { display: block; width: 64px; height: 64px; border-radius: var(--s2-radio); object-fit: cover; box-shadow: var(--s2-sombra-1); }
-.sin-foto { display: grid; place-items: center; width: 64px; height: 64px; border-radius: var(--s2-radio-s); color: var(--s2-teal-800); background: linear-gradient(145deg, var(--s2-teal-50), var(--s2-teal-100)); font-size: 12px; font-weight: 600; text-align: center; }
+.fila-miniatura { width: 72px; height: 72px; }
+.fila-miniatura img { display: block; width: 72px; height: 72px; border-radius: var(--s2-radio); object-fit: cover; }
+.sin-foto {
+  display: grid; place-items: center; width: 72px; height: 72px; border-radius: var(--s2-radio); color: var(--s2-gris);
+  background: var(--s2-fondo-2); font-size: 12px; font-weight: 800; text-align: center;
+}
 .fila-datos { display: grid; gap: 4px; min-width: 0; }
-.fila-titulo { overflow: hidden; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
-.pagina .fila-titulo { color: var(--s2-tinta); font-size: 15.5px; text-decoration: none; }
-.pagina .fila-titulo:hover { color: var(--s2-teal-800); text-decoration: underline; }
-.fila-detalle { margin: 0; color: var(--s2-tinta-2); font-size: 14px; }
-.fila-estado { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 0; color: var(--s2-gris); font-size: 13px; }
+.fila-titulo { overflow: hidden; font-weight: 900; white-space: nowrap; text-overflow: ellipsis; }
+.pagina .fila-titulo { color: var(--s2-tinta); font-size: 17px; text-decoration: none; }
+.pagina .fila-titulo:hover { color: var(--s2-teal-700); text-decoration: underline; text-underline-offset: 3px; }
+.fila-detalle { margin: 0; color: var(--s2-tinta-2); font-size: 15px; font-weight: 700; }
+.fila-estado { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
 .fila-acciones { display: flex; align-items: center; gap: 8px; }
 .fila-acciones:empty { display: none; }
 .fila-acciones button { margin-top: 0; padding: 8px 12px; }
 .menu-mas { position: relative; }
-.menu-mas-opciones { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; display: grid; min-width: 190px; padding: 6px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); background: var(--s2-superficie); box-shadow: var(--s2-sombra-3); }
+.menu-mas-opciones {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; display: grid; min-width: 200px; padding: 6px;
+  border: 1px solid var(--s2-linea); border-radius: var(--s2-radio); background: var(--s2-superficie); box-shadow: var(--s2-sombra-3);
+}
 .menu-mas-opciones[hidden] { display: none; }
-.menu-mas-opciones > button { width: 100%; margin: 0; padding: 9px 12px; color: var(--s2-teal-700); background: none; text-align: left; }
-.menu-mas-opciones > button:hover { background: var(--s2-teal-50); }
+.menu-mas-opciones > button {
+  --pisada: 0 0 transparent; width: 100%; min-height: var(--s2-toque); margin: 0; padding: 9px 12px; border-radius: var(--s2-radio-s);
+  color: var(--s2-tinta); background: none; text-align: left; font-weight: 700;
+}
+.menu-mas-opciones > button:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); }
 /* Opción destructiva del menú («Retirar anuncio», US-70). Solo los hijos directos: el diálogo que abre no hereda estos estilos. */
 .menu-mas-opciones > .menu-mas-opcion-peligro { color: var(--s2-peligro); }
-.menu-mas-opciones > .menu-mas-opcion-peligro:hover { background: var(--s2-peligro-50); }
-.paginacion { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; color: var(--s2-gris); font-size: 14px; font-weight: 600; }
+.menu-mas-opciones > .menu-mas-opcion-peligro:hover { color: var(--s2-peligro); background: var(--s2-peligro-50); }
+.paginacion { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; color: var(--s2-gris); font-size: 15px; font-weight: 700; }
 .paginacion button { margin-top: 0; }
 .paginacion button:disabled { cursor: not-allowed; }
 @media (max-width: 560px) {
-  .fila-anuncio { grid-template-columns: 64px minmax(0, 1fr); }
+  .fila-anuncio { grid-template-columns: 64px minmax(0, 1fr); gap: 14px; }
+  .fila-miniatura, .fila-miniatura img, .sin-foto { width: 64px; height: 64px; }
   .fila-acciones { grid-column: 2; }
   .menu-mas-opciones { right: auto; left: 0; }
   .paginacion { gap: 10px; }
 }
 
 /* Editar anuncio (US-15 T15-2): «Editar» como botón secundario en la ficha y como botón principal de la fila */
-.pagina .boton-enlace-secundario { color: var(--s2-teal-800); background: var(--s2-superficie); box-shadow: inset 0 0 0 1px var(--s2-linea), var(--s2-sombra-1); }
-.pagina .boton-enlace-secundario:hover { color: var(--s2-teal-900); background: var(--s2-teal-50); }
+.pagina .boton-enlace-secundario { --pisada: inset 0 0 0 var(--s2-borde) var(--s2-teal-700); color: var(--s2-teal-700); background: var(--s2-superficie); }
+.pagina .boton-enlace-secundario:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); }
 .ficha-acciones .boton-enlace { margin-top: 0; }
 .fila-acciones .boton-enlace { margin-top: 0; padding: 8px 12px; }
 
-/* Detalle de un anuncio de otro centro (US-24 T24-2) con el diseño S2 del Figma (03-US-24): dos columnas en escritorio
-   y una en < 900 px; precio protagonista, acciones del mismo tamaño y tarjetas para los detalles, el centro y la
-   descripción. El orden de los elementos no cambia (título, precio, detalles, botones, «Ofrecido por», descripción). */
-.pagina.detalle-otro-centro { max-width: none; padding-top: 40px; }
-.detalle-columnas { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; align-items: start; }
-@media (max-width: 899px) { .detalle-columnas { grid-template-columns: minmax(0, 1fr); gap: 22px; } }
-.detalle-galeria-marco { position: relative; }
-.detalle-galeria-grande {
-  display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--s2-radio-l);
-  background: var(--s2-teal-50); box-shadow: var(--s2-sombra-2);
-}
-.detalle-galeria-flecha {
-  position: absolute; top: 50%; display: grid; place-items: center; width: 42px; height: 42px; min-height: 0; margin: 0; padding: 0;
-  border-radius: var(--s2-radio); transform: translateY(-50%); color: var(--s2-tinta); background: rgb(255 255 255 / 94%);
-  box-shadow: var(--s2-sombra-2); font-size: 24px; line-height: 1;
-}
-.detalle-galeria-flecha:hover { color: var(--s2-teal-800); background: #fff; }
-.detalle-galeria-flecha:focus-visible { outline: 0; box-shadow: var(--s2-foco), var(--s2-sombra-2); }
-.detalle-galeria-flecha-anterior { left: 14px; }
-.detalle-galeria-flecha-siguiente { right: 14px; }
-.detalle-galeria-miniaturas { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }
-.detalle-galeria-miniaturas .galeria-miniatura { border-radius: var(--s2-radio); }
-.detalle-galeria-miniaturas .galeria-miniatura-activa { box-shadow: 0 0 0 3px var(--s2-teal-500); }
-.detalle-sin-foto {
-  display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: var(--s2-radio-l); color: var(--s2-teal-800);
-  background: linear-gradient(145deg, var(--s2-teal-50), var(--s2-teal-100)); font-weight: 600;
-}
-
-.detalle-otro-centro .detalle-datos h1 {
-  margin: 0; font-size: clamp(30px, 4vw, 40px); font-weight: 780; line-height: 1.08; letter-spacing: -0.035em; overflow-wrap: anywhere;
-}
-.detalle-reservado { margin: 0 0 14px; white-space: normal; }
-.detalle-precio { margin: 12px 0 22px; color: var(--s2-teal-800); font-size: 30px; font-weight: 780; letter-spacing: -0.02em; }
-
-/* Tarjetas: «Detalles», «Ofrecido por» y «Descripción» */
+/* Detalle de un anuncio de otro centro (US-24 T24-2). Diseño con vida (#361, mockup «Anuncio» de Lucía): cabe sin
+   scroll en 1440 × 900. «← Volver al catálogo» como botón blanco y una tarjeta blanca con dos columnas en escritorio y
+   una en < 900 px; la descripción debajo, a todo el ancho. El orden de los elementos no cambia (título, precio,
+   detalles, botones, «Ofrecido por», descripción). */
+.pagina.detalle-otro-centro { display: flex; flex-direction: column; gap: 12px; max-width: none; padding: 14px 0 0; }
+/* El aspecto de botón blanco de «← Volver al catálogo» es el común de styles.css; aquí solo su sitio. */
+.pagina.detalle-otro-centro .enlace-volver { align-self: flex-start; margin: 0; }
 .detalle-tarjeta {
-  padding: 20px 22px; border: 1px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
-  box-shadow: var(--s2-sombra-2);
+  display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 2px solid var(--s2-linea); border-radius: var(--s2-radio-l);
+  background: var(--s2-superficie);
 }
-.detalle-subtitulo { margin: 0 0 10px; color: var(--s2-tinta); font-size: 16px; font-weight: 700; }
-.detalle-lista { display: grid; margin: 0; }
-.detalle-lista > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--s2-linea-2); font-size: 15px; }
-.detalle-lista > div:last-child { border-bottom: 0; padding-bottom: 0; }
-.detalle-lista dt { color: var(--s2-gris); font-weight: 500; }
-.detalle-lista dd { margin: 0; color: var(--s2-tinta); font-weight: 600; text-align: right; }
+.detalle-columnas { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 899px) { .detalle-columnas { grid-template-columns: minmax(0, 1fr); } }
 
-/* Acciones: «Pedir» [US-32] y «Escribir al centro» [US-28], del mismo tamaño */
-.detalle-botones { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 20px; }
+/* Galería: foto 16:11 sobre el tinte del deporte, flechas redondas de 52 px, contador «1 / 3» y miniaturas de 72 × 54
+   (la activa con borde verde de 3 px). */
+.detalle-galeria { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.detalle-galeria-marco { position: relative; overflow: hidden; border-radius: 16px; background: var(--s2-fondo-2); }
+.detalle-galeria-grande { display: block; width: 100%; aspect-ratio: 16 / 11; object-fit: contain; }
+.detalle-galeria .detalle-galeria-flecha {
+  --pisada: 0 3px 0 color-mix(in srgb, var(--s2-tinta) 20%, transparent);
+  position: absolute; top: 50%; display: grid; place-items: center; width: 52px; height: 52px; min-height: 0; margin: 0; padding: 0;
+  border-radius: 50%; transform: translateY(-50%); color: var(--s2-tinta); background: var(--s2-superficie);
+}
+.detalle-galeria .detalle-galeria-flecha:hover { color: var(--s2-tinta); background: var(--s2-linea-2); }
+.detalle-galeria-flecha-anterior { left: 10px; }
+.detalle-galeria-flecha-siguiente { right: 10px; }
+.detalle-galeria-contador {
+  position: absolute; right: 10px; bottom: 10px; padding: 3px 10px; border-radius: var(--s2-radio-etiqueta); color: #fff;
+  background: var(--s2-tinta); font-size: 14px; font-weight: 900; font-variant-numeric: tabular-nums;
+}
+.detalle-galeria-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.detalle-galeria-miniaturas .galeria-miniatura {
+  --pisada: 0 0 transparent;
+  width: 72px; height: 54px; border: 3px solid transparent; border-radius: 10px; background: var(--s2-fondo-2);
+}
+.detalle-galeria-miniaturas .galeria-miniatura img { border-radius: 7px; }
+.detalle-galeria-miniaturas .galeria-miniatura-activa { border-color: var(--s2-teal-700); }
+/* «Sin foto» (US-24): el círculo grande del deporte sobre su tinte, con un marco discontinuo decorativo. */
+.detalle-sin-foto {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  aspect-ratio: 16 / 11; border-radius: 16px; color: var(--s2-tinta-2); background: var(--s2-fondo-2); font-size: 16px; font-weight: 800;
+}
+.detalle-sin-foto::before {
+  content: ''; position: absolute; inset: 12px; border: 3px dashed color-mix(in srgb, var(--s2-tinta) 12%, transparent); border-radius: 12px;
+}
+.detalle-sin-foto > span:first-child { box-shadow: 0 8px 0 color-mix(in srgb, var(--s2-tinta) 15%, transparent); }
+.detalle-sin-foto-circulo {
+  display: grid; place-items: center; width: 170px; height: 170px; border-radius: 50%; color: var(--s2-gris); background: var(--s2-superficie);
+}
+
+/* Columna de datos */
+.detalle-datos { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.detalle-otro-centro .detalle-datos h1 {
+  margin: 0; font-size: 30px; font-weight: 900; line-height: 1.15; letter-spacing: 0; overflow-wrap: anywhere;
+}
+/* CA4: «Reservado» como franja naranja con icono (sin el punto de .etiqueta-estado). */
+.etiqueta-estado.detalle-reservado {
+  display: flex; gap: 8px; margin: 0; padding: 8px 12px; border-radius: var(--s2-radio-s); color: var(--s2-naranja-700);
+  background: var(--s2-naranja-100); font-size: 15px; font-weight: 900; white-space: normal;
+}
+.etiqueta-estado.detalle-reservado::before { display: none; }
+.detalle-precio { margin: 0; color: var(--s2-teal-800); font-size: 32px; font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.detalle-precio-sufijo { color: var(--s2-gris); font-size: 17px; font-weight: 800; }
+.detalle-precio-donacion { align-self: flex-start; padding: 4px 14px; border-radius: var(--s2-radio-s); background: var(--s2-teal-100); font-size: 28px; }
+
+/* «Detalles»: rejilla de 3 bloques sobre el fondo suave; «Publicado el» ocupa dos. */
+.detalle-bloque { margin: 0; }
+.detalle-subtitulo { margin: 0 0 6px; color: var(--s2-tinta); font-size: 16px; font-weight: 900; letter-spacing: 0; }
+.detalle-lista { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.detalle-lista > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 8px 10px; border-radius: var(--s2-radio-s); background: var(--s2-fondo); }
+.detalle-lista > .detalle-lista-ancho { grid-column: span 2; }
+.detalle-lista dt { color: var(--s2-gris); font-size: 13px; font-weight: 800; }
+.detalle-lista dd { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0; color: var(--s2-tinta); font-size: 15px; font-weight: 900; }
+.detalle-lista dd > svg { flex: none; color: var(--s2-teal-700); }
+.detalle-lista .barra-estado { width: 5px; height: 13px; border-radius: 2px; }
+@media (max-width: 599px) { .detalle-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Acciones: «Pedir» [US-32] naranja a todo el ancho y «Escribir al centro» [US-28] secundario verde debajo. */
+.detalle-botones { display: grid; gap: 8px; margin: 0; }
 .detalle-boton { min-width: 0; }
 .detalle-boton svg { flex: none; }
-.detalle-boton button,
-.detalle-boton .boton-enlace {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; margin-top: 0;
-  padding-block: 0; font-size: 15.5px;
-}
-.detalle-boton .boton-enlace { box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 1px 2px rgb(6 62 71 / 30%), 0 8px 18px -8px rgb(11 107 122 / 60%); }
-.detalle-boton button:disabled { cursor: not-allowed; }
+.detalle-boton .s2-boton { width: 100%; }
+.detalle-boton-pedir .s2-boton { min-height: 54px; font-size: 18px; }
+.detalle-boton .s2-boton-secundario { min-height: 50px; }
 /* US-32 (T32-3): el aviso de pedido pendiente con «Ver mi pedido». */
 .detalle-pedido-pendiente {
-  display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--s2-radio); color: var(--s2-teal-900); background: var(--s2-teal-50);
+  display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--s2-radio); color: var(--s2-teal-900); background: var(--s2-teal-100);
 }
-.detalle-pedido-pendiente p { margin: 0; font-weight: 600; }
-.detalle-ayuda { margin: 6px 0 0; color: var(--s2-gris); font-size: 13px; text-align: center; }
+.detalle-pedido-pendiente p { margin: 0; font-weight: 900; }
+.detalle-pedido-pendiente a { font-weight: 900; }
+.detalle-ayuda {
+  display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 0; color: var(--s2-naranja-700);
+  font-size: 15px; font-weight: 900;
+}
 
-.detalle-centro { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
-.detalle-centro .detalle-subtitulo { margin: 0 0 2px; color: var(--s2-gris); font-size: 12.5px; font-weight: 650; letter-spacing: 0.06em; }
-.detalle-centro-avatar {
-  flex: none; width: 48px; height: 48px; border-radius: 50%; box-shadow: 0 0 0 3px var(--s2-superficie), var(--s2-sombra-1);
-  background: radial-gradient(circle at 30% 30%, var(--s2-teal-100), var(--s2-teal-500) 55%, var(--s2-teal-800));
+/* «Ofrecido por»: recuadro con las iniciales del centro en un círculo azul, el nombre (enlace) y la localidad. */
+.detalle-centro {
+  display: flex; align-items: center; gap: 12px; margin: 0; padding: 10px 12px; border: 2px solid var(--s2-linea); border-radius: var(--s2-radio);
 }
-.detalle-centro-nombre { margin: 0; font-size: 16px; font-weight: 700; }
-.detalle-centro-nombre a { color: var(--s2-teal-800); text-decoration: none; }
-.detalle-centro-nombre a:hover { text-decoration: underline; }
-.detalle-centro-datos { margin: 2px 0 0; color: var(--s2-gris); font-size: 14px; }
-.detalle-descripcion.detalle-tarjeta { margin-top: 28px; }
-.detalle-descripcion h2 { margin: 0 0 10px; font-size: 17px; }
+.detalle-centro > div { display: flex; flex-direction: column; min-width: 0; }
+.detalle-centro .detalle-subtitulo { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 800; }
+.detalle-centro-avatar {
+  flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #fff;
+  background: var(--s2-estado-recibido-punto); font-size: 16px; font-weight: 900;
+}
+.detalle-centro-nombre { margin: 0; font-size: 17px; font-weight: 900; overflow-wrap: anywhere; }
+.pagina .detalle-centro-nombre a { color: var(--s2-teal-800); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.pagina .detalle-centro-nombre a:hover { color: var(--s2-teal-900); }
+.detalle-centro-datos { margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
+
+/* «Descripción», a todo el ancho bajo las dos columnas. */
+.detalle-otro-centro .detalle-descripcion {
+  display: flex; flex-direction: column; gap: 4px; margin: 0; padding-top: 12px; border-top: 2px solid var(--s2-linea-2);
+}
+.detalle-otro-centro .detalle-descripcion h2 { margin: 0; font-size: 18px; font-weight: 900; letter-spacing: 0; }
+.detalle-otro-centro .detalle-descripcion p { max-width: 100ch; color: var(--s2-tinta); font-size: 16px; font-weight: 600; line-height: 1.5; }
 .detalle-no-disponible-botones { display: flex; flex-wrap: wrap; gap: 10px; }

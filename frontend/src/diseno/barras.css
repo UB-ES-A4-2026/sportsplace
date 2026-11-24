@@ -1,0 +1,4 @@
+/* Barritas del estado del material (BarrasEstado.jsx, #361). */
+.barras-estado { display: inline-flex; align-items: flex-end; gap: 2px; flex: none; }
+.barra-estado { width: 4px; height: 12px; border-radius: 1px; background: var(--s2-linea); }
+.barra-estado-llena { background: var(--s2-teal-700); }

@@ -63,12 +63,22 @@ export default function CatalogoPage() {
 
   return (
     <section className="pagina pagina-catalogo" aria-labelledby="titulo-pagina" aria-busy={cargando || undefined}>
-      <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
-      <CuadroBusqueda q={q} alBuscar={buscar} alQuitar={quitar} />
+      {/* Diseño con vida (#361): portada a todo el ancho con una foto (decorativa, va de fondo en el CSS) y, encima, una
+          tarjeta blanca con el título y la búsqueda, como la portada de los marketplaces. */}
+      <div className="catalogo-portada">
+        <div className="catalogo-portada-tarjeta">
+          <div className="catalogo-portada-textos">
+            <p className="catalogo-portada-lema">{TEXTOS.lema}</p>
+            <h1 id="titulo-pagina">{TEXTOS.titulo}</h1>
+            <p className="catalogo-portada-subtitulo">{TEXTOS.subtitulo}</p>
+          </div>
+          <CuadroBusqueda q={q} alBuscar={buscar} alQuitar={quitar} />
+        </div>
+      </div>
       <BarraFiltros parametros={parametros} filtros={filtros} onCambiar={cambiar} />
       <div ref={inicioResultados} />
 
-      {/* CA13: «Cargando…» en lugar de la rejilla, con esqueletos de tarjeta (boceto de #250). */}
+      {/* CA13: «Cargando…» en lugar de la rejilla, con esqueletos de tarjeta. */}
       {cargando && (
         <>
           <p className="catalogo-cargando" role="status">{TEXTOS.cargando}</p>
@@ -79,7 +89,7 @@ export default function CatalogoPage() {
       {/* CA15: con la API caída, el error y «Reintentar», que repite la misma petición. */}
       {actual?.error && (
         <div className="catalogo-estado">
-          <span className="catalogo-estado-icono" aria-hidden="true"><CloudOff size={24} /></span>
+          <span className="catalogo-estado-icono" aria-hidden="true"><CloudOff size={52} strokeWidth={2} /></span>
           <p role="alert">{TEXTOS.error}</p>
           <button type="button" className="s2-boton" onClick={() => setIntento((n) => n + 1)}>{TEXTOS.reintentar}</button>
         </div>
@@ -141,15 +151,15 @@ function SinAnuncios({ q, filtros, alLimpiarFiltros }) {
   if (tipo === 'filtros') {
     return (
       <div className="catalogo-estado" role="status">
-        <span className="catalogo-estado-icono" aria-hidden="true"><SearchX size={24} /></span>
+        <span className="catalogo-estado-icono" aria-hidden="true"><SearchX size={52} strokeWidth={2} /></span>
         <p>{TEXTOS_FILTROS.sinResultados}</p>
-        <button type="button" className="s2-boton s2-boton-secundario" onClick={alLimpiarFiltros}>{TEXTOS_FILTROS.limpiar}</button>
+        <button type="button" className="s2-boton s2-boton-verde" onClick={alLimpiarFiltros}>{TEXTOS_FILTROS.limpiar}</button>
       </div>
     );
   }
   return (
     <div className="catalogo-estado">
-      <span className="catalogo-estado-icono" aria-hidden="true"><PackageOpen size={24} /></span>
+      <span className="catalogo-estado-icono" aria-hidden="true"><PackageOpen size={52} strokeWidth={2} /></span>
       <p>{TEXTOS.vacio}</p>
       <Link to="/anuncios/nuevo" className="s2-boton">{TEXTOS.publicar}</Link>
     </div>
