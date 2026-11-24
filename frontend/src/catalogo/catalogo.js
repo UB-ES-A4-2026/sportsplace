@@ -3,6 +3,9 @@
 
 export const TEXTOS = {
   titulo: 'Catálogo',
+  // Diseño con vida (#361): antetítulo y frase de la portada, del mockup del catálogo de Lucía (no son textos de un CA).
+  lema: 'Dale más juego al material deportivo',
+  subtitulo: 'Encuentra lo que tu centro necesita: compra o recibe gratis material de otros clubes.',
   cargando: 'Cargando…',
   error: 'No se ha podido cargar. ',
   reintentar: 'Reintentar',

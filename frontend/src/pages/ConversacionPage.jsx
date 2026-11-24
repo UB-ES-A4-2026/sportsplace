@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { History, TriangleAlert } from 'lucide-react';
+import { CircleAlert, History } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { enviarMensaje, obtenerConversacion } from '../api/mensajes.js';
 import Aviso from '../components/Aviso.jsx';
@@ -17,6 +17,7 @@ import {
   tituloConEnlace,
   ultimoId,
 } from '../mensajes/conversacion.js';
+import { inicialesDe } from '../utilidades/iniciales.js';
 import '../mensajes/mensajes.css';
 
 // US-28 T28-3: /mensajes/:id · hilo de una conversación (también la usará US-77 para el vendedor).
@@ -152,14 +153,20 @@ export default function ConversacionPage() {
 
         {conversacion && (
           <>
-            {/* Debajo del título, el otro centro: enlace a su perfil, o «Centro eliminado» sin enlace. */}
-            <p className="mensajes-otro-centro">
-              {centro.enlace ? <Link to={centro.enlace}>{centro.nombre}</Link> : centro.nombre}
-            </p>
-            <CabeceraAnuncioMensajes anuncio={conversacion.anuncio} vendedor={vendedor}
-              conEnlace={tituloConEnlace(conversacion.anuncio.estado)} />
+            {/* Diseño con vida (#361): una tarjeta con el otro centro (iniciales decorativas) y el anuncio. */}
+            <div className="mensajes-cabecera">
+              <div className="mensajes-con-quien">
+                <span className="mensajes-avatar" aria-hidden="true">{inicialesDe(centro.nombre)}</span>
+                {/* Debajo del título, el otro centro: enlace a su perfil, o «Centro eliminado» sin enlace. */}
+                <p className="mensajes-otro-centro">
+                  {centro.enlace ? <Link to={centro.enlace}>{centro.nombre}</Link> : centro.nombre}
+                </p>
+              </div>
+              <CabeceraAnuncioMensajes anuncio={conversacion.anuncio} vendedor={vendedor}
+                conEnlace={tituloConEnlace(conversacion.anuncio.estado)} />
+            </div>
             {banda && (
-              <p className="mensajes-banda" role="status"><TriangleAlert size={16} aria-hidden="true" />{banda}</p>
+              <p className="mensajes-banda" role="status"><CircleAlert size={20} strokeWidth={2.6} aria-hidden="true" />{banda}</p>
             )}
 
             <div className="mensajes-hilo">

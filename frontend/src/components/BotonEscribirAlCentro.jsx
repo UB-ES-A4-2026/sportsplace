@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { conversacionDelAnuncio } from '../api/mensajes.js';
 import { destinoDeEscribir, resultadoDelFallo, TEXTOS } from '../mensajes/conversacion.js';
@@ -29,7 +29,7 @@ export default function BotonEscribirAlCentro({ anuncioId }) {
     <div className="detalle-boton">
       <Aviso aviso={aviso} onCerrar={cerrarAviso} />
       <button type="button" className="s2-boton s2-boton-secundario" disabled={comprobando} onClick={escribir}>
-        <MessageCircle size={17} aria-hidden="true" />
+        <MessageSquare size={20} strokeWidth={2.6} aria-hidden="true" />
         {TEXTOS.escribir}
       </button>
     </div>

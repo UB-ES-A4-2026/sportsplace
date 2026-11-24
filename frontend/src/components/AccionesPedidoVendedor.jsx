@@ -75,7 +75,7 @@ export default function AccionesPedidoVendedor({ pedido, onActualizado, onAviso,
           </button>
         )}
         {botones.rechazar && (
-          <button type="button" className="boton-secundario" disabled={enviando} onClick={() => { setAperturasRechazo((n) => n + 1); setDialogo('rechazar'); }}>
+          <button type="button" className="boton-secundario boton-borde-peligro" disabled={enviando} onClick={() => { setAperturasRechazo((n) => n + 1); setDialogo('rechazar'); }}>
             Rechazar
           </button>
         )}
