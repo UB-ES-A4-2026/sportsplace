@@ -1,0 +1,175 @@
+/* T21-6: barra de filtros de /catalogo. Diseño con vida (#361, mockup «Main» de Lucía): los controles en una tarjeta
+   blanca con borde (Categoría, Deporte, Estado del material, Precio (€), Modalidad y «Limpiar filtros», en el orden de
+   US-22); el elegido, en verde claro con borde verde; debajo, las etiquetas de los filtros activos en pastillas oscuras.
+   Los selectores llevan dos clases porque styles.css (que define `button`) se carga después. */
+@import '../diseno/tokens.css';
+
+.filtros { margin-top: 24px; color: var(--s2-tinta); }
+.filtros button { margin-top: 0; }
+.filtros-tarjeta {
+  padding: 12px; border: var(--s2-borde) solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
+}
+.filtros-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+/* Dos clases: si otra hoja vuelve a cargar tokens.css después, `.s2-boton { display: inline-flex }` no lo muestra. */
+.filtros .filtros-movil { display: none; }
+
+/* Categoría y Deporte: <select> nativo de 52 px con el icono en un círculo a la izquierda. */
+.filtro-desplegable-caja { position: relative; display: inline-flex; min-width: 0; }
+.filtro-desplegable-icono {
+  position: absolute; top: 50%; left: 8px; display: flex; transform: translateY(-50%); pointer-events: none;
+}
+.filtro-icono-categoria {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--s2-teal-700); background: var(--s2-linea-2);
+}
+.filtro-desplegable,
+.filtros .filtro-boton {
+  --pisada: 0 0 transparent;
+  min-height: var(--s2-toque-l); border: var(--s2-campo-grosor) solid var(--s2-campo-borde); border-radius: var(--s2-radio);
+  color: var(--s2-tinta); background-color: var(--s2-superficie); font: inherit; font-size: 17px; font-weight: 800; line-height: 1.2;
+  transition: border-color 160ms var(--s2-curva), background-color 160ms var(--s2-curva);
+}
+/* field-sizing: el desplegable mide lo que la opción elegida (no lo que la más larga), como el botón del mockup. */
+.filtro-desplegable {
+  max-width: 100%; padding: 0 40px 0 50px; cursor: pointer; appearance: none; field-sizing: content;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2314261a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+.filtro-desplegable:hover, .filtros .filtro-boton:hover { border-color: var(--s2-tinta); background-color: var(--s2-superficie); }
+.filtro-desplegable:focus-visible,
+.filtros .filtro-boton:focus-visible { outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
+/* Con un filtro elegido, el control se marca en verde claro con borde verde. */
+.filtro-desplegable.activo,
+.filtros .filtro-boton.activo,
+.filtros .filtro-boton.activo:hover { border-color: var(--s2-teal-700); background-color: var(--s2-teal-100); }
+
+/* «Estado del material»: botón con las barritas y panel flotante con las 5 casillas. */
+.filtros .filtro-boton { display: inline-flex; align-items: center; gap: 10px; padding: 0 14px; }
+.filtros .filtro-boton .barra-estado,
+.filtro-panel .barra-estado { width: 6px; height: 16px; border-radius: 2px; }
+.filtro-boton .icono-girar { flex: none; transition: transform 220ms var(--s2-curva); }
+.filtro-boton[aria-expanded="true"] .icono-girar { transform: rotate(180deg); }
+.filtro-estado { position: relative; }
+.filtro-panel {
+  position: absolute; z-index: 10; top: calc(100% + 8px); left: 0; display: flex; flex-direction: column; gap: 2px;
+  width: 280px; max-width: 86vw; margin: 0; padding: 10px; border: var(--s2-campo-grosor) solid var(--s2-linea);
+  border-radius: 18px; background: var(--s2-superficie); box-shadow: var(--s2-sombra-flota);
+  animation: filtro-aparece 160ms var(--s2-curva);
+}
+@keyframes filtro-aparece { from { opacity: 0; transform: translateY(-4px); } }
+.filtro-panel legend {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.filtro-panel label {
+  display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 10px; border-radius: var(--s2-radio-s);
+  color: var(--s2-tinta); font-size: 16px; font-weight: 800; cursor: pointer;
+}
+.filtro-panel label:hover { background: var(--s2-linea-2); }
+.filtro-panel-texto { flex: 1 1 auto; }
+.filtro-panel input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--s2-teal-700); cursor: pointer; }
+
+/* «Precio (€)»: recuadro con «Desde» – «Hasta» y «Aplicar»; con donaciones, gris y deshabilitado. */
+.filtro-precio { min-width: 0; margin: 0; }
+.filtro-precio fieldset {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; min-height: var(--s2-toque-l); margin: 0;
+  padding: 2px 4px 2px 14px; border: var(--s2-campo-grosor) solid var(--s2-linea); border-radius: var(--s2-radio);
+  background: var(--s2-superficie);
+}
+.filtro-precio legend {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.filtro-precio-titulo { color: var(--s2-tinta); font-size: 17px; font-weight: 800; white-space: nowrap; }
+.filtro-precio-guion { color: var(--s2-gris); font-weight: 900; }
+.filtro-precio input {
+  width: 76px; height: var(--s2-toque); padding: 0 10px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde);
+  border-radius: 10px; color: var(--s2-tinta); background: var(--s2-superficie); font: inherit; font-size: 16px; font-weight: 700;
+  font-variant-numeric: tabular-nums; transition: border-color 160ms var(--s2-curva);
+}
+.filtro-precio input::placeholder { color: var(--s2-gris); font-weight: 700; opacity: 1; }
+.filtro-precio input:hover { border-color: var(--s2-tinta); }
+.filtro-precio input:focus-visible { outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
+.filtro-precio input[aria-invalid="true"] { border-color: var(--s2-peligro); }
+.filtros .filtro-aplicar {
+  --pisada: 0 0 transparent;
+  min-height: var(--s2-toque); padding: 0 14px; border-radius: 10px; color: #fff; background: var(--s2-teal-700);
+  font-size: 16px; font-weight: 900;
+}
+.filtros .filtro-aplicar:hover { background: var(--s2-teal-800); }
+.filtro-precio.desactivado fieldset { background: var(--s2-estado-cancelado-fondo); }
+.filtro-precio.desactivado .filtro-precio-titulo { color: var(--s2-gris); }
+.filtro-precio.desactivado input { border-color: var(--s2-linea); background: var(--s2-linea-2); cursor: not-allowed; }
+.filtros .filtro-precio.desactivado .filtro-aplicar { background: var(--s2-campo-borde); cursor: not-allowed; opacity: 1; }
+/* Nota «No aplica a donaciones» y error del precio: debajo de la barra, a todo el ancho. */
+.filtro-nota {
+  display: flex; flex-basis: 100%; order: 10; align-items: center; gap: 6px; margin: 0 4px; color: var(--s2-gris);
+  font-size: 15px; font-weight: 800;
+}
+.filtro-nota svg { flex: none; }
+.filtro-nota-error { color: var(--s2-peligro); }
+
+/* «Todos · Venta · Donación»: grupo con borde; el elegido, relleno oscuro (Donación, verde oscuro). */
+.filtro-modalidad {
+  display: inline-flex; gap: 4px; padding: 4px; border: var(--s2-campo-grosor) solid var(--s2-linea); border-radius: var(--s2-radio);
+  background: var(--s2-superficie);
+}
+.filtros .filtro-modalidad button {
+  --pisada: 0 0 transparent;
+  min-height: var(--s2-toque); padding: 0 16px; border-radius: 10px; color: var(--s2-tinta); background: transparent;
+  font-size: 16px; font-weight: 900; transition: background-color 160ms var(--s2-curva);
+}
+.filtros .filtro-modalidad button:hover { background: var(--s2-linea-2); }
+.filtros .filtro-modalidad button[aria-pressed="true"] { color: #fff; background: var(--s2-tinta); }
+.filtros .filtro-modalidad .filtro-modalidad-donacion[aria-pressed="true"] { background: var(--s2-teal-800); }
+
+/* «Limpiar filtros»: enlace verde subrayado. */
+.filtros .filtros-limpiar {
+  --pisada: 0 0 transparent;
+  min-height: 48px; padding: 0 10px; border-radius: var(--s2-radio-s); color: var(--s2-teal-700); background: transparent;
+  font-size: 17px; font-weight: 900; text-decoration: underline; text-underline-offset: 3px;
+}
+.filtros .filtros-limpiar:hover { color: var(--s2-teal-800); background: var(--s2-linea-2); }
+
+/* Etiquetas de filtros activos: «Nombre: Valor» en una pastilla oscura y la «×» en un círculo blanco. Toda la pastilla
+   quita el filtro: el botón se estira por encima con ::after (su nombre sigue siendo «Quitar …»). */
+.filtros-etiquetas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+.filtro-etiqueta {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: var(--s2-toque); padding: 0 8px 0 16px;
+  border-radius: var(--s2-radio-etiqueta); color: #fff; background: var(--s2-tinta); font-size: 16px; font-weight: 800;
+  animation: filtro-aparece 160ms var(--s2-curva);
+}
+.filtro-etiqueta:hover { background: var(--s2-tinta-2); }
+.filtros .filtro-etiqueta button {
+  --pisada: 0 0 transparent;
+  display: grid; flex: none; place-items: center; width: 28px; height: 28px; min-height: 0; padding: 0; border-radius: 50%;
+  color: var(--s2-tinta); background: var(--s2-superficie);
+}
+.filtros .filtro-etiqueta button::after { content: ''; position: absolute; inset: 0; border-radius: var(--s2-radio-etiqueta); }
+.filtros .filtro-etiqueta button:hover { color: var(--s2-tinta); background: var(--s2-superficie); }
+
+/* US-22: en pantallas < 600 px la barra se pliega tras «Filtros (N)» (botón oscuro a todo el ancho) y se despliega en
+   vertical dentro de la tarjeta. */
+@media (max-width: 599px) {
+  .filtros .filtros-movil {
+    --pisada: 0 0 transparent;
+    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: var(--s2-toque-l); padding: 0 16px;
+    border-radius: var(--s2-radio); color: #fff; background: var(--s2-tinta); font-size: 18px; font-weight: 900;
+  }
+  .filtros .filtros-movil:hover { background: var(--s2-tinta-2); }
+  .filtros-barra { display: none; flex-direction: column; align-items: stretch; margin-top: 12px; }
+  .filtros-barra.abierta { display: flex; animation: filtro-aparece 180ms var(--s2-curva); }
+  .filtros-barra > * { min-width: 0; max-width: 100%; }
+  .filtro-desplegable-caja, .filtro-desplegable, .filtro-estado, .filtros .filtro-estado .filtro-boton { width: 100%; }
+  .filtros .filtro-estado .filtro-boton .icono-girar { margin-left: auto; }
+  .filtro-panel { position: static; width: auto; max-width: none; margin-top: 8px; box-shadow: none; animation: none; }
+  .filtro-precio fieldset { padding: 8px 6px 6px 12px; }
+  .filtro-precio-titulo { flex-basis: 100%; }
+  .filtro-precio input { flex: 1 1 0; width: auto; min-width: 0; }
+  .filtro-nota { order: 0; }
+  .filtro-modalidad { display: flex; }
+  .filtros .filtro-modalidad button { flex: 1; padding: 0 8px; }
+  .filtros .filtros-limpiar { align-self: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filtro-panel, .filtro-etiqueta, .filtros-barra.abierta { animation: none; }
+  .filtro-boton .icono-girar { transition: none; }
+}

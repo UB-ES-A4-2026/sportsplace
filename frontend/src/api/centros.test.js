@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { actualizarMiCentro, guardarUbicacion, obtenerMiCentro } from './centros.js';
+import { actualizarMiCentro, guardarUbicacion, listarAnunciosDelCentro, obtenerCentro, obtenerMiCentro } from './centros.js';
 
 describe('obtenerMiCentro', () => {
   test('CA17: GET /centros/mio y devuelve el `centro`', async () => {
@@ -47,5 +47,43 @@ describe('guardarUbicacion', () => {
 
     assert.deepEqual(llamadas, [{ ruta: '/centros/mio/ubicacion', opciones: { method: 'PUT', body: ubicacion } }]);
     assert.equal(resultado, centro);
+  });
+});
+
+describe('obtenerCentro (US-10 CA11)', () => {
+  test('GET /centros/:id con el id codificado y devuelve el `centro`', async () => {
+    const llamadas = [];
+    const centro = { id: 'c 1', nombre: 'Club Natació Exemple', es_mio: false };
+    const signal = new AbortController().signal;
+
+    const resultado = await obtenerCentro('c 1', { signal }, async (ruta, opciones) => {
+      llamadas.push({ ruta, opciones });
+      return { centro };
+    });
+
+    assert.deepEqual(llamadas, [{ ruta: '/centros/c%201', opciones: { signal } }]);
+    assert.equal(resultado, centro);
+  });
+});
+
+describe('listarAnunciosDelCentro (US-10 CA12)', () => {
+  test('GET /centros/:id/anuncios?pagina=n y devuelve { anuncios, pagina, total }', async () => {
+    const llamadas = [];
+    const respuesta = { anuncios: [{ id: 'a1' }], pagina: 2, total: 21 };
+    const signal = new AbortController().signal;
+
+    const resultado = await listarAnunciosDelCentro('c1', { pagina: 2, signal }, async (ruta, opciones) => {
+      llamadas.push({ ruta, opciones });
+      return respuesta;
+    });
+
+    assert.deepEqual(llamadas, [{ ruta: '/centros/c1/anuncios?pagina=2', opciones: { signal } }]);
+    assert.equal(resultado, respuesta);
+  });
+
+  test('sin página pide la 1', async () => {
+    let ruta;
+    await listarAnunciosDelCentro('c1', {}, async (r) => { ruta = r; return { anuncios: [], pagina: 1, total: 0 }; });
+    assert.equal(ruta, '/centros/c1/anuncios?pagina=1');
   });
 });

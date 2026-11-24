@@ -1,0 +1,150 @@
+/* Diseño con vida (#361): cabecera común, como Cabecera.dc.html de Lucía. Barra blanca fija arriba con borde de 3 px;
+   logo con el balón blanco en un círculo naranja con pisada; enlaces con icono de 48 px y radio 14, el activo con fondo
+   verde claro (E03: «Mis anuncios»; E04 CA1: «Catálogo»; siempre con aria-current), contador de pedidos naranja,
+   «Publicar anuncio» naranja con «+» y el menú del centro con sus iniciales en un círculo. En móvil los enlaces se
+   recogen tras «Menú». */
+@import './tokens.css';
+
+/* Alto de la barra con sesión (80 px + el borde). Lo usa el aviso tras una acción (styles.css) para salir justo debajo. */
+:root { --cabecera-alto: 83px; }
+
+.cabecera { position: sticky; top: 0; z-index: 30; border-bottom: var(--s2-borde) solid var(--s2-linea); background: var(--s2-superficie); }
+.cabecera-contenido {
+  display: flex; align-items: center; gap: 14px; max-width: 1280px; min-height: calc(var(--cabecera-alto) - var(--s2-borde));
+  margin: 0 auto; padding: 0 24px;
+}
+/* Sin sesión (portada, registro y /entrar) solo hay «Registro» y «Entrar»: la barra se queda en 69 px, como antes
+   (la pantalla partida de /entrar ocupa justo el resto de la ventana). */
+.cabecera-publica .cabecera-contenido { min-height: 66px; }
+
+/* Logo «Sportsplace»: círculo naranja con pisada y el balón en blanco. */
+.cabecera .brand {
+  display: flex; flex: none; align-items: center; gap: 10px; margin-right: 16px; color: var(--s2-tinta); font-size: 24px;
+  font-weight: 900; letter-spacing: -0.4px; text-decoration: none; white-space: nowrap;
+}
+.cabecera .brand-mark {
+  display: grid; flex: none; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  background: var(--s2-naranja-500); box-shadow: inset 0 -4px 0 var(--s2-naranja-600);
+}
+.cabecera .brand:focus-visible { border-radius: var(--s2-radio); }
+
+/* Enlaces con icono, de 48 px y radio 14; el activo con fondo verde claro y texto verde oscuro, sin subrayado. */
+.cabecera .menu { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; }
+.cabecera .menu-enlaces { display: flex; align-items: center; gap: 6px; }
+.cabecera .menu-acciones { display: flex; align-items: center; gap: 14px; }
+.cabecera .menu-enlaces a {
+  display: inline-flex; flex: none; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px;
+  border-radius: var(--s2-radio); color: var(--s2-tinta); font-size: 17px; font-weight: 800; text-decoration: none;
+  white-space: nowrap; transition: background-color 160ms var(--s2-curva), color 160ms var(--s2-curva);
+}
+.cabecera .menu-enlaces a svg { flex: none; }
+.cabecera .menu-enlaces a:hover { color: var(--s2-tinta); background: var(--s2-linea-2); }
+.cabecera .menu-enlaces a.active { color: var(--s2-teal-800); background: var(--s2-teal-100); font-weight: 900; }
+
+/* US-109 CA9: contador de pedidos recibidos pendientes («pendientes» solo para lectores de pantalla). */
+.cabecera .contador-pedidos {
+  display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: var(--s2-radio-etiqueta);
+  color: #fff; background: var(--s2-naranja-600); font-size: 14px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums;
+}
+
+/* US-12 CA1: «Publicar anuncio» (.s2-boton naranja con pisada, 52 px). */
+.cabecera a.boton-cabecera { flex: none; min-height: var(--s2-toque-l); padding: 0 22px; font-size: 18px; }
+
+/* US-07 CA1: menú del centro («nombre ▾» con «Mi perfil» y «Cerrar sesión»). Las iniciales van en un círculo blanco de
+   52 px con borde, como el botón del centro del mockup; el desplegable flota (sombra suave). */
+.cabecera .menu-centro { position: relative; }
+.cabecera .menu-centro-boton {
+  --pisada: 0 0 transparent;
+  display: inline-flex; align-items: center; gap: 10px; min-height: var(--s2-toque-l); margin: 0; padding: 0 14px 0 0;
+  border: 0; border-radius: var(--s2-radio-etiqueta); color: var(--s2-tinta); background: none;
+  font-size: 16px; font-weight: 800; line-height: 1.2; white-space: nowrap; cursor: pointer;
+  transition: background-color 160ms var(--s2-curva);
+}
+.cabecera .menu-centro-boton:hover { color: var(--s2-tinta); background: var(--s2-linea-2); }
+.cabecera .menu-centro-avatar {
+  display: grid; flex: none; place-items: center; width: 52px; height: 52px; border: var(--s2-borde) solid var(--s2-linea);
+  border-radius: 50%; color: var(--s2-teal-800); background: var(--s2-superficie); font-size: 16px; font-weight: 900;
+  transition: border-color 160ms var(--s2-curva);
+}
+.cabecera .menu-centro-boton:hover .menu-centro-avatar,
+.cabecera .menu-centro-boton[aria-expanded="true"] .menu-centro-avatar { border-color: var(--s2-teal-700); }
+.cabecera .menu-centro-nombre { max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+.cabecera .menu-centro-opciones {
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 10; display: grid; gap: 2px; min-width: 220px; padding: 8px;
+  border: 2px solid var(--s2-linea); border-radius: var(--s2-radio-l); background: var(--s2-superficie);
+  box-shadow: var(--s2-sombra-flota); animation: cabecera-aparece 180ms var(--s2-curva);
+}
+.cabecera .menu-centro-opciones[hidden] { display: none; }
+.cabecera .menu-centro-opciones a,
+.cabecera .menu-centro-opciones button {
+  --pisada: 0 0 transparent;
+  display: flex; align-items: center; width: 100%; min-height: var(--s2-toque); margin: 0; padding: 0 14px; border: 0;
+  border-radius: var(--s2-radio-s); color: var(--s2-tinta); background: none; font: inherit; font-size: 16px; font-weight: 800;
+  text-align: left; text-decoration: none; cursor: pointer;
+}
+.cabecera .menu-centro-opciones a:hover,
+.cabecera .menu-centro-opciones button:hover { color: var(--s2-teal-800); background: var(--s2-teal-100); }
+
+/* Botón «Menú» (solo en móvil). Con pedidos recibidos pendientes lleva un punto naranja: el número está dentro. */
+.cabecera .cabecera-boton-menu { display: none; }
+.cabecera .cabecera-boton-menu-aviso {
+  position: absolute; top: 6px; right: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--s2-naranja-600);
+  box-shadow: 0 0 0 2px var(--s2-superficie);
+}
+
+/* Hasta 1360 px el nombre del centro no cabe al lado de sus iniciales: se queda solo para los lectores de pantalla. */
+@media (max-width: 1360px) {
+  .cabecera .menu.privado .menu-centro-boton { padding-right: 10px; }
+  .cabecera .menu.privado .menu-centro-nombre {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+}
+
+/* Pantallas medianas: menos aire entre piezas, enlaces más estrechos y «Publicar anuncio» un poco más pequeño. */
+@media (max-width: 1180px) {
+  .cabecera-contenido { gap: 10px; }
+  .cabecera .brand { margin-right: 4px; font-size: 22px; }
+  .cabecera .menu, .cabecera .menu-acciones { gap: 10px; }
+  .cabecera .menu-enlaces { gap: 2px; }
+  .cabecera .menu-enlaces a { padding: 0 12px; font-size: 16px; }
+  .cabecera a.boton-cabecera { padding: 0 16px; font-size: 16px; }
+  .cabecera .menu-centro-avatar { width: 46px; height: 46px; }
+}
+
+/* Móvil y tabletas: los enlaces se recogen tras «Menú» y se abren en columna, con las mismas pastillas de 48 px. */
+@media (max-width: 980px) {
+  :root { --cabecera-alto: 67px; }
+  .cabecera-contenido,
+  .cabecera-publica .cabecera-contenido { flex-wrap: wrap; gap: 10px; min-height: calc(var(--cabecera-alto) - var(--s2-borde)); padding: 8px 16px; }
+  .cabecera .brand { margin-right: 0; font-size: 22px; }
+  .cabecera .brand-mark { width: 42px; height: 42px; }
+  .cabecera .cabecera-boton-menu {
+    --pisada: 0 0 transparent;
+    position: relative; display: grid; place-items: center; width: 48px; height: 48px; margin: 0 0 0 auto; padding: 0;
+    border: var(--s2-campo-grosor) solid var(--s2-linea); border-radius: var(--s2-radio); color: var(--s2-tinta);
+    background: var(--s2-superficie); cursor: pointer;
+  }
+  .cabecera .cabecera-boton-menu:hover { color: var(--s2-tinta); background: var(--s2-linea-2); }
+  .cabecera .cabecera-boton-menu[aria-expanded="true"] { color: var(--s2-teal-800); border-color: var(--s2-teal-100); background: var(--s2-teal-100); }
+  .cabecera .menu.privado { display: none; flex: 1 1 100%; flex-direction: column; align-items: stretch; gap: 12px; padding: 4px 0 12px; }
+  .cabecera .menu.privado.abierto { display: flex; animation: cabecera-aparece 200ms var(--s2-curva); }
+  .cabecera .menu.privado .menu-enlaces,
+  .cabecera .menu.privado .menu-acciones { flex-direction: column; align-items: stretch; gap: 4px; }
+  .cabecera .menu.privado .menu-enlaces { padding-top: 10px; border-top: 2px solid var(--s2-linea-2); }
+  .cabecera .menu.privado .menu-enlaces a { min-height: 52px; padding: 0 14px; font-size: 17px; }
+  .cabecera .menu.privado .menu-acciones { gap: 10px; }
+  .cabecera .menu.privado a.boton-cabecera { justify-content: center; min-height: var(--s2-toque-l); font-size: 18px; }
+  .cabecera .menu.privado .menu-centro-boton { width: 100%; padding-right: 14px; border-radius: var(--s2-radio); }
+  .cabecera .menu.privado .menu-centro-avatar { width: 46px; height: 46px; }
+  .cabecera .menu.privado .menu-centro-nombre {
+    position: static; width: auto; height: auto; max-width: none; flex: 1; overflow: hidden; clip: auto; text-align: left;
+  }
+  .cabecera .menu.privado .menu-centro-opciones { position: static; margin-top: 6px; box-shadow: none; animation: none; }
+  .cabecera .menu:not(.privado) { justify-content: flex-end; }
+  .cabecera .menu:not(.privado) .menu-enlaces a { padding: 0 14px; }
+}
+
+@keyframes cabecera-aparece { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .cabecera .menu.privado.abierto, .cabecera .menu-centro-opciones { animation: none; }
+}

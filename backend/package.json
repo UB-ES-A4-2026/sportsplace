@@ -11,13 +11,15 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "node --test",
+    "test:cobertura": "node --experimental-test-coverage --test-coverage-lines=95 --test-coverage-branches=90 --test-coverage-functions=95 --test",
     "db:check": "node scripts/check-database.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3",
     "busboy": "1.6.0",
     "express": "5.2.1",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

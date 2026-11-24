@@ -17,19 +17,27 @@ Validación de infraestructura del sprint: [validación DevOps](docs/sprint-0-va
 Sprint 1: [pruebas e2e con Playwright (T12-7)](docs/pruebas-e2e.md) y
 [base de pruebas aislada y semilla de QA (T12-8)](docs/base-pruebas.md).
 
+Sprint 2: [estrategia de verificación y test, métricas y umbral de cobertura (#350)](docs/estrategia-test.md).
+
 T12-6: [imagen de producción y procedimiento de despliegue](docs/despliegue-pruebas.md).
 **Entorno de pruebas:** [https://sportsplace-pruebas.onrender.com](https://sportsplace-pruebas.onrender.com).
 Está alojado en **Render, plan gratuito**, en un único Web Service para la web y
-la API mediante el `Dockerfile` de la raíz. Tiene configurado el despliegue desde
-`dev` con **Auto-Deploy: After CI Checks Pass**; se acepta el arranque en frío.
+la API mediante el `Dockerfile` de la raíz; se acepta el arranque en frío.
+El flujo acordado pasa a ser **`story/...` → `dev` → `staging` → `main`**:
+`staging` es la rama configurada en Render para QA, con **Auto-Deploy: After CI Checks Pass**.
+La rama y su protección se activaron el 4/11/2026; el cambio de rama en Render
+inició un despliegue correcto de `c8bb2e1`.
+[Capturas, checks y alcance de la evidencia](docs/evidencias/staging-2026-11-04/README.md).
+Queda registrar la primera promoción por PR `dev` → `staging`, con su Auto-Deploy
+y smoke posteriores del mismo commit; el primer smoke de creación precedió al cambio de Render.
 El Auto-Deploy de la PR #145 y el `deploy:check` contra la URL real quedaron
 [comprobados y aceptados el 29/10/2026](https://github.com/UB-ES-A4-2026/sportsplace/issues/86#issuecomment-6500493326).
-El workflow [Smoke Render (T12-6)](.github/workflows/smoke-render.yml) programa una
-comprobación con cada push a `dev`: espera a que `/api/health` identifique ese mismo
+El workflow [Smoke Render (T12-6)](.github/workflows/smoke-render.yml) pasa a programar una
+comprobación con cada push a `staging`: espera a que `/api/health` identifique ese mismo
 commit y ejecuta `deploy:check` contra la URL HTTPS. La espera se ejecuta en una
 rama de CI conservada para que no bloquee los checks que Render necesita para
-desplegar. La guía explica el flujo, el límite de espera y la primera ejecución
-automática que debe enlazarse en #86 después de integrar esta ampliación.
+desplegar. El smoke automático desde `dev` se integró mediante #147 y #86 está
+cerrada; el cambio a `staging` necesita su propia evidencia de despliegue y smoke.
 
 ## Tecnologías
 
@@ -42,14 +50,16 @@ automática que debe enlazarse en #86 después de integrar esta ampliación.
 
 ## Equipo y responsabilidades
 
+Roles desde el Sprint 2 (en el Sprint 0 y el Sprint 1: Carlos DevOps, Asier QA, Anass y Alex backend, Lucía y Marta frontend).
+
 | Persona | Rol | Responsabilidades principales | Permiso del repositorio |
 |---|---|---|---|
-| Carlos | DevOps | Repositorio, accesos, protección de ramas, entorno con Docker, configuración compartida y documentación de arranque. | Admin |
-| Asier | QA | Casos de prueba, validación de criterios de aceptación, workflow de instalación, lint y tests, y seguimiento de resultados. | Write |
-| Anass | Backend | API, datos, validaciones del servidor y autenticación, coordinado con Alex. | Write |
-| Alex | Backend | API, datos, validaciones del servidor y autenticación, coordinado con Anass. | Write |
-| Lucía | Frontend | Interfaz, formularios, navegación e integración con la API, coordinada con Marta. | Write |
-| Marta | Frontend | Interfaz, formularios, navegación e integración con la API, coordinada con Lucía. | Write |
+| Asier | DevOps y scrum master | CI/CD, `staging`, despliegue en Render, smoke test, protección de ramas, PR única `dev` → `main` de cada demo y seguimiento del sprint. | Write |
+| Carlos | Backend | API, datos, migraciones y validaciones del servidor, coordinado con Marta. | Admin |
+| Marta | Backend | API, datos, migraciones y validaciones del servidor, coordinada con Carlos. | Write |
+| Anass | Frontend | Interfaz, formularios, navegación e integración con la API. | Write |
+| Lucía | QA | Pruebas E2E de los criterios de aceptación, validación de cada historia antes de entrar en `dev` y cambio de diseño. | Write |
+| Alex | QA | Pruebas E2E de los criterios de aceptación, validación de cada historia antes de entrar en `dev`, y criterios de aceptación de Trello. | Write |
 
 Las responsabilidades se concretan mediante tareas asignadas a cada persona.
 
@@ -79,27 +89,26 @@ Cada historia debe poder implementarse igual por cualquier persona o agente a pa
 
 ### Estrategia de ramas
 
-Trabajamos con dos ramas permanentes, `main` y `dev`, y con ramas temporales por historia y por tarea:
+Trabajamos con tres ramas permanentes, `main`, `dev` y `staging`, y con ramas por historia y por tarea. El flujo de integración y entrega es:
 
 ```text
-main                                  versiones entregables (builds)
- └── dev                              integración, siempre funcional
-      ├── story/US-01-registro        una historia de usuario completa
-      │    ├── feature/T01-3-registro-api
-      │    ├── feature/T01-4-registro-web
-      │    └── chore/T01-5-ci-github-actions    tarea técnica de la historia
-      └── fix/T03-4-...                   corrección de algo ya integrado
+feature/T01-3-registro-api ─┐
+feature/T01-4-registro-web ─┼─→ story/US-01-registro → dev → staging → main
+chore/T01-5-ci             ─┘                      integración   QA     entrega
+                                                              Render
 ```
 
-`main` y `dev` están protegidas: solo reciben cambios mediante pull request con al menos una aprobación de otra persona, conversaciones resueltas y CI en verde. La protección se aplica también a los administradores.
+`main`, `dev` y `staging` están protegidas: solo reciben cambios mediante pull request con al menos una aprobación de otra persona, conversaciones resueltas y CI en verde. La protección se aplica también a los administradores. Carlos ha copiado en `staging` las opciones de revisión de `dev`; se han verificado los cuatro checks de GitHub Actions en ambas ramas. La evidencia distingue esa lectura pública de las opciones copiadas desde el panel.
+
+Se utiliza **`staging`**, en lugar del nombre inicial `test`, para conservar las 16 ramas existentes `test/T...`. Git no permite crear una rama `test` mientras existen ramas con el prefijo `test/`. Se mantienen sus nombres y sus historiales.
 
 #### `main`: versiones entregables
 
 `main` contiene solo versiones entregables: lo que se construye y se enseña en cada demo o entrega.
 
-- Solo recibe cambios desde `dev`, mediante pull request, cuando el equipo decide publicar una versión (normalmente al final del sprint, antes de la demo).
+- Tras activar el nuevo flujo, solo recibe cambios desde `staging`, mediante pull request, cuando QA ha validado la versión publicada y el equipo decide entregarla.
 - No se crean ramas de trabajo desde `main`.
-- Carlos abre y fusiona la pull request `dev` → `main` con **Create a merge commit**, para que las dos ramas compartan historial y no aparezcan conflictos en la siguiente versión.
+- Carlos coordina la pull request `staging` → `main` con **Create a merge commit**, para conservar el historial compartido. La entrega del Sprint 1 mediante [#212 (`dev` → `main`)](https://github.com/UB-ES-A4-2026/sportsplace/pull/212) es anterior a esta transición; las siguientes entregas siguen el flujo con `staging`.
 
 #### `dev`: rama de integración, siempre funcional
 
@@ -108,6 +117,17 @@ main                                  versiones entregables (builds)
 - Solo recibe historias completas y correcciones, siempre mediante pull request.
 - Una historia entra en `dev` únicamente cuando frontend, backend, base de datos y pruebas están terminados y se cumplen todos sus criterios de aceptación. No se fusiona en `dev` una parte suelta de una historia.
 - Si `dev` deja de funcionar, arreglarlo tiene prioridad sobre el trabajo nuevo.
+
+#### `staging`: versión desplegada para QA
+
+- Se crea desde `dev` actualizado y recibe sus versiones mediante pull request `dev` → `staging`, con una aprobación ajena y los mismos checks obligatorios que `dev`.
+- Render despliega únicamente `staging`, después del CI. Cada push a esta rama programa un smoke que espera y comprueba el SHA exacto publicado.
+- QA prueba la versión de la URL HTTPS y registra el commit, los criterios revisados y el resultado. Un smoke verde comprueba el despliegue HTTP; no sustituye esta validación funcional.
+- La versión validada se promueve con una pull request `staging` → `main`. Si entra otro commit en `staging`, la validación de la entrega debe corresponder a esa nueva versión.
+- Las correcciones se preparan desde su historia o desde `dev`, según su alcance, y recorren `dev` → `staging` antes de la entrega. No se programa ni se fuerza el historial directamente en `staging`.
+- Cambiar el nombre de la rama desplegada no crea otra base de datos ni aplica migraciones. Se conserva el procedimiento de Supabase y la coordinación de los datos del entorno.
+
+La [guía de despliegue](docs/despliegue-pruebas.md#transición-de-dev-a-staging) separa la configuración preparada de los pasos remotos pendientes de comprobar.
 
 #### Ramas de historia: `story/`
 
@@ -161,8 +181,8 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 - Escribir la descripción en minúsculas, con guiones y sin espacios ni tildes.
 - Crear cada rama desde su base actualizada, según la tabla anterior.
 - Mantener un cambio coherente y revisable por rama.
-- No crear ramas permanentes por persona, área o sprint: las únicas permanentes son `main` y `dev`.
-- Conservar todas las ramas: `main`, `dev`, las `story/` y las ramas de trabajo. No se eliminan después de fusionarse, para que sigan visibles en el historial (Network).
+- No crear ramas permanentes por persona, área o sprint: las únicas permanentes son `main`, `dev` y `staging`.
+- Conservar todas las ramas: `main`, `dev`, `staging`, las `story/` y las ramas de trabajo. No se eliminan después de fusionarse, para que sigan visibles en el historial (Network).
 
 #### Resumen del flujo
 
@@ -171,7 +191,8 @@ Si una funcionalidad incluye código y sus pruebas, ambos cambios pueden ir en l
 | `feature/`, `chore/`, `docs/`, `test/` → `story/...` | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Create a merge commit** |
 | `story/...` → `dev` | Quien cierra la historia | 1 aprobación, CI en verde, historia probada de punta a punta y validada por QA. | **Create a merge commit** |
 | `docs/`, `fix/` → `dev` (documentación del proceso o corrección) | Responsable de la tarea | 1 aprobación de otra persona y CI en verde. | **Create a merge commit** |
-| `dev` → `main` | Carlos | Acuerdo del equipo, CI en verde y `dev` probada. | **Create a merge commit** |
+| `dev` → `staging` | Carlos o responsable de la integración | 1 aprobación y los mismos checks de protección que `dev`. Tras el merge, despliegue automático y smoke del commit publicado. | **Create a merge commit** |
+| `staging` → `main` | Carlos | Acuerdo del equipo, CI en verde y QA funcional de esa versión desplegada. | **Create a merge commit** |
 
 ### Procedimiento para desarrollar una tarea
 
@@ -242,17 +263,17 @@ Si se añaden cambios después de una aprobación, solicitar que se revise la nu
 - Quien revisa debe comprobar los cambios y las pruebas descritas.
 - La revisión puede realizarla otra persona del equipo.
 - Cada pull request ejecuta el workflow de GitHub Actions y su resultado debe estar en verde antes de fusionar.
-- Los tres jobs del workflow deben estar configurados como comprobaciones obligatorias en `main` y `dev`. Carlos verifica esa configuración; los fallos deberán resolverse antes de fusionar.
-- No se permite forzar cambios ni eliminar `main` ni `dev`.
+- El workflow ejecuta cinco jobs: backend, frontend, herramientas, imagen de despliegue y E2E. En `dev` son obligatorios Backend (lint y tests), Frontend (lint y build), Herramientas de migración (lint y tests) y E2E (Playwright); `staging` debe copiar esa misma protección. Carlos verifica las reglas de las ramas; que se ejecuten cinco jobs no significa que los cinco estén configurados como obligatorios.
+- No se permite forzar cambios ni eliminar `main`, `dev` ni `staging`.
 
 ### Cómo revisar y fusionar una pull request en GitHub
 
-1. El autor abre la pull request hacia su rama base (`story/...` o `dev`, según la estrategia de ramas) y solicita revisión desde **Reviewers** a un compañero con permiso Write.
+1. El autor abre la pull request hacia su rama base (`story/...`, `dev`, `staging` o `main`, según la estrategia de ramas) y solicita revisión desde **Reviewers** a un compañero con permiso Write.
 2. El revisor entra en **Files changed**, revisa los cambios y las comprobaciones descritas.
 3. Si todo está correcto, pulsa **Review changes → Approve → Submit review**. Si necesita correcciones, utiliza **Request changes** y explica qué debe cambiar.
 4. El autor atiende los comentarios y solicita otra revisión cuando corresponda.
 5. Cuando exista una aprobación y se cumplan los demás requisitos, el autor selecciona **Create a merge commit** y confirma la fusión. No se usa **Squash and merge** ni **Rebase and merge**: el profesor pidió que las ramas no desaparezcan del historial (Network), y el squash provocó los conflictos de la integración del Sprint 0.
-6. No se pulsa **Delete branch**: se conservan todas las ramas, también `main` y `dev` después de publicar una entrega.
+6. No se pulsa **Delete branch**: se conservan todas las ramas, también `main`, `dev` y `staging` después de publicar una entrega.
 
 Un comentario normal no cuenta como aprobación. El autor no puede aprobar su propia pull request.
 
@@ -512,15 +533,15 @@ docker run --rm -v "${PWD}/tools:/repo:ro" -w /tmp/sportsplace-tools node:24-boo
 
 La copia y sus dependencias quedan en el contenedor temporal. No invocar el servicio `dbtools` sin `--dry-run` para ejecutar estas pruebas: su entrada está destinada a aplicar migraciones.
 
-El workflow de esta rama ([.github/workflows/ci.yml](.github/workflows/ci.yml)) se ejecuta en cada pull request y en cada cambio de `main` y `dev` (#26 integrado en la historia). Con Node.js 24, instala las dependencias con `npm ci` y ejecuta el lint (ESLint) en `backend/`, `frontend/` y `tools/`, las pruebas del servidor y de las herramientas, y la compilación de la web. La versión del workflow de cada rama depende de sus integraciones; no se ha adelantado US-01 a `dev` para publicar este ajuste.
+El workflow ([.github/workflows/ci.yml](.github/workflows/ci.yml)) se ejecuta en cada pull request y en cada push a `main`, `dev` y `staging`. Con Node.js 24 instala las dependencias con `npm ci` y ejecuta cinco jobs: backend (lint y tests), frontend (lint, tests disponibles y build), herramientas (lint y tests), imagen Docker de despliegue (build y comprobación HTTP local) y E2E con Playwright y Supabase local aislado. El smoke remoto es otro workflow y solo se programa con los pushes a la rama desplegada `staging`.
 
-Para reproducir el CI completo en local antes de abrir una pull request, ejecutar desde la raíz:
+Para reproducir el lint, los tests unitarios de backend/tools y el build del frontend en local antes de abrir una pull request, ejecutar desde la raíz:
 
 ```bash
-docker run --rm -v "${PWD}:/repo:ro" -w /tmp/sportsplace-ci node:24-bookworm-slim sh -c "cp -R /repo/backend /repo/tools /repo/frontend . && cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
+docker run --rm -v "${PWD}:/repo:ro" -w /tmp/sportsplace-ci node:24-bookworm-slim sh -c "cp -R /repo/backend /repo/tools /repo/frontend /repo/shared . && cd backend && npm ci && npm run lint && npm test && cd ../tools && npm ci && npm run lint && npm test && cd ../frontend && npm ci && npm run lint && npm run build"
 ```
 
-El contenedor lee el repositorio y copia las tres carpetas a su espacio temporal. Las dependencias y la compilación se generan dentro de ese espacio, que se elimina al terminar; así no crea archivos con propietario root en la carpeta de trabajo de Linux.
+El contenedor lee el repositorio y copia las carpetas de los tres paquetes y `shared/` a su espacio temporal. Las dependencias y la compilación se generan dentro de ese espacio, que se elimina al terminar; así no crea archivos con propietario root en la carpeta de trabajo de Linux. Este comando no reproduce los otros dos jobs: la imagen se valida con la [guía de despliegue](docs/despliegue-pruebas.md) y los E2E con la [guía de Playwright](docs/pruebas-e2e.md).
 
 ### Problemas habituales
 

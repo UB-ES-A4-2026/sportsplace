@@ -1,0 +1,124 @@
+/* US-109 (T33-4): /pedidos. Diseño con vida (#361), mockup «Pedidos» de Lucía tal cual: pestañas grandes con flecha
+   (la elegida, oscura) y la pastilla naranja «N pendientes»; la tabla dentro de una tarjeta blanca, con cada fila como
+   una barra redondeada (los pendientes en amarillo) y el estado en pastilla (.s2-estado--… y .s2-pagado de tokens.css).
+   La tabla se mantiene (filas y columnas para los lectores de pantalla y los E2E); en móvil cada fila es una tarjeta.
+   Este archivo también lo carga la cabecera (Layout.jsx), que usa .sr-only; el contador está en diseno/cabecera.css. */
+@import '../diseno/tokens.css';
+
+.pedidos-pagina { display: flex; flex-direction: column; gap: 12px; max-width: 1132px; padding-top: 16px; }
+.pedidos-cabecera { display: grid; gap: 12px; }
+.pedidos-cabecera h1 { margin: 0; font-size: 30px; font-weight: 900; line-height: 1.15; letter-spacing: 0; }
+
+/* Pestañas «Recibidos» y «Realizados»: botones grandes con flecha; la elegida, en negro. */
+.pedidos-pestanas { display: flex; flex-wrap: wrap; gap: 8px; }
+.pedidos-cabecera .pedidos-pestana {
+  --pisada: 0 0 transparent;
+  display: flex; align-items: center; gap: 10px; min-height: 56px; margin: 0; padding: 0 20px;
+  border: 3px solid var(--s2-linea); border-radius: 16px; color: var(--s2-tinta); background: var(--s2-superficie);
+  font-size: 18px; font-weight: 900; line-height: 1.2; transition: background-color 160ms var(--s2-curva), border-color 160ms var(--s2-curva);
+}
+.pedidos-cabecera .pedidos-pestana:hover { border-color: var(--s2-teal-700); background: var(--s2-superficie); }
+.pedidos-cabecera .pedidos-pestana[aria-selected='true'] { border-color: var(--s2-tinta); color: var(--s2-superficie); background: var(--s2-tinta); }
+.pedidos-pestana svg { flex: none; }
+/* «(2 pendientes)» se ve como la pastilla «2 pendientes»: los paréntesis siguen en el texto (nombre accesible igual). */
+.pedidos-pastilla {
+  display: inline-block; padding: 2px 10px; border-radius: var(--s2-radio-etiqueta); color: var(--s2-superficie);
+  background: var(--s2-naranja-600); font-size: 14px; font-weight: 900; line-height: 1.4; white-space: nowrap;
+}
+.pedidos-parentesis { font-size: 0; }
+
+/* Panel de la pestaña: tarjeta blanca. */
+.pedidos-panel { padding: 8px 10px; border: 2px solid var(--s2-linea); border-radius: 20px; background: var(--s2-superficie); }
+.pedidos-panel > .intro-text { margin: 8px 6px; }
+
+/* Tabla: cada fila es una barra redondeada con 4 px entre filas. */
+.pedidos-tabla { width: 100%; border-collapse: separate; border-spacing: 0 4px; }
+.pedidos-tabla th {
+  padding: 4px 12px; color: var(--s2-gris); font-size: 13px; font-weight: 900; letter-spacing: 0.6px; text-align: left;
+  text-transform: uppercase; white-space: nowrap;
+}
+.pedidos-tabla td {
+  padding: 8px 12px; color: var(--s2-tinta); background: var(--s2-fondo); font-size: 15px; font-weight: 800; vertical-align: middle;
+  transition: background-color 160ms var(--s2-curva);
+}
+.pedidos-tabla .pedidos-num { text-align: right; font-variant-numeric: tabular-nums; }
+.pedidos-tabla td:first-child { border-radius: 14px 0 0 14px; }
+.pedidos-tabla td:last-child { border-radius: 0 14px 14px 0; }
+.pedidos-fila { cursor: pointer; }
+.pedidos-tabla .pedidos-fila-pendiente td { background: var(--s2-amarillo-50); }
+.pedidos-tabla .pedidos-fila:hover td { background: var(--s2-fondo-2); }
+.pedidos-tabla .pedidos-foto { width: 48px; padding: 6px 8px; }
+.pedidos-foto img, .pedidos-sin-foto {
+  display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; object-fit: cover;
+  color: var(--s2-teal-800); background: var(--s2-teal-100);
+}
+.pedidos-anuncio a { color: var(--s2-tinta); font-weight: 900; text-decoration: none; }
+.pagina .pedidos-anuncio a, .pedidos-tabla .pedidos-anuncio a { color: var(--s2-tinta); }
+.pedidos-fila:hover .pedidos-anuncio a { text-decoration: underline; text-underline-offset: 3px; }
+/* US-40 CA18: «Recogida» o «Envío» bajo el título */
+.pedidos-entrega { display: block; margin-top: 1px; color: var(--s2-gris); font-size: 13px; font-weight: 700; }
+.pedidos-tabla .pedidos-centro { font-weight: 700; }
+.pedidos-tabla .pedidos-total { font-weight: 900; }
+.pedidos-tabla .pedidos-donacion { color: var(--s2-teal-800); }
+.pedidos-estado .s2-estado, .pedidos-estado .s2-pagado { margin: 2px 4px 2px 0; }
+.pedidos-tabla .pedidos-fecha { color: var(--s2-gris); font-weight: 700; white-space: nowrap; }
+
+/* Paginación dentro del panel (CA5). */
+.pedidos-panel .paginacion { gap: 12px; margin-top: 0; padding: 8px 0 4px; color: var(--s2-gris); font-size: 15px; font-weight: 800; }
+.pedidos-panel .paginacion button {
+  --pisada: inset 0 0 0 2px var(--s2-campo-borde);
+  min-height: var(--s2-toque); padding: 0 16px; border-radius: 12px; color: var(--s2-tinta); background: var(--s2-superficie);
+  font-size: 15px; font-weight: 900;
+}
+.pedidos-panel .paginacion button:hover:not(:disabled) { color: var(--s2-tinta); background: var(--s2-fondo-2); }
+.pedidos-panel .paginacion button:disabled { opacity: 0.45; }
+
+/* CA7: bandeja vacía, centrada con la caja en un círculo amarillo. */
+.pedidos-vacio { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 24px; text-align: center; }
+.pedidos-vacio-icono {
+  display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; color: var(--s2-aviso); background: var(--s2-aviso-50);
+}
+.pedidos-vacio .intro-text { max-width: 520px; margin: 0; color: var(--s2-tinta); font-size: 19px; font-weight: 900; line-height: 1.4; }
+.pedidos-vacio .boton-enlace {
+  min-height: var(--s2-toque-l); margin-top: 0; padding: 0 22px; border-radius: 14px; font-size: 17px; font-weight: 900;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Móvil: cada pedido es una tarjeta con la foto a la izquierda; las cabeceras de columna siguen para el lector. */
+@media (max-width: 760px) {
+  .pedidos-pagina { padding-top: 6px; }
+  .pedidos-cabecera h1 { font-size: 28px; }
+  .pedidos-cabecera .pedidos-pestana { flex: 1 1 auto; justify-content: center; min-height: var(--s2-toque-l); padding: 0 14px; font-size: 17px; }
+  .pedidos-panel { padding: 0; border: 0; background: none; }
+  .pedidos-panel > .intro-text { margin: 4px 0; }
+  .pedidos-vacio { padding: 32px 16px; border: 2px solid var(--s2-linea); border-radius: 20px; background: var(--s2-superficie); }
+  .pedidos-tabla { border-spacing: 0; }
+  .pedidos-tabla thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .pedidos-tabla, .pedidos-tabla tbody { display: block; width: 100%; }
+  .pedidos-tabla .pedidos-fila {
+    display: grid; grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-areas: "foto anuncio anuncio" "foto centro total" "foto unidades fecha" "foto estado estado";
+    gap: 4px 12px; align-items: center; margin-bottom: 8px; padding: 10px 12px; border: 2px solid var(--s2-linea);
+    border-radius: 14px; background: var(--s2-superficie);
+  }
+  .pedidos-tabla .pedidos-fila-pendiente { background: var(--s2-amarillo-50); }
+  .pedidos-tabla .pedidos-fila td, .pedidos-tabla .pedidos-fila:hover td, .pedidos-tabla .pedidos-fila-pendiente td {
+    display: block; padding: 0; border-radius: 0; background: none;
+  }
+  .pedidos-tabla .pedidos-foto { grid-area: foto; align-self: start; width: 48px; padding: 0; }
+  .pedidos-anuncio { grid-area: anuncio; }
+  .pedidos-tabla .pedidos-centro { grid-area: centro; color: var(--s2-tinta-2); font-size: 14px; }
+  .pedidos-tabla .pedidos-unidades { grid-area: unidades; text-align: left; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
+  .pedidos-tabla .pedidos-unidades::before { content: attr(data-columna) ': '; }
+  .pedidos-tabla .pedidos-total { grid-area: total; }
+  .pedidos-estado { grid-area: estado; }
+  .pedidos-tabla .pedidos-fecha { grid-area: fecha; text-align: right; font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pedidos-pestana, .pedidos-tabla td { transition: none; }
+}

@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main,dev]
+    branches: [main,dev,staging]
 
 permissions:
   contents: read
@@ -24,7 +24,8 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      - name: Tests con umbral de cobertura (docs/estrategia-test.md)
+        run: npm run test:cobertura
 
   frontend:
     name: Frontend (lint y build)
@@ -41,7 +42,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
-      - run: npm test --if-present
+      - name: Tests con umbral de cobertura (docs/estrategia-test.md)
+        run: npm run test:cobertura
       - run: npm run build
 
   tools:
@@ -109,6 +111,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Preparar Supabase local aislado, migraciones y semilla (T12-8)
         run: npm --prefix tools run test-env:up
+      - name: Pruebas SQL de supabase/tests contra la base de pruebas
+        run: npm --prefix tools run test-env:sql
       - name: Probar web y API contra la base de pruebas
         run: npm --prefix e2e test
       - name: Guardar informe y evidencia de fallos

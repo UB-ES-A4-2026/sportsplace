@@ -1,0 +1,162 @@
+/* US-28 T28-3: /mensajes/nueva y /mensajes/:id. Diseño con vida (#361), como MensajeNuevo.dc.html y
+   Conversacion.dc.html de Lucía: columna centrada con tarjetas blancas de borde fino; la conversación ocupa toda la
+   altura de la ventana y solo hace scroll el hilo; mensajes propios en verde a la derecha y los del otro centro en gris
+   a la izquierda; el cuadro de escribir queda abajo. */
+@import '../diseno/tokens.css';
+
+.pagina.pagina-mensajes {
+  display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 732px; margin: 0 auto; padding: 18px 0 24px;
+  color: var(--s2-tinta);
+}
+.pagina-mensajes > * { margin-block: 0; }
+.mensajes-encabezado { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.pagina-mensajes .mensajes-encabezado .enlace-volver { margin: 0; }
+.mensajes-titulo { margin: 0; font-size: 28px; font-weight: 900; line-height: 1.2; letter-spacing: -0.01em; text-wrap: balance; }
+.pagina-mensajes .intro-text { margin: 0; }
+.pagina-mensajes .ficha-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.pagina-mensajes .ficha-error .intro-text { margin: 0; }
+.pagina-mensajes button { margin-top: 0; }
+
+/* Tarjeta del anuncio: miniatura de 64 × 64, título (enlace), precio y vendedor. */
+.mensajes-anuncio {
+  display: flex; align-items: center; gap: 14px; min-width: 0; padding: 12px; border: 2px solid var(--s2-linea);
+  border-radius: 18px; background: var(--s2-superficie);
+}
+.mensajes-anuncio-foto { flex-shrink: 0; width: 64px; height: 64px; border-radius: var(--s2-radio); object-fit: cover; }
+.mensajes-anuncio-sin-foto {
+  display: grid; place-content: center; justify-items: center; gap: 2px; color: var(--s2-naranja-700);
+  background: var(--s2-naranja-100); font-size: 11px; font-weight: 900;
+}
+.mensajes-anuncio-datos { display: grid; gap: 2px; min-width: 0; }
+.mensajes-anuncio-titulo {
+  overflow: hidden; color: var(--s2-tinta); font-size: 18px; font-weight: 900; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap;
+}
+.pagina a.mensajes-anuncio-titulo { color: var(--s2-teal-700); text-decoration: underline; text-underline-offset: 3px; }
+.pagina a.mensajes-anuncio-titulo:hover { color: var(--s2-teal-800); }
+.mensajes-anuncio-precio { color: var(--s2-teal-800); font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.mensajes-anuncio-centro { color: var(--s2-gris); font-size: 14px; font-weight: 800; }
+
+/* Cuadro de texto con ayuda (candado), contador y «Enviar» naranja. */
+.cuadro-mensaje { display: grid; gap: 10px; }
+.cuadro-mensaje .campo-ayuda {
+  display: flex; align-items: flex-start; gap: 10px; margin: 0; color: var(--s2-tinta); font-size: 17px; font-weight: 800; line-height: 1.4;
+}
+.cuadro-mensaje .campo-ayuda svg { flex: none; width: 26px; height: 26px; color: var(--s2-teal-700); stroke-width: 2.4; }
+.cuadro-mensaje textarea {
+  display: block; width: 100%; padding: 12px 14px; border: var(--s2-campo-grosor) solid var(--s2-campo-borde); border-radius: var(--s2-radio);
+  color: var(--s2-tinta); background: var(--s2-superficie); font: inherit; font-size: 17px; font-weight: 700; line-height: 1.45; resize: vertical;
+  transition: border-color 160ms var(--s2-curva), box-shadow 160ms var(--s2-curva);
+}
+.cuadro-mensaje textarea::placeholder { color: var(--s2-gris); font-weight: 600; opacity: 1; }
+.cuadro-mensaje textarea:focus-visible { outline: 0; border-color: var(--s2-tinta); box-shadow: var(--s2-foco); }
+.cuadro-mensaje-pie { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+.cuadro-mensaje .cuadro-mensaje-pie .s2-boton { min-height: 54px; padding: 0 28px; font-size: 18px; }
+.cuadro-mensaje-pie .s2-boton svg { width: 22px; height: 22px; stroke-width: 2.6; }
+/* CA10: «n/2000», en rojo a partir de 1900 (sin la caja roja de .alerta de styles.css, que es otra cosa). */
+.cuadro-mensaje-contador { color: var(--s2-gris); font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.cuadro-mensaje-contador.alerta { padding: 0; border: 0; border-radius: 0; color: var(--s2-peligro); background: none; font-size: 15px; font-weight: 900; }
+
+/* /mensajes/nueva: la ayuda, el cuadro y el pie van en una tarjeta; «Ctrl + Enter también envía.» a la izquierda del pie.
+   El formulario se «abre» (display: contents) para que sus piezas y la ayuda del atajo compartan la rejilla. */
+.mensajes-escribir {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'ayuda ayuda' 'texto texto' 'atajo pie';
+  align-items: center; gap: 10px 14px; padding: 18px; border: 2px solid var(--s2-linea); border-radius: 20px;
+  background: var(--s2-superficie);
+}
+.mensajes-escribir .cuadro-mensaje { display: contents; }
+.mensajes-escribir .campo-ayuda { grid-area: ayuda; }
+.mensajes-escribir textarea { grid-area: texto; }
+.mensajes-escribir .cuadro-mensaje-pie { grid-area: pie; }
+.mensajes-atajo { grid-area: atajo; margin: 0; color: var(--s2-gris); font-size: 14px; font-weight: 700; }
+
+/* Pantalla «Conversación»: la raíz ocupa toda la ventana (100dvh, con la cabecera dentro) y solo el hilo hace scroll. */
+#root:has(.pagina-conversacion) { display: flex; flex-direction: column; height: 100dvh; min-height: 560px; }
+#root:has(.pagina-conversacion) > .page { display: flex; flex: 1 1 auto; flex-direction: column; width: 100%; min-height: 0; padding-bottom: 0; }
+#root:has(.pagina-conversacion) > .page > main { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.pagina.pagina-conversacion { flex: 1 1 auto; gap: 10px; max-width: 932px; min-height: 0; padding: 14px 0 16px; }
+.pagina-conversacion .mensajes-titulo { font-size: 24px; }
+
+/* Con quién hablas y de qué anuncio: una tarjeta con el otro centro (iniciales decorativas) y el anuncio, separados. */
+.mensajes-cabecera {
+  display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 10px 14px;
+  border: 2px solid var(--s2-linea); border-radius: 18px; background: var(--s2-superficie);
+}
+.mensajes-con-quien { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mensajes-avatar {
+  display: grid; flex: none; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  color: #fff; background: var(--s2-estado-recibido-punto); font-size: 16px; font-weight: 900;
+}
+.mensajes-otro-centro { margin: 0; color: var(--s2-tinta); font-size: 18px; font-weight: 900; }
+.pagina .mensajes-otro-centro a { color: var(--s2-teal-800); text-decoration: underline; text-underline-offset: 3px; }
+.pagina .mensajes-otro-centro a:hover { color: var(--s2-teal-700); }
+.mensajes-cabecera .mensajes-anuncio {
+  flex: 1 1 320px; gap: 10px; padding: 0 0 0 16px; border: 0; border-left: 2px solid var(--s2-linea-2); border-radius: 0; background: none;
+}
+.mensajes-cabecera .mensajes-anuncio-titulo { font-size: 16px; }
+.mensajes-cabecera .mensajes-anuncio-precio { font-size: 14px; }
+.mensajes-cabecera .mensajes-anuncio-centro { font-size: 13px; }
+
+/* CA33-CA35: bandas de aviso, en amarillo con borde y su icono. */
+.mensajes-banda {
+  display: flex; flex: none; align-items: center; gap: 8px; margin: 0; padding: 8px 14px;
+  border: var(--s2-campo-grosor) solid var(--s2-amarillo); border-radius: var(--s2-radio-s);
+  color: var(--s2-aviso); background: var(--s2-aviso-50); font-size: 15px; font-weight: 900;
+}
+.mensajes-banda svg { flex: none; }
+
+/* Hilo: tarjeta blanca que ocupa el alto que queda y es lo único que hace scroll. */
+.mensajes-hilo {
+  display: grid; flex: 1 1 auto; align-content: start; gap: 12px; min-height: 120px; overflow-y: auto; padding: 14px;
+  border: 2px solid var(--s2-linea); border-radius: 18px; background: var(--s2-superficie); overscroll-behavior: contain;
+}
+.mensajes-anteriores { justify-self: center; }
+.mensajes-hilo .mensajes-anteriores { min-height: var(--s2-toque); font-size: 15px; }
+.mensajes-lista { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+/* Cada mensaje: el bocadillo y debajo la fecha, a la derecha (míos, verde) o a la izquierda (del otro centro, gris). */
+.mensaje { display: flex; flex-direction: column; gap: 3px; animation: mensaje-llega 200ms var(--s2-curva); }
+@keyframes mensaje-llega { from { opacity: 0; transform: translateY(4px); } }
+.mensaje-texto {
+  max-width: 72%; margin: 0; padding: 10px 14px; font-size: 16px; font-weight: 700; line-height: 1.45;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.mensaje-mio { align-items: flex-end; }
+.mensaje-mio .mensaje-texto { border-radius: 18px 4px 18px 18px; color: #fff; background: var(--s2-teal-700); }
+.mensaje-otro { align-items: flex-start; }
+.mensaje-otro .mensaje-texto { border-radius: 4px 18px 18px 18px; color: var(--s2-tinta); background: var(--s2-estado-cancelado-fondo); }
+.mensaje-fecha { color: var(--s2-gris); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mensaje-mio .mensaje-texto::selection { color: var(--s2-teal-900); background: #fff; }
+
+/* Pie: el cuadro de escribir, abajo, en su tarjeta: el texto a la izquierda y el contador sobre «Enviar» a la derecha. */
+.mensajes-pie { flex: none; }
+.mensajes-pie .cuadro-mensaje {
+  grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; padding: 10px;
+  border: 2px solid var(--s2-linea); border-radius: 18px; background: var(--s2-superficie);
+}
+.mensajes-pie .cuadro-mensaje textarea {
+  min-height: 64px; padding: 10px 12px; border-radius: var(--s2-radio-s); font-size: 16px; resize: none;
+}
+.mensajes-pie .cuadro-mensaje-pie { flex-direction: column; align-items: flex-end; gap: 4px; }
+.mensajes-pie .cuadro-mensaje-contador,
+.mensajes-pie .cuadro-mensaje-contador.alerta { font-size: 14px; }
+.mensajes-pie .cuadro-mensaje .cuadro-mensaje-pie .s2-boton { min-height: var(--s2-toque-l); padding: 0 22px; font-size: 17px; }
+.mensajes-pie .cuadro-mensaje-pie .s2-boton svg { width: 20px; height: 20px; }
+/* CA35: sin el otro centro, en lugar del cuadro sale el aviso gris con borde discontinuo. */
+.mensajes-pie .franja-pausado {
+  margin: 0; padding: 14px; border: var(--s2-campo-grosor) dashed var(--s2-campo-borde); border-radius: 18px;
+  text-align: center; font-size: 16px; font-weight: 900;
+}
+
+@media (max-width: 640px) {
+  .pagina.pagina-mensajes { padding-top: 12px; }
+  .mensajes-titulo { font-size: 24px; }
+  .mensajes-anuncio-titulo { white-space: normal; }
+  .mensajes-escribir { grid-template-areas: 'ayuda ayuda' 'texto texto' 'pie pie' 'atajo atajo'; padding: 14px; }
+  .mensajes-escribir .cuadro-mensaje-pie { justify-content: space-between; }
+  .mensajes-cabecera .mensajes-anuncio { flex-basis: 100%; padding: 10px 0 0; border-top: 2px solid var(--s2-linea-2); border-left: 0; }
+  .mensaje-texto { max-width: 88%; }
+  .pagina.pagina-conversacion { padding: 10px 0 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mensaje { animation: none; }
+}

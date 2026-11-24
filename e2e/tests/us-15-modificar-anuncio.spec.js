@@ -555,7 +555,7 @@ test.describe('US-15 · Resto de criterios', () => {
 
     await expect(page).toHaveURL(`/anuncios/${id}`);
     await expect(page.getByText(AVISO_GUARDADO, { exact: true })).toBeVisible();
-    await expect(page.getByText('Donación · Gratis', { exact: true })).toBeVisible();
+    await expect(page.getByText('Gratis · Donación', { exact: true })).toBeVisible();
     expect(await filaDe(id)).toMatchObject({ modalidad: 'donacion', precio_unitario_centimos: null });
   });
 

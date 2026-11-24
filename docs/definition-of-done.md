@@ -8,7 +8,7 @@ Una tarea pasa a **Hecho** cuando se cumplen todos estos puntos aplicables:
 
 - [ ] Se cumplen sus criterios de aceptación y sus dependencias están resueltas.
 - [ ] El resultado está explicado y se puede comprobar con la evidencia enlazada en la issue o la PR.
-- [ ] Los cambios de la historia están integrados en `dev` mediante PR, con aprobación de otra persona sobre la versión actual, conversaciones resueltas y validación de QA. La entrega se publica después mediante PR `dev` → `main`.
+- [ ] Los cambios de la historia están integrados en `dev` mediante PR, con aprobación de otra persona sobre la versión actual, conversaciones resueltas y validación de QA. Tras activar el nuevo flujo, la entrega recorre `dev` → `staging` → `main`: CI y smoke del commit desplegado en Render, y QA funcional de esa versión antes de publicarla en `main`. La entrega del Sprint 1 en #212 precede a esta transición.
 - [ ] Las comprobaciones de CI exigidas pasan en la versión que se integra. Durante la incorporación de TR-04, cualquier comprobación aún pendiente se registra como pendiente.
 - [ ] Se han realizado las pruebas relevantes del cambio. Se distinguen pruebas unitarias, build, comprobación de conexión y pruebas del flujo real.
 - [ ] README, configuración de ejemplo y contrato de API reflejan los cambios cuando corresponde.
@@ -17,7 +17,7 @@ Una tarea pasa a **Hecho** cuando se cumplen todos estos puntos aplicables:
 
 Las PR parciales de frontend, backend, pruebas y TR se integran en la rama `story/` correspondiente. Su revisión no completa una historia que requiere todas las partes: la issue de la historia permanece abierta hasta validar el conjunto e integrarlo en `dev`. Los TR iniciales son tareas de US-01. Las tareas sin cambios de código se verifican mediante sus propios criterios y evidencias.
 
-## Comprobaciones específicas de infraestructura
+## Comprobaciones específicas de infraestructura del Sprint 0
 
 | Tarea | Evidencia necesaria para cerrarla |
 |---|---|
@@ -28,7 +28,7 @@ Las PR parciales de frontend, backend, pruebas y TR se integran en la rama `stor
 | TR-05 y TR-06 | Estructuras y contrato acordados entre frontend y backend, cambios integrados y comprobaciones de sus criterios propias de las issues. |
 | TR-07 | Seguimiento coherente, planificación del sprint rellenada en la plantilla requerida y evidencias de cierre enlazadas. |
 
-Los jobs de TR-04 son `Backend (lint y tests)`, `Frontend (lint y build)` y `Herramientas de migración (lint y tests)`. El CI actual no aplica migraciones ni prueba por sí solo los correos y las sesiones reales de Supabase.
+Los tres jobs originales de TR-04 son `Backend (lint y tests)`, `Frontend (lint y build)` y `Herramientas de migración (lint y tests)`. El CI actual añade imagen de despliegue y E2E con Playwright; `staging` debe heredar los checks obligatorios y las revisiones de `dev`, como indica el README. El CI no aplica migraciones al Supabase compartido ni acredita por sí solo sus correos y sesiones reales.
 
 ## Registro, confirmación y sesión
 

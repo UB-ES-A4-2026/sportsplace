@@ -1,0 +1,198 @@
+/* /pedidos/:id (T32-5: US-108, US-35 y US-40). Diseño con vida (#361), mockups «PedidoRecibido» y «PedidoRealizado» de
+   Lucía llevados al marcado actual SOLO CON CSS (el JSX lo cambia #353, US-42): arriba «← Volver a pedidos», el título y
+   el estado en pastilla; debajo, dos columnas. A la izquierda, la frase de la situación en un panel del color del
+   estado y, pegados a ella, «Aceptar» y «Rechazar»; a la derecha, tarjetas blancas (anuncio, datos con el mensaje como
+   bocadillo, entrega, el otro centro e historial). El orden del DOM no cambia; en móvil, una columna en ese orden.
+   Lo que necesita marcado nuevo («¿Aceptas este pedido?» con las tres cifras, el seguimiento en 3 pasos, «Pedido
+   recibido» / «Pedido realizado») queda para #353. Selectores de dos o más clases: styles.css y anuncios.css ganarían. */
+@import '../diseno/tokens.css';
+
+/* Colores del estado (los usan la pastilla, el panel de la frase y el de las acciones). */
+.pagina.pagina-pedido {
+  --pedido-claro: color-mix(in srgb, var(--s2-estado-cancelado-fondo) 50%, var(--s2-superficie));
+  --pedido-fondo: var(--s2-estado-cancelado-fondo);
+  --pedido-texto: var(--s2-estado-cancelado-texto);
+  --pedido-borde: color-mix(in srgb, var(--s2-estado-cancelado-punto) 40%, var(--s2-superficie));
+  --pedido-punto: var(--s2-estado-cancelado-punto);
+}
+.pagina.pagina-pedido:has(.pedido-estado .etiqueta-amarilla) {
+  --pedido-claro: var(--s2-amarillo-50); --pedido-fondo: var(--s2-estado-pendiente-fondo);
+  --pedido-texto: var(--s2-estado-pendiente-texto); --pedido-borde: var(--s2-amarillo); --pedido-punto: var(--s2-estado-pendiente-punto);
+}
+.pagina.pagina-pedido:has(.pedido-estado .etiqueta-verde) {
+  --pedido-claro: var(--s2-teal-50); --pedido-fondo: var(--s2-estado-aceptado-fondo);
+  --pedido-texto: var(--s2-estado-aceptado-texto); --pedido-borde: color-mix(in srgb, var(--s2-teal-500) 55%, var(--s2-superficie));
+  --pedido-punto: var(--s2-estado-aceptado-punto);
+}
+.pagina.pagina-pedido:has(.pedido-estado .etiqueta-roja) {
+  --pedido-claro: var(--s2-peligro-50); --pedido-fondo: var(--s2-estado-rechazado-fondo);
+  --pedido-texto: var(--s2-estado-rechazado-texto); --pedido-borde: color-mix(in srgb, var(--s2-estado-rechazado-punto) 45%, var(--s2-superficie));
+  --pedido-punto: var(--s2-estado-rechazado-punto);
+}
+.pagina.pagina-pedido:has(.pedido-estado .etiqueta-azul) {
+  --pedido-claro: color-mix(in srgb, var(--s2-estado-recibido-fondo) 50%, var(--s2-superficie)); --pedido-fondo: var(--s2-estado-recibido-fondo);
+  --pedido-texto: var(--s2-estado-recibido-texto); --pedido-borde: color-mix(in srgb, var(--s2-estado-recibido-punto) 40%, var(--s2-superficie));
+  --pedido-punto: var(--s2-estado-recibido-punto);
+}
+
+/* Rejilla: la fila de arriba (volver, título, estado) y dos columnas (las tarjetas, a 360 px a la derecha).
+   «dense» sube cada bloque de la izquierda al primer hueco libre, junto a las tarjetas de la derecha. */
+.pagina.pagina-pedido {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr) 360px; grid-auto-flow: row dense; gap: 12px 14px;
+  align-items: start; width: 100%; max-width: 1192px; padding: 14px 0 0; color: var(--s2-tinta);
+}
+.pagina-pedido > * { grid-column: 4; min-width: 0; margin: 0; }
+.pagina-pedido > .enlace-volver { grid-row: 1; grid-column: 1; align-self: center; }
+.pagina-pedido > h1 { grid-row: 1; grid-column: 2; align-self: center; }
+.pagina-pedido > .pedido-estado { grid-row: 1; grid-column: 3 / 5; align-self: center; justify-self: start; }
+.pagina-pedido > .pedido-frase, .pagina-pedido > .pedido-motivo { grid-column: 1 / 4; }
+/* «Aceptar», «Rechazar» y «Marcar como cobrado» van abajo y a todo el ancho, donde están en el DOM: así el tabulador
+   llega a ellos en el mismo orden en que se ven (WCAG 2.4.3). */
+.pagina-pedido > .pedido-acciones { grid-column: 1 / -1; }
+
+/* Fila de arriba. */
+.pagina.pagina-pedido .enlace-volver {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--s2-toque); margin: 0; padding: 0 14px 0 10px;
+  border: 2px solid var(--s2-linea); border-radius: 12px; color: var(--s2-teal-800); background: var(--s2-superficie);
+  font-size: 16px; font-weight: 900; text-decoration: none; white-space: nowrap;
+}
+.pagina.pagina-pedido .enlace-volver:hover { color: var(--s2-teal-800); background: var(--s2-teal-50); text-decoration: none; }
+.pagina-pedido h1 { font-size: 25px; font-weight: 900; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere; }
+.pagina-pedido .pedido-estado { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+/* El estado en pastilla, con el texto del estado (nunca solo el color). */
+.pedido-estado .etiqueta-estado {
+  padding: 4px 12px; border: 2px solid var(--pedido-borde); border-radius: var(--s2-radio-etiqueta); color: var(--pedido-texto);
+  background: var(--pedido-fondo); font-size: 15px; font-weight: 900; line-height: 1.3;
+}
+.pedido-estado .etiqueta-estado::before { display: none; }
+.pedido-estado .etiqueta-estado.etiqueta-pagado { border-color: var(--s2-teal-800); color: var(--s2-superficie); background: var(--s2-teal-800); }
+
+/* La frase de la situación (CA5), en un panel del color del estado. */
+.pagina-pedido .pedido-frase {
+  padding: 16px 18px; border: 3px solid var(--pedido-borde); border-radius: 20px; color: var(--pedido-texto);
+  background: var(--pedido-claro); font-size: 18px; font-weight: 900; line-height: 1.35;
+}
+.pagina-pedido .pedido-frase:empty { display: none; }
+
+/* «Aceptar» y «Rechazar» (US-33 y US-79): grandes, verde con pisada y borde rojo, con su icono (decorativo). */
+.pagina-pedido .pedido-acciones {
+  padding: 16px 18px; border: 3px solid var(--pedido-borde); border-radius: 20px; background: var(--pedido-claro);
+}
+.pagina-pedido .pedido-acciones:empty { display: none; }
+.pedido-acciones .pedido-aviso-stock {
+  margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; color: var(--s2-aviso); background: var(--s2-aviso-50);
+  font-size: 15px; font-weight: 900; line-height: 1.4;
+}
+.pedido-acciones .pedido-acciones-vendedor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 620px; }
+.pedido-acciones .pedido-acciones-vendedor button {
+  --pisada: var(--s2-pisada-verde);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 58px; margin: 0; padding: 0 18px;
+  border-radius: 16px; color: var(--s2-superficie); background: var(--s2-teal-700); font-size: 19px; font-weight: 900; line-height: 1.2;
+}
+.pedido-acciones .pedido-acciones-vendedor button:hover:not(:disabled) { background: var(--s2-teal-700); filter: brightness(0.94); }
+.pedido-acciones .pedido-acciones-vendedor button:disabled { opacity: 0.5; cursor: not-allowed; }
+.pedido-acciones .pedido-acciones-vendedor .boton-borde-peligro {
+  --pisada: inset 0 0 0 var(--s2-borde) var(--s2-peligro);
+  color: var(--s2-peligro); background: var(--s2-superficie);
+}
+.pedido-acciones .pedido-acciones-vendedor .boton-borde-peligro:hover:not(:disabled) { color: var(--s2-peligro); background: var(--s2-peligro-50); filter: none; }
+.pedido-acciones-vendedor button::before {
+  content: ''; flex: none; width: 22px; height: 22px; background: currentColor;
+  -webkit-mask: var(--pedido-icono) center / contain no-repeat; mask: var(--pedido-icono) center / contain no-repeat;
+  --pedido-icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.pedido-acciones-vendedor .boton-borde-peligro::before {
+  --pedido-icono: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E");
+}
+
+/* Tarjetas blancas de la derecha (y «Motivo» a la izquierda). */
+.pagina-pedido .pedido-anuncio, .pagina-pedido .pedido-seccion, .pagina-pedido .pedido-motivo {
+  padding: 12px 16px; border: 2px solid var(--s2-linea); border-radius: 18px; background: var(--s2-superficie);
+}
+.pagina-pedido .pedido-seccion h2, .pagina-pedido .pedido-motivo h2 { margin: 0 0 8px; font-size: 16px; font-weight: 900; letter-spacing: 0; }
+.pagina-pedido .pedido-seccion p, .pagina-pedido .pedido-motivo p {
+  margin: 0 0 2px; color: var(--s2-tinta); font-size: 14px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere;
+}
+.pagina-pedido .pedido-motivo .pedido-motivo-codigo { font-size: 17px; font-weight: 900; }
+.pagina-pedido .pedido-motivo .boton-enlace { margin-top: 10px; }
+
+/* El anuncio del pedido: foto, título con enlace y modalidad. */
+.pagina-pedido .pedido-anuncio { display: flex; align-items: center; gap: 10px; }
+.pedido-anuncio img, .pedido-anuncio-sin-foto {
+  flex: none; width: 56px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--s2-fondo-2);
+}
+.pedido-anuncio-sin-foto { display: flex; align-items: center; justify-content: center; color: var(--s2-gris); font-size: 11px; font-weight: 800; }
+.pedido-anuncio .pedido-anuncio-titulo { display: block; margin: 0; font-size: 15px; font-weight: 900; overflow-wrap: anywhere; }
+.pagina-pedido a.pedido-anuncio-titulo { color: var(--s2-teal-700); text-decoration: underline; text-underline-offset: 3px; }
+.pagina-pedido a.pedido-anuncio-titulo:hover { color: var(--s2-teal-800); }
+.pedido-anuncio .pedido-anuncio-modalidad { margin: 0; color: var(--s2-gris); font-size: 13px; font-weight: 800; }
+
+/* El anuncio y «Datos del pedido» forman una sola tarjeta (en el mockup, el anuncio va dentro de los datos). */
+.pagina-pedido > .pedido-anuncio { align-self: stretch; padding-bottom: 8px; border-bottom: 0; border-radius: 18px 18px 0 0; }
+.pagina-pedido > .pedido-anuncio + .pedido-seccion { margin-top: -12px; padding-top: 4px; border-top: 0; border-radius: 0 0 18px 18px; }
+
+/* «Datos del pedido»: cada dato en una baldosa; el total, en verde; el mensaje del comprador (siempre el último),
+   como bocadillo de chat: a la izquierda para el vendedor y a la derecha, en azul, para el comprador. */
+.pagina-pedido .pedido-seccion[aria-labelledby='titulo-datos'] { display: grid; gap: 4px; }
+.pedido-seccion[aria-labelledby='titulo-datos'] h2 { margin-bottom: 2px; }
+.pagina-pedido .pedido-seccion[aria-labelledby='titulo-datos'] p {
+  margin: 0; padding: 5px 10px; border-radius: 10px; background: var(--s2-fondo); font-size: 14px; font-weight: 900;
+}
+/* Venta: Unidades, Precio por unidad, Total… (el 4.º hijo es el total si no es el último, que siempre es el mensaje). */
+.pagina-pedido .pedido-seccion[aria-labelledby='titulo-datos'] p:nth-child(4):not(:last-child) {
+  color: var(--s2-teal-800); background: var(--s2-teal-100); font-size: 16px;
+}
+.pagina-pedido .pedido-seccion[aria-labelledby='titulo-datos'] p:last-child {
+  justify-self: start; max-width: 100%; margin-top: 4px; padding: 8px 14px; border-radius: 4px 16px 16px 16px;
+  background: var(--s2-fondo-2); font-size: 15px; font-weight: 700;
+}
+.pagina-pedido:has(.enlace-volver[href$='pestana=realizados']) .pedido-seccion[aria-labelledby='titulo-datos'] p:last-child {
+  justify-self: end; border-radius: 16px 4px 16px 16px; background: var(--s2-estado-recibido-fondo);
+}
+
+/* Entrega: el método en negrita; el aviso de US-40, en amarillo. */
+.pagina-pedido .pedido-seccion[aria-labelledby='titulo-entrega'] h2 + p { font-weight: 900; }
+.pagina-pedido .pedido-seccion .pedido-entrega-aviso {
+  margin-top: 6px; padding: 8px 12px; border-left: 4px solid var(--s2-amarillo); border-radius: 10px; color: var(--s2-aviso);
+  background: var(--s2-amarillo-50); font-size: 13px; font-weight: 800;
+}
+.pagina-pedido .pedido-seccion a { font-size: 14px; font-weight: 900; }
+/* El otro centro: el nombre, en negrita, y la localidad en la misma línea (como en el mockup). */
+.pagina-pedido .pedido-seccion[aria-labelledby='titulo-otro'] h2 + p { display: inline; font-size: 15px; font-weight: 900; }
+.pagina-pedido .pedido-seccion[aria-labelledby='titulo-otro'] h2 + p + p { display: inline; color: var(--s2-gris); }
+.pedido-seccion[aria-labelledby='titulo-otro'] h2 + p + p::before { content: ' · ' / ''; }
+.pedido-seccion[aria-labelledby='titulo-otro'] h2 + p + p + p { margin-top: 4px; }
+
+/* Historial: un punto por línea; el primero (el pedido creado) en el color de «Pendiente» y el último, en el del estado. */
+.pedido-historial { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.pedido-historial li { display: flex; align-items: baseline; gap: 8px; color: var(--s2-tinta); font-size: 14px; font-weight: 800; }
+.pedido-historial li::before {
+  content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--s2-teal-700); transform: translateY(-1px);
+}
+.pedido-historial li:first-child::before { background: var(--s2-estado-pendiente-punto); }
+.pedido-historial li:last-child:not(:first-child)::before { background: var(--pedido-punto); }
+
+/* Escritorio: la frase ocupa el alto de su fila, junto al anuncio. */
+@media (min-width: 1000px) {
+  .pagina-pedido .pedido-frase { display: grid; align-content: center; align-self: stretch; }
+}
+
+/* Una columna, en el orden del DOM. */
+@media (max-width: 999px) {
+  .pagina.pagina-pedido { grid-template-columns: minmax(0, 1fr); grid-auto-flow: row; }
+  .pagina-pedido > *, .pagina-pedido > .enlace-volver, .pagina-pedido > h1, .pagina-pedido > .pedido-estado,
+  .pagina-pedido > .pedido-frase, .pagina-pedido > .pedido-acciones, .pagina-pedido > .pedido-motivo { grid-row: auto; grid-column: 1; }
+  .pagina-pedido > .enlace-volver { justify-self: start; }
+}
+@media (max-width: 599px) {
+  .pagina.pagina-pedido { padding-top: 6px; }
+  .pagina-pedido h1 { font-size: 24px; }
+  .pagina-pedido .pedido-frase { font-size: 17px; }
+  .pedido-acciones .pedido-acciones-vendedor { grid-template-columns: minmax(0, 1fr); }
+}
+@media (forced-colors: active) {
+  .pedido-acciones-vendedor button::before { background: ButtonText; }
+}
+
+/* #353 (US-42 y US-80): «He recibido el material» dentro de «Entrega». */
+.pedido-seccion .pedido-acciones-cierre { margin-top: 12px; }
