@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/cliente.js';
+import QuienesSomos from '../components/QuienesSomos.jsx';
 
 export default function InicioPage() {
   const [attempt, setAttempt] = useState(0);
@@ -85,6 +86,8 @@ export default function InicioPage() {
           {apiStatus === 'checking' ? 'Comprobando…' : 'Volver a comprobar'}
         </button>
       </section>
+
+      <QuienesSomos />
     </>
   );
 }
