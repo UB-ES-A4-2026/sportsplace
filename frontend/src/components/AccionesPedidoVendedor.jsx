@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Check, TriangleAlert, X } from 'lucide-react';
 import { ErrorApi } from '../api/cliente.js';
 import { aceptarPedido, rechazarPedido } from '../api/accionesPedido.js';
 import {
@@ -9,10 +10,12 @@ import {
   dialogoAceptar,
   resultadoDelFallo,
 } from '../pedidos/acciones.js';
+import { TEXTOS_VISTA } from '../pedidos/vistas.js';
 import DialogoConfirmacion from './DialogoConfirmacion.jsx';
 import DialogoRechazo from './DialogoRechazo.jsx';
 
-// T33-5: botones del vendedor en la barra de acciones de /pedidos/:id (US-108 punto 9).
+// T33-5: botones del vendedor en /pedidos/:id (US-108 punto 9), dentro del panel «¿Aceptas este pedido?» de
+// PanelPedidoVendedor: «Rechazar» (borde rojo) y «Aceptar» (verde), grandes y en ese orden, como en el mockup.
 // - US-33: «Aceptar» → diálogo «¿Aceptar el pedido?» → «Aceptando…» → aviso «Pedido aceptado.».
 // - US-79: «Rechazar» → diálogo con el motivo → «Rechazando…» → aviso «Pedido rechazado.».
 // - US-34: si faltan unidades, aviso amarillo y «Aceptar» deshabilitado.
@@ -67,16 +70,25 @@ export default function AccionesPedidoVendedor({ pedido, onActualizado, onAviso,
 
   return (
     <>
-      {botones.avisoSinStock && <p className="pedido-aviso-stock" role="status">{botones.avisoSinStock}</p>}
-      <div className="pedido-acciones-vendedor">
-        {botones.aceptar && (
-          <button type="button" disabled={botones.aceptarDeshabilitado || enviando} onClick={() => setDialogo('aceptar')}>
-            Aceptar
+      {botones.avisoSinStock && (
+        <p className="pedido-aviso-stock" role="status">
+          <TriangleAlert size={20} strokeWidth={2.6} aria-hidden="true" />
+          {botones.avisoSinStock}
+        </p>
+      )}
+      <div className="pedido-acciones-vendedor" role="group" aria-label={TEXTOS_VISTA.responder}>
+        {botones.rechazar && (
+          <button type="button" className="s2-boton s2-boton-peligro pedido-boton-responder" disabled={enviando}
+            onClick={() => { setAperturasRechazo((n) => n + 1); setDialogo('rechazar'); }}>
+            <X size={22} strokeWidth={3} aria-hidden="true" />
+            Rechazar
           </button>
         )}
-        {botones.rechazar && (
-          <button type="button" className="boton-secundario boton-borde-peligro" disabled={enviando} onClick={() => { setAperturasRechazo((n) => n + 1); setDialogo('rechazar'); }}>
-            Rechazar
+        {botones.aceptar && (
+          <button type="button" className="s2-boton s2-boton-verde pedido-boton-responder"
+            disabled={botones.aceptarDeshabilitado || enviando} onClick={() => setDialogo('aceptar')}>
+            <Check size={22} strokeWidth={3} aria-hidden="true" />
+            Aceptar
           </button>
         )}
       </div>

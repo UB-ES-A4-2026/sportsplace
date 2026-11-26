@@ -16,6 +16,7 @@ export const TEXTOS = {
   esperaRecogida: 'Verás la dirección de recogida cuando el vendedor acepte el pedido.', // US-40 CA15
   sinDireccion: 'El vendedor aún no ha indicado su dirección. Escríbele para acordarla.', // US-40 CA14
   escribirVendedor: 'Escribir al vendedor',
+  mensajeComprador: 'Mensaje del comprador',
 };
 
 // E06 «Etiquetas de estado en la web».
@@ -77,22 +78,36 @@ export function datosDelPedido(pedido) {
   } else {
     filas.push({ etiqueta: null, valor: TEXTOS.donacion });
   }
-  filas.push({ etiqueta: 'Mensaje del comprador', valor: pedido.mensaje || TEXTOS.sinMensaje });
+  filas.push({ etiqueta: TEXTOS.mensajeComprador, valor: pedido.mensaje || TEXTOS.sinMensaje });
   return filas;
 }
 
-// Punto 6 y CA7: el otro centro; email y teléfono solo cuando la API los manda (aceptado o recibido).
+// Punto 6 y CA7: «Comprador» o «Vendedor» (el otro centro) con su nombre y localidad; email y teléfono solo en
+// aceptado o recibido y solo si la API los manda. `contacto` es null si no hay ninguno de los dos.
 export function datosDelOtroCentro(pedido) {
   const centro = otroCentro(pedido);
-  const lineas = [centro.nombre, centro.localidad].filter(Boolean);
-  if (centro.email) lineas.push(`Email: ${centro.email}`);
-  if (centro.telefono) lineas.push(`Teléfono: ${centro.telefono}`);
-  return { titulo: pedido.mi_papel === 'comprador' ? 'Vendedor' : 'Comprador', lineas };
+  const email = centro.email || null;
+  const telefono = centro.telefono || null;
+  const conContacto = ['aceptado', 'recibido'].includes(pedido.estado) && Boolean(email || telefono);
+  return {
+    titulo: pedido.mi_papel === 'comprador' ? 'Vendedor' : 'Comprador',
+    nombre: centro.nombre,
+    localidad: centro.localidad || null,
+    contacto: conContacto
+      ? {
+        email,
+        telefono,
+        enlaceEmail: email && `mailto:${email}`,
+        // El enlace lleva solo las cifras (y el «+»); el texto, el teléfono tal cual lo manda la API.
+        enlaceTelefono: telefono && `tel:${telefono.replace(/[^\d+]/g, '')}`,
+      }
+      : null,
+  };
 }
 
-// US-40: sección «Entrega». Devuelve { metodo, lineas, aviso, escribir }:
-// - Envío: «Método: Envío a tu dirección» (comprador) o «… a la dirección del comprador» (vendedor) y la dirección en
-//   4 líneas (persona · dirección y piso · CP localidad (provincia) · teléfono) más «Indicaciones: …» si las hay.
+// US-40: sección «Entrega». Devuelve { metodo, lineas, indicaciones, aviso, escribir }:
+// - Envío: «Método: Envío a tu dirección» (comprador) o «… a la dirección del comprador» (vendedor), la dirección en
+//   4 líneas (persona · dirección y piso · CP localidad (provincia) · teléfono) y, aparte, «Indicaciones: …» si las hay.
 // - Recogida: «Método: Recogida en el centro vendedor». El comprador ve «Dirección de recogida: …» en aceptado o
 //   recibido (CA15); en pendiente, el aviso de espera; sin dirección del vendedor, el aviso de CA14 con «Escribir al
 //   vendedor». El vendedor y los pedidos rechazados o cancelados no ven nada más.
@@ -107,16 +122,16 @@ export function datosDeEntrega(pedido) {
       `${d.codigo_postal ?? ''} ${d.localidad ?? ''}${d.provincia ? ` (${d.provincia})` : ''}`.trim(),
       d.telefono_contacto,
     ].filter(Boolean);
-    if (d.indicaciones) lineas.push(`Indicaciones: ${d.indicaciones}`);
     return {
       metodo: comprador ? 'Método: Envío a tu dirección' : 'Método: Envío a la dirección del comprador',
       lineas,
+      indicaciones: d.indicaciones ? `Indicaciones: ${d.indicaciones}` : null,
       aviso: null,
       escribir: false,
     };
   }
   if (entrega.metodo === 'recogida') {
-    const resultado = { metodo: 'Método: Recogida en el centro vendedor', lineas: [], aviso: null, escribir: false };
+    const resultado = { metodo: 'Método: Recogida en el centro vendedor', lineas: [], indicaciones: null, aviso: null, escribir: false };
     if (!comprador) return resultado;
     if (pedido.estado === 'pendiente') return { ...resultado, aviso: TEXTOS.esperaRecogida };
     if (['aceptado', 'recibido'].includes(pedido.estado)) {
@@ -132,22 +147,28 @@ export function datosDeEntrega(pedido) {
   return null;
 }
 
-// Punto 8: «Historial», en orden de fechas, con hora de Madrid (CA6).
-export function historial(pedido) {
+// Punto 8: «Historial», en orden de fechas, con hora de Madrid (CA6). Cada línea lleva su `tipo` para el color del
+// punto que la acompaña (pendiente, aceptado, rechazado, cancelado o pagado); el texto ya dice qué es.
+export function lineasDelHistorial(pedido) {
   const lineas = [];
-  if (pedido.creado_en) lineas.push(`Pedido el ${formatearFechaHora(pedido.creado_en)}`);
+  if (pedido.creado_en) lineas.push({ tipo: 'pendiente', texto: `Pedido el ${formatearFechaHora(pedido.creado_en)}` });
   if (pedido.respondido_en && ['aceptado', 'recibido'].includes(pedido.estado)) {
-    lineas.push(`Aceptado el ${formatearFechaHora(pedido.respondido_en)}`);
+    lineas.push({ tipo: 'aceptado', texto: `Aceptado el ${formatearFechaHora(pedido.respondido_en)}` });
   }
   if (pedido.respondido_en && pedido.estado === 'rechazado') {
-    lineas.push(`Rechazado el ${formatearFechaHora(pedido.respondido_en)}`);
+    lineas.push({ tipo: 'rechazado', texto: `Rechazado el ${formatearFechaHora(pedido.respondido_en)}` });
   }
   if (pedido.cancelado_en) {
-    lineas.push(`Cancelado el ${formatearFechaHora(pedido.cancelado_en)} por ${pedido.cerrado_por === 'vendedor' ? 'vendedor' : 'comprador'}`);
+    const quien = pedido.cerrado_por === 'vendedor' ? 'vendedor' : 'comprador';
+    lineas.push({ tipo: 'cancelado', texto: `Cancelado el ${formatearFechaHora(pedido.cancelado_en)} por ${quien}` });
   }
-  if (pedido.pagado_en) lineas.push(`Marcado como pagado el ${formatearFechaHora(pedido.pagado_en)}`);
+  if (pedido.pagado_en) lineas.push({ tipo: 'pagado', texto: `Marcado como pagado el ${formatearFechaHora(pedido.pagado_en)}` });
   // «Recibido el …» va en la sección «Entrega» (US-42), no en el historial.
   return lineas;
+}
+
+export function historial(pedido) {
+  return lineasDelHistorial(pedido).map(({ texto }) => texto);
 }
 
 // CA3 y CA4: 404 → «no existe o no tienes acceso»; el resto (red, 500, 503) → «No se ha podido cargar.» + «Reintentar».
