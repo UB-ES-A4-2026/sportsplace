@@ -147,7 +147,7 @@ Regla de QA para quitar un caso E2E: solo si su CA queda cubierto en otro test (
 1. 0 omitidos en el job E2E de `dev` (quitar los `test.skip` por detección y cerrar la deuda del 403 sin confirmar).
 2. Cada CA nuevo con un test que lo nombre; lista de CA sin test revisada en cada validación de QA.
 3. Los CA que dependen de otras historias (US-39, 41, 43, 83, 115) se marcan al entrar esas historias; `Closes #n` no debe cerrar una historia con CA sin marcar.
-4. Casos que solo pasan al reintentar: cada uno, una issue.
+4. Casos que solo pasan al reintentar: cada uno, una issue. El job E2E los lista en su resumen, junto con los omitidos y su motivo (`e2e/resumen-ci.js`, #389).
 
 ## Objetivos medibles del Sprint 3
 
