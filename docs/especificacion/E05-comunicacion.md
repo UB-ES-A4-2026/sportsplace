@@ -1,6 +1,6 @@
 # E05 Comunicación entre centros
 
-Historias del Sprint 2: US-28 y US-77. El resto de historias de la épica (US-65, US-30, US-78 y US-102) y las de E08 se añadirán cuando entren en un sprint.
+Historias del Sprint 2: US-28 y US-77. Sprint 3: US-65. El resto de historias de la épica (US-30, US-78 y US-102) y las de E08 se añadirán cuando entren en un sprint.
 
 Este documento sigue `00-guia-comun.md`. Anuncios (E03), catálogo (E04) y pedidos (E06/E07) están en sus archivos: aquí solo se usan sus campos y estados y se marcan con «[Depende de US-xx]».
 
@@ -184,3 +184,68 @@ Como responsable del centro que ofrece un anuncio, quiero ver las preguntas que 
 - T77-1 · Backend: `GET /api/anuncios/:id/conversaciones`, `POST /api/conversaciones/:id/leida` y contadores en `GET /api/mis-anuncios`.
 - T77-2 · Frontend: columna en `/mis-anuncios` y pantalla `/mis-anuncios/:id/conversaciones`.
 - T77-3 · QA: automatizar E2E-1 a E2E-4.
+
+---
+
+## (3) US-65 · Veo todas mis conversaciones en una bandeja
+
+**Épica:** E05 · **Prioridad:** Should · **Puntos:** 3 · **Sprint:** 3 · **Depende de:** US-28 y US-77 (en dev)
+**Cambios respecto al backlog original:** Se define la bandeja `/mensajes`, el enlace «Mensajes» de la cabecera con contador de no leídas, la regla exacta de «sin leer» y la paginación. El aviso en la campana es US-47 (E09) y no se implementa aquí. CA6, CA14 y las columnas de CA15 ya están en `dev` desde el Sprint 2 (se adelantaron en T28-1 y T77-1, ver US-77 CA7): en esta historia solo se comprueban. Faltan los dos índices de CA15.
+
+**Historia**
+Como responsable de un centro, quiero ver juntas todas las conversaciones que tengo como comprador y como vendedor, para retomar lo hablado sin buscar el anuncio.
+1. En la cabecera veo «Mensajes (2)» y lo pulso → `/mensajes`.
+2. Veo mis conversaciones, la de mensaje más reciente primero; las no leídas en negrita.
+3. Filtro por «Como comprador» o «Como vendedor» si lo necesito.
+4. Pulso una → `/mensajes/:id`; la conversación queda leída y el contador de la cabecera baja.
+
+**Pantallas para el boceto**
+- Cabecera (todas las páginas privadas): enlace «Mensajes» y, si hay conversaciones sin leer, una burbuja con el número (máx. «99+»).
+- `/mensajes`: «Mensajes».
+  1. Pestañas «Todas» · «Como comprador» · «Como vendedor».
+  2. Lista de filas: miniatura del anuncio (48×48), nombre del otro centro en negrita si sin leer, título del anuncio, resumen del último mensaje (80 caracteres, «Tú: » si es mío), fecha relativa («hh:mm» si es de hoy, «Ayer», o «dd/mm/aaaa»), punto azul si sin leer.
+  3. Paginación de 20 en 20 con «Anterior» / «Siguiente».
+  4. Vacía: «Todavía no tienes conversaciones. Cuando escribas a un centro desde un anuncio, aparecerá aquí.» y botón «Ir al catálogo».
+
+**Criterios de aceptación**
+
+*Navegación*
+- CA1. «Mensajes» en la cabecera lleva a `/mensajes` desde cualquier página privada.
+- CA2. Cada fila lleva a `/mensajes/<id>`. El enlace «← Mensajes» de la conversación vuelve a `/mensajes` conservando pestaña y página (`?rol=comprador&pagina=2`).
+- CA3. Las pestañas cambian la URL: `/mensajes`, `/mensajes?rol=comprador`, `/mensajes?rol=vendedor`. Un `rol` desconocido se trata como «Todas».
+
+*Comportamiento*
+- CA4. Orden: `ultimo_mensaje_en` descendente; empate por `id`.
+- CA5. Una conversación está sin leer para mi centro si existe un mensaje de la otra parte con `creado_en` > mi `leida_hasta` (o `leida_hasta` es nulo). Mis propios mensajes nunca la ponen como no leída.
+- CA6. Abrir `/mensajes/:id` llama a `POST /api/conversaciones/:id/leida`, que pone `leida_hasta = now()` para mi centro. Lo mismo tras cada refresco que traiga mensajes nuevos con la pestaña visible.
+- CA7. La burbuja de la cabecera muestra el número de conversaciones (no de mensajes) sin leer. Se actualiza al cargar cada página y cada 60 s. Con 0 no se muestra. Con 100 o más muestra «99+».
+- CA8. Conversaciones con centro eliminado o anuncio retirado siguen apareciendo, con «Centro eliminado» o el título tachado y «(retirado)».
+
+*Mensajes*
+- CA9. Mientras carga: «Cargando…». Error: «No se ha podido cargar. » + «Reintentar».
+- CA10. Pestaña «Como vendedor» vacía: «Nadie te ha escrito todavía sobre tus anuncios.». «Como comprador» vacía: «Todavía no has escrito a ningún centro.».
+
+*API*
+- CA11. `GET /api/conversaciones?rol=todas|comprador|vendedor&pagina=n` → `200 { "conversaciones": [...], "pagina": n, "total": N, "por_pagina": 20 }`. Cada elemento: `id`, `soy`, `anuncio` (`id`,`titulo`,`foto_principal_url`,`estado`), `otro_centro` (`id`,`nombre`,`eliminado`), `ultimo_mensaje` (`texto_resumen`,`es_mio`,`creado_en`), `sin_leer`.
+- CA12. `pagina` entero ≥ 1; `0`, `-1` o `abc` → `400 DATOS_INVALIDOS` con `details.pagina` = «La página debe ser un número mayor que 0.». Una página mayor que la última devuelve lista vacía.
+- CA13. `GET /api/conversaciones/no-leidas` → `200 { "total": n }`.
+- CA14. `POST /api/conversaciones/:id/leida` → `204`. Otro centro → `404 NO_ENCONTRADO`.
+
+*Datos*
+- CA15. Migración: añadir a `conversaciones` las columnas `leida_hasta_comprador` y `leida_hasta_vendedor` (timestamptz, nulas). Índices (`centro_comprador_id`, `ultimo_mensaje_en`) y (`centro_vendedor_id`, `ultimo_mensaje_en`).
+
+*Permisos*
+- CA16. La lista solo incluye conversaciones donde mi centro es comprador o vendedor; una conversación de CNS con CEG nunca aparece para EET.
+
+**Flujos e2e**
+- E2E-1 (camino feliz). 1) CNS tiene C1 (A1 con CEG) y C2 (A2 con EET); CEG escribe un mensaje nuevo en C1. 2) CNS ve «Mensajes (1)». 3) Abre `/mensajes`: C1 primera y en negrita, C2 segunda en normal. 4) Abre C1: en BD `leida_hasta_vendedor` = ahora; vuelve y la burbuja ha desaparecido.
+- E2E-2 (filtro). 1) CEG tiene C1 como comprador y C3 como vendedor de su anuncio B1. 2) «Como comprador» muestra solo C1; «Como vendedor» solo C3.
+- E2E-3 (paginación). 1) Con 25 conversaciones, la página 1 muestra 20 y «Siguiente»; la 2 muestra 5 y «Anterior». 2) `?pagina=0` en la API → `400 DATOS_INVALIDOS`.
+- E2E-4 (mis mensajes no cuentan). 1) CEG envía un mensaje en C1 y vuelve a `/mensajes`: C1 no está en negrita para CEG.
+- E2E-5 (vacía). 1) EET sin conversaciones abre `/mensajes`: ve el texto de vacía y «Ir al catálogo».
+
+**Tareas**
+- T65-1 · Base de datos: índices de CA15 en una migración nueva (las columnas `leida_hasta_*` ya existen, de T28-1).
+- T65-2 · Backend: `GET /api/conversaciones`, `GET /api/conversaciones/no-leidas`, `POST /api/conversaciones/:id/leida` (este último ya existe, de T77-1).
+- T65-3 · Frontend: enlace y burbuja en la cabecera, pantalla `/mensajes` con pestañas y paginación, marcar leída al abrir.
+- T65-4 · QA: automatizar E2E-1 a E2E-5.
