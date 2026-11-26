@@ -70,8 +70,8 @@ export function aResumen(fila) {
 
 // Fila de la consulta del catálogo → tarjeta de `GET /api/catalogo` (E04 US-96 CA16).
 // Solo lo que muestra la tarjeta: nunca la descripción ni los datos de contacto o
-// la dirección del centro (CA21). `distancia_km` lo calculará US-23 y
-// `es_favorito`, US-25; hasta entonces, null y false.
+// la dirección del centro (CA21). `distancia_km` lo calculará US-23; hasta
+// entonces, null. `es_favorito` es el de los favoritos del centro (US-25 CA16).
 export function aTarjetaCatalogo(fila) {
   return {
     id: fila.id,
@@ -85,9 +85,24 @@ export function aTarjetaCatalogo(fila) {
     publicado_en: fecha(fila.publicado_en),
     centro: { id: fila.centro_id, nombre: fila.centro_nombre, localidad: fila.centro_localidad },
     distancia_km: null,
-    es_favorito: false,
+    es_favorito: fila.es_favorito === true,
   };
 }
+
+// US-25 CA14: errores de PUT /api/favoritos/:anuncio_id.
+export const MAXIMO_FAVORITOS = 500;
+export function anuncioPropio() {
+  return new ApiError(400, 'ANUNCIO_PROPIO', 'No puedes guardar tus propios anuncios.');
+}
+export function limiteFavoritos() {
+  return new ApiError(409, 'LIMITE_FAVORITOS',
+    `Has llegado al máximo de ${MAXIMO_FAVORITOS} favoritos. Quita alguno para guardar otro.`);
+}
+
+// US-25 CA7: un favorito está disponible si el anuncio se podría pedir
+// (`activo` o `reservado` con unidades); `pausado`, `entregado` o sin
+// unidades, no. Los retirados no llegan (se borran sus favoritos).
+const esDisponible = (fila) => ['activo', 'reservado'].includes(fila.estado) && fila.unidades_disponibles > 0;
 
 const COLUMNAS = `id, centro_id, titulo, descripcion, categoria, deporte,
   unidades_disponibles, estado_material, modalidad, precio_unitario_centimos,
@@ -139,6 +154,8 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
                 (SELECT p.id FROM public.pedidos p
                  WHERE p.anuncio_id = a.id AND p.comprador_centro_id = yo.id
                    AND p.estado = 'pendiente') AS mi_pedido_pendiente_id,
+                EXISTS (SELECT 1 FROM public.favoritos f
+                        WHERE f.centro_id = yo.id AND f.anuncio_id = a.id) AS es_favorito,
                 CASE
                   WHEN c.latitud IS NULL OR c.longitud IS NULL
                     OR yo.latitud IS NULL OR yo.longitud IS NULL THEN NULL
@@ -175,7 +192,7 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
         fotos,
         centro: { id: fila.centro_id, nombre: fila.centro_nombre, localidad: fila.centro_localidad },
         distancia_km: fila.distancia_km,
-        es_favorito: false, // US-25 incorporará los favoritos del centro.
+        es_favorito: fila.es_favorito === true, // US-25 CA4 y CA16.
         es_propio: fila.es_propio,
         mi_pedido_pendiente_id: fila.mi_pedido_pendiente_id ?? null,
       };
@@ -476,9 +493,12 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
       const { rows } = await consultar(
         `SELECT a.id, a.titulo, a.modalidad, a.precio_unitario_centimos, a.estado,
                 a.estado_material, a.unidades_disponibles, a.publicado_en,
-                a.centro_id, cv.nombre AS centro_nombre, cv.localidad AS centro_localidad
+                a.centro_id, cv.nombre AS centro_nombre, cv.localidad AS centro_localidad,
+                f.anuncio_id IS NOT NULL AS es_favorito
          FROM public.anuncios a
          JOIN public.centros cv ON cv.id = a.centro_id
+         LEFT JOIN public.centros yo ON yo.usuario_id = $1
+         LEFT JOIN public.favoritos f ON f.centro_id = yo.id AND f.anuncio_id = a.id
          WHERE ${visibles}
          ORDER BY a.publicado_en DESC, a.id ASC
          LIMIT $${valores.length + 1} OFFSET $${valores.length + 2}`,
@@ -521,6 +541,99 @@ export function createAnunciosRepository(database, { urlFoto = () => null } = {}
         anuncios: rows.map((fila) => aResumen({ ...fila, foto_principal_url: principal(fila.id) })),
         pagina,
         total,
+      };
+    },
+
+    // US-25 CA13, CA14 y CA11: guarda el anuncio en los favoritos del centro de
+    // la sesión. Solo anuncios visibles en el catálogo (404 si no) y de otro
+    // centro (400). Guardar uno que ya está no cambia nada ni cuenta para el
+    // máximo. El centro se bloquea (FOR UPDATE) para que dos peticiones a la
+    // vez no pasen del máximo de 500.
+    async guardarFavorito(usuarioId, anuncioId) {
+      if (!esIdDeAnuncio(anuncioId)) throw anuncioNoEncontrado();
+      try {
+        await database.transaction(async (client) => {
+          const { rows: [yo] } = await client.query(
+            'SELECT id FROM public.centros WHERE usuario_id = $1 FOR UPDATE',
+            [usuarioId],
+          );
+          if (!yo) throw new Error('La cuenta de la sesión no tiene centro.');
+          const { rows: [anuncio] } = await client.query(
+            `SELECT a.centro_id,
+                    EXISTS (SELECT 1 FROM public.favoritos f
+                            WHERE f.centro_id = $1 AND f.anuncio_id = a.id) AS es_favorito,
+                    (SELECT count(*)::integer FROM public.favoritos f WHERE f.centro_id = $1) AS total
+             FROM public.anuncios a
+             WHERE a.id = $2 AND a.estado IN ('activo', 'reservado') AND a.unidades_disponibles > 0`,
+            [yo.id, anuncioId],
+          );
+          if (!anuncio) throw anuncioNoEncontrado();
+          if (anuncio.centro_id === yo.id) throw anuncioPropio();
+          if (anuncio.es_favorito) return;
+          if (anuncio.total >= MAXIMO_FAVORITOS) throw limiteFavoritos();
+          await client.query(
+            `INSERT INTO public.favoritos (centro_id, anuncio_id) VALUES ($1, $2)
+             ON CONFLICT (centro_id, anuncio_id) DO NOTHING`,
+            [yo.id, anuncioId],
+          );
+        });
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        console.error(`No se pudo guardar el favorito: ${error?.code ?? 'error desconocido'}`);
+        if (esViolacionDeRestriccion(error)) throw errorInterno();
+        throw databaseUnavailable();
+      }
+    },
+
+    // US-25 CA13 y CA18: quita el anuncio de los favoritos del centro de la
+    // sesión; también responde bien si no estaba (o el id no es de un anuncio).
+    async quitarFavorito(usuarioId, anuncioId) {
+      if (!esIdDeAnuncio(anuncioId)) return;
+      await consultar(
+        `DELETE FROM public.favoritos
+         WHERE anuncio_id = $2
+           AND centro_id = (SELECT c.id FROM public.centros c WHERE c.usuario_id = $1)`,
+        [usuarioId, anuncioId],
+      );
+    },
+
+    // US-25 CA6, CA7, CA15 y CA18: favoritos del centro de la sesión, del
+    // guardado más reciente al más antiguo, 20 por página, con la tarjeta del
+    // catálogo y `disponible`. Nunca los retirados. Una página mayor que la
+    // última responde vacía con el total real, como el catálogo.
+    async listarFavoritos(usuarioId, { pagina }) {
+      const visibles = `f.centro_id = (SELECT c.id FROM public.centros c WHERE c.usuario_id = $1)
+           AND a.estado <> 'retirado'`;
+      const { rows: [{ total }] } = await consultar(
+        `SELECT count(*)::integer AS total
+         FROM public.favoritos f
+         JOIN public.anuncios a ON a.id = f.anuncio_id
+         WHERE ${visibles}`,
+        [usuarioId],
+      );
+      const { rows } = await consultar(
+        `SELECT a.id, a.titulo, a.modalidad, a.precio_unitario_centimos, a.estado,
+                a.estado_material, a.unidades_disponibles, a.publicado_en,
+                a.centro_id, cv.nombre AS centro_nombre, cv.localidad AS centro_localidad
+         FROM public.favoritos f
+         JOIN public.anuncios a ON a.id = f.anuncio_id
+         JOIN public.centros cv ON cv.id = a.centro_id
+         WHERE ${visibles}
+         ORDER BY f.creado_en DESC, a.id ASC
+         LIMIT $2 OFFSET $3`,
+        [usuarioId, POR_PAGINA_CATALOGO, (pagina - 1) * POR_PAGINA_CATALOGO],
+      );
+      const fotos = await fotosDe(rows.map((fila) => fila.id));
+      const principal = (id) => fotos.get(id).find((foto) => foto.es_principal)?.url ?? null;
+      return {
+        anuncios: rows.map((fila) => ({
+          ...aTarjetaCatalogo({ ...fila, foto_principal_url: principal(fila.id), es_favorito: true }),
+          disponible: esDisponible(fila),
+        })),
+        pagina,
+        por_pagina: POR_PAGINA_CATALOGO,
+        total,
+        total_paginas: Math.ceil(total / POR_PAGINA_CATALOGO),
       };
     },
   };

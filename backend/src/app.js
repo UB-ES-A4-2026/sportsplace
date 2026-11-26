@@ -6,6 +6,7 @@ import { authRouter } from './routes/auth.js';
 import { catalogoRouter } from './routes/catalogo.js';
 import { centrosRouter } from './routes/centros.js';
 import { conversacionesRouter } from './routes/conversaciones.js';
+import { favoritosRouter } from './routes/favoritos.js';
 import { healthRouter } from './routes/health.js';
 import { pedidosRouter } from './routes/pedidos.js';
 import { staticWeb } from './static-web.js';
@@ -42,6 +43,7 @@ export function createApp({
   app.use('/api/centros', centrosRouter());
   app.use('/api/pedidos', pedidosRouter());
   app.use('/api/conversaciones', conversacionesRouter());
+  app.use('/api/favoritos', favoritosRouter());
 
   if (webRoot !== null) app.use(staticWeb(webRoot));
 
