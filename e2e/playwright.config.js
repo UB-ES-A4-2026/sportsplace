@@ -12,7 +12,8 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   timeout: 30_000,
   expect: { timeout: 10_000 },
-  reporter: [['list'], ['html', { open: 'never' }]],
+  // resumen-ci.js: inestables y omitidos en el resumen del job de E2E (#389); fuera del CI no escribe nada.
+  reporter: [['list'], ['html', { open: 'never' }], ['./resumen-ci.js']],
   globalSetup: './global-setup.js',
   use: {
     baseURL: 'http://127.0.0.1:4173',
