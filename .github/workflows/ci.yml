@@ -62,6 +62,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - name: Matriz CA → test en el resumen (#390, solo informe)
+        run: npm run ca:matriz
 
   deployment-image:
     name: Imagen de despliegue (T12-6)

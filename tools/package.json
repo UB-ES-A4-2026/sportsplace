@@ -15,7 +15,8 @@
     "test-env:down": "node scripts/e2e-environment.js down",
     "test-env:sql": "node scripts/e2e-environment.js sql",
     "deploy:check": "node scripts/check-deployment.js",
-    "deploy:wait": "node scripts/wait-for-deployment.js"
+    "deploy:wait": "node scripts/wait-for-deployment.js",
+    "ca:matriz": "node scripts/matriz-ca.js .."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
