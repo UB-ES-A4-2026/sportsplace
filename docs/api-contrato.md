@@ -618,7 +618,7 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Catálogo de anuncios de **ot
 - Solo anuncios `activo` o `reservado` con `unidades_disponibles` > 0 y de centros distintos al de la sesión (CA4, CA24). Los `reservado` van en su sitio del orden; la web les pone «Reservado» (CA6).
 - Orden: `publicado_en` descendente y, a igual fecha, `id` ascendente, estable entre páginas (CA5). Lo sirve el índice `anuncios_catalogo_estado_publicado` sobre `anuncios(estado, publicado_en DESC, id)` (CA22).
 - `total` cuenta todos los anuncios que cumplen la consulta y `total_paginas` = ⌈`total` / 20⌉ (CA11). Con 0 anuncios, `total: 0` y `total_paginas: 0` (CA19). Una `pagina` mayor que `total_paginas` responde `200` con `anuncios: []` y el `total` real (CA18); la web corrige la URL a la última página (CA10).
-- `foto_principal_url` es la URL pública de la foto con `es_principal` o `null` si no hay fotos (CA20). `distancia_km` lo rellenará US-23 y `es_favorito`, US-25: hasta entonces van a `null` y `false`.
+- `foto_principal_url` es la URL pública de la foto con `es_principal` o `null` si no hay fotos (CA20). `distancia_km` lo rellenará US-23: hasta entonces va a `null`. `es_favorito` es `true` si el anuncio está en los favoritos del centro de la sesión (US-25 CA16).
 - Nunca incluye la descripción completa ni el email, el teléfono o la dirección del centro (CA21).
 - `400 DATOS_INVALIDOS`, `message` «Revisa los campos marcados.»: `details.pagina` «La página debe ser un número entero entre 1 y 10000.» (`0`, `10001`, `abc`, `2.5`, `-1` o el parámetro repetido) (CA17).
 - Con los filtros, el mismo `400` con un campo por parámetro inválido (el parámetro repetido también lo es): `details.categoria` «Categoría no válida.», `details.deporte` «Deporte no válido.» (US-22 CA12 y CA13), `details.estado_material` «Estado del material no válido.», `details.precio_min` o `details.precio_max` «Indica un precio entero entre 0 y 99.999 €.», `details.precio_min` «El precio mínimo no puede ser mayor que el máximo.» (US-73 CA11 y CA12) y `details.modalidad` «Modalidad no válida.» (US-74 CA6).
@@ -886,7 +886,8 @@ propietario conserva `GET /api/anuncios/:id` y su respuesta `{ "anuncio": … }`
 - `distancia_km` es un número en kilómetros, calculado en PostgreSQL con Haversine
   (radio de 6371 km) y redondeado a un decimal. Es `null` si cualquiera de los dos
   centros carece de latitud o longitud. Las coordenadas nunca se envían a la web.
-- `es_favorito` es `false` hasta incorporar US-25. `descripcion` conserva el texto
+- `es_favorito` es `true` si el anuncio está en los favoritos del centro de la sesión
+  (US-25 CA4 y CA16). `descripcion` conserva el texto
   y los saltos de línea; la web debe mostrarla como texto plano, sin interpretar HTML.
 - `mi_pedido_pendiente_id` es el UUID del pedido pendiente de ese anuncio para el centro de la sesión, o `null`. La ficha propia de `GET /api/anuncios/:id` incluye el mismo campo dentro de `anuncio` con valor `null`.
 - `404 NO_ENCONTRADO`, `message` «Anuncio no encontrado.», idéntico para UUID
@@ -894,6 +895,63 @@ propietario conserva `GET /api/anuncios/:id` y su respuesta `{ "anuncio": … }`
   Un UUID inválido se rechaza antes de consultar la base de datos.
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `405 METODO_NO_PERMITIDO`, cabecera `Allow: GET`, para otros métodos.
+
+## Favoritos (US-25 / T25-1)
+
+Los favoritos son del centro de la sesión: cualquier usuario del centro ve los mismos (CA10) y no hay forma de consultar ni cambiar los de otro (CA18). Las tres rutas exigen sesión y email confirmado: `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, y `503 BASE_DATOS_NO_DISPONIBLE` si falla PostgreSQL.
+
+### `PUT /api/favoritos/:anuncio_id`
+
+Sin cuerpo. Guarda el anuncio en los favoritos → `204` sin cuerpo. Es idempotente: guardar uno que ya está responde `204` y no cambia nada (CA13).
+
+- `404 NO_ENCONTRADO`, «Anuncio no encontrado.»: UUID inválido, inexistente o no visible en el catálogo (`pausado`, `entregado`, `retirado` o sin unidades) (CA14).
+- `400 ANUNCIO_PROPIO`, «No puedes guardar tus propios anuncios.» (CA5, CA14).
+- `409 LIMITE_FAVORITOS`, «Has llegado al máximo de 500 favoritos. Quita alguno para guardar otro.»: el centro ya tiene 500 (CA11, CA14).
+
+### `DELETE /api/favoritos/:anuncio_id`
+
+Quita el anuncio de los favoritos → `204` sin cuerpo, también si no estaba (CA13).
+
+Con otro método en `/api/favoritos/:anuncio_id`, `405` con `Allow: PUT, DELETE`.
+
+### `GET /api/favoritos?pagina=N`
+
+`200` con la misma forma que `GET /api/catalogo` y, en cada tarjeta, `disponible` (CA15):
+
+```json
+{
+  "anuncios": [
+    {
+      "id": "uuid",
+      "titulo": "Balones de fútbol talla 5",
+      "modalidad": "venta",
+      "precio_unitario_centimos": 1250,
+      "estado": "pausado",
+      "estado_material": "buen_estado",
+      "unidades_disponibles": 12,
+      "foto_principal_url": "https://.../anuncio-fotos/...",
+      "publicado_en": "2026-11-08T10:00:00.000Z",
+      "centro": { "id": "uuid", "nombre": "CE Montjuïc", "localidad": "Barcelona" },
+      "distancia_km": null,
+      "es_favorito": true,
+      "disponible": false
+    }
+  ],
+  "pagina": 1,
+  "por_pagina": 20,
+  "total": 1,
+  "total_paginas": 1
+}
+```
+
+- Del guardado más reciente al más antiguo, 20 por página (CA6). `pagina` sigue la regla del catálogo: `400 DATOS_INVALIDOS` con `details.pagina` «La página debe ser un número entero entre 1 y 10000.»; una página mayor que la última responde `anuncios: []` con el `total` real.
+- `disponible` es `true` si el anuncio está `activo` o `reservado` con unidades (la web pone «Reservado» a los reservados) y `false` si está `pausado`, `entregado` o con 0 unidades: foto en gris, «Ya no está disponible» y sin enlace (CA7). `es_favorito` siempre es `true` para poder quitarlo (CA8).
+- Los `retirado` no se devuelven: al retirar un anuncio se borran sus favoritos (CA7).
+- Con otro método en `/api/favoritos`, `405` con `Allow: GET`.
+
+### Datos
+
+Tabla `public.favoritos` (migración `20261126190000_crear_favoritos.sql`, CA17): `centro_id` (FK `centros`, `ON DELETE CASCADE`), `anuncio_id` (FK `anuncios`, `ON DELETE CASCADE`) y `creado_en`; clave primaria (`centro_id`, `anuncio_id`) e índice `favoritos_centro_creado` (`centro_id`, `creado_en DESC`, `anuncio_id`). El disparador `anuncios_borrar_favoritos_al_retirar` borra los favoritos de un anuncio al pasar a `retirado`. RLS activada y sin permisos para `anon` ni `authenticated`: solo la API accede.
 
 ## Configuración del correo de recuperación (T04-1 / US-04)
 

@@ -16,7 +16,7 @@ const vacio = (valor) => valor === undefined || valor === '';
 
 // US-96 CA17: enteros de 1 a 10000; «0», «10001», «abc», «2.5», «-1» o el
 // parámetro repetido (?pagina=1&pagina=2) se rechazan.
-function validarPagina(valor) {
+export function validarPagina(valor) {
   if (vacio(valor)) return { valor: 1 };
   if (typeof valor !== 'string' || !/^\d+$/.test(valor)) return { error: MENSAJE_PAGINA_CATALOGO };
   const pagina = Number(valor);
