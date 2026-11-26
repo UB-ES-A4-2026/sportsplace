@@ -216,7 +216,11 @@ Como responsable de un centro que participa en un pedido (como comprador o como 
 3. Veo los botones de las acciones que puedo hacer en ese momento.
 
 **Pantallas para el boceto**
-- `/pedidos/:id`: «Pedido de <titulo_anuncio>». En orden: (1) enlace «← Volver a pedidos» → `/pedidos` (pestaña según mi papel); (2) etiqueta de estado y, si aplica, «Pagado»; (3) frase de situación (CA5); (4) tarjeta del anuncio: foto, título (enlace a `/anuncios/:id` si sigue visible), modalidad; (5) «Datos del pedido»: Unidades, Precio por unidad, Total (o «Donación: sin coste»), Forma de pago [US-35], Entrega [US-40], Mensaje del comprador (o «Sin mensaje»); (6) «Comprador» o «Vendedor» (el otro centro): nombre y localidad; email y teléfono solo si aceptado/recibido; (7) «Motivo» si rechazado o cancelado; (8) «Historial»: «Pedido el dd/mm/aaaa hh:mm», «Aceptado el…», «Rechazado el…», «Cancelado el… por <comprador|vendedor>», «Marcado como pagado el…»; (9) barra de acciones (botones de US-33, US-79, US-80, US-39, E07 según `acciones`).
+- `/pedidos/:id`: «Pedido de <titulo_anuncio>». Diseño de dos columnas (diseño «con vida», #361 bloque B); el orden del DOM es el visual (orden del foco, WCAG 2.4.3).
+  1. Fila de arriba: enlace «← Volver a pedidos» → `/pedidos` (pestaña según mi papel), el título y la etiqueta de estado en pastilla con su icono y, si aplica, «Pagado».
+  2. Columna izquierda, **panel de la situación** (del color del estado): la frase de situación (CA5) y, en la misma fila, las acciones que tengo según `acciones` (botones de US-33, US-79, US-80, US-39 y E07). Dentro del panel van también: el aviso de US-34 si faltan unidades; con el pedido aceptado o recibido, el email y el teléfono del otro centro (`mailto:`/`tel:`); y, si está rechazado o cancelado, el «Motivo» (US-79, US-39). El comprador ve además, al principio del panel, el seguimiento en 3 pasos (Pedido enviado → respuesta del vendedor → Material recibido).
+  3. Columna izquierda, tarjeta **«Datos del pedido»**: el anuncio (foto, título con enlace a `/anuncios/:id` si sigue visible, modalidad) y las cifras: Unidades, Precio por unidad, Total (o «Donación: sin coste»), Forma de pago [US-35] y Mensaje del comprador (o «Sin mensaje»).
+  4. Columna derecha: el otro centro («Comprador» o «Vendedor»: nombre y localidad), «Entrega» [US-40] con la dirección e «Historial»: «Pedido el dd/mm/aaaa hh:mm», «Aceptado el…», «Rechazado el…», «Cancelado el… por <comprador|vendedor>», «Marcado como pagado el…».
 
 **Criterios de aceptación**
 
@@ -316,7 +320,7 @@ Como responsable de un centro que ha publicado material, quiero aceptar un pedid
 4. El pedido pasa a «Aceptado», veo los datos de contacto del comprador y el aviso «Pedido aceptado.»
 
 **Pantallas para el boceto**
-- `/pedidos/:id` (vendedor, pendiente): barra de acciones con «Aceptar» (principal, verde) y «Rechazar» (US-79).
+- `/pedidos/:id` (vendedor, pendiente): en el panel de la situación, «Rechazar» (US-79) y «Aceptar» (principal, verde), en este orden.
 - Diálogo: título «¿Aceptar el pedido?», texto «Te comprometes a entregar <n> unidades de «<título>» a <comprador>. Después tendréis que acordar la entrega y el pago.», botones «Aceptar pedido» y «Cancelar».
 
 **Criterios de aceptación**
@@ -488,7 +492,7 @@ Como responsable de un centro que vende material, quiero marcar un pedido como c
 3. El pedido muestra la etiqueta «Pagado» y la fecha.
 
 **Pantallas para el boceto**
-- `/pedidos/:id` (vendedor, venta, aceptado o recibido, sin pagar): botón «Marcar como cobrado» en la barra de acciones.
+- `/pedidos/:id` (vendedor, venta, aceptado o recibido, sin pagar): tarjeta «Marcar como cobrado» debajo del panel de la situación, con el botón «Marcar como cobrado».
 - Diálogo «¿Has cobrado este pedido?» / «Confirma que has recibido 34,00 € de <comprador> por <forma de pago>. No se puede deshacer.» / «Sí, lo he cobrado» / «Cancelar».
 
 **Criterios de aceptación**
@@ -531,7 +535,7 @@ Como responsable de un centro (comprador o vendedor de un pedido), quiero cancel
 3. Pulso «Cancelar pedido» en el diálogo: el pedido pasa a «Cancelado» y la otra parte ve quién lo ha cancelado y por qué.
 
 **Pantallas para el boceto**
-- `/pedidos/:id`: botón secundario rojo «Cancelar pedido» al final de la barra de acciones.
+- `/pedidos/:id`: botón secundario rojo «Cancelar pedido», el último de las acciones del panel de la situación.
 - Diálogo «Cancelar el pedido»: texto «<otro centro> verá el motivo. No se puede deshacer.» (si `aceptado`, añade «Las unidades volverán a estar disponibles en el anuncio.»); desplegable «Motivo» (opciones de cancelación según mi papel, base común); área «Explicación» (contador «0/300»); botones «Cancelar pedido» (rojo) y «Volver».
 
 **Criterios de aceptación**
