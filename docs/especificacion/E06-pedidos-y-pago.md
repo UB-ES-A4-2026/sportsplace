@@ -525,7 +525,7 @@ Como responsable de un centro que vende material, quiero marcar un pedido como c
 
 ## (3) US-39 · Cancelar un pedido indicando el motivo
 
-**Épica:** E06 · **Prioridad:** Should · **Puntos:** 3 · **Sprint:** 4 · **Depende de:** US-108, US-33 (y US-34 para devolver unidades)
+**Épica:** E06 · **Prioridad:** Should · **Puntos:** 3 · **Sprint:** 3 · **Depende de:** US-108, US-33 (y US-34 para devolver unidades)
 **Cambios respecto al backlog original:** «no entregado» se concreta como estados `pendiente` o `aceptado`, sin pago marcado ni incidencia abierta. Motivo con lista fija + texto.
 
 **Historia**

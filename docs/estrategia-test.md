@@ -147,7 +147,7 @@ Regla de QA para quitar un caso E2E: solo si su CA queda cubierto en otro test (
 1. 0 omitidos en el job E2E de `dev` (quitar los `test.skip` por detección y cerrar la deuda del 403 sin confirmar).
 2. Cada CA nuevo con un test que lo nombre; lista de CA sin test revisada en cada validación de QA.
 3. Los CA que dependen de otras historias (US-39, 41, 43, 83, 115) se marcan al entrar esas historias; `Closes #n` no debe cerrar una historia con CA sin marcar.
-4. Casos que solo pasan al reintentar: cada uno, una issue.
+4. Casos que solo pasan al reintentar: cada uno, una issue. El job E2E los lista en su resumen, junto con los omitidos y su motivo (`e2e/resumen-ci.js`, #389).
 
 ## Objetivos medibles del Sprint 3
 
@@ -157,7 +157,7 @@ Regla de QA para quitar un caso E2E: solo si su CA queda cubierto en otro test (
 | E2E sin omitidos | 0 omitidos en el job E2E de `dev` | QA |
 | CI rápido | Mediana ≤ 7 min en `dev` | DevOps |
 | Cada CA nuevo con su test | 100 % de los CA de las historias del S3 con un test que los nombre (`US-XX CAn`) | Autor de cada historia, lo comprueba quien revisa |
-| CA sin test, a la vista | % de CA con test por historia y lista de los que ningún test nombra, revisada en cada QA | QA |
+| CA sin test, a la vista | % de CA con test por historia y lista de los que ningún test nombra, revisada en cada QA (la publica el job «Herramientas» en el resumen de cada PR: `npm --prefix tools run ca:matriz`, #390) | QA |
 | Tests inestables | 0 casos que solo pasen al reintentar; cada uno se abre como issue y se arregla en el sprint | DevOps |
 | Rendimiento de la búsqueda (US-21) | Respuesta del catálogo medida con la semilla ampliada | Backend |
 | Smoke tras cada despliegue | 100 % de los despliegues de `staging` y `main` con smoke en verde | DevOps |

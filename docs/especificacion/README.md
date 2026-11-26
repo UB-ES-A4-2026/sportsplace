@@ -7,9 +7,9 @@ Esta carpeta es la especificación funcional y técnica del proyecto. Se impleme
 | [00-guia-comun.md](00-guia-comun.md) | Normas de redacción, convenciones de API e interfaz y diccionario de datos. |
 | [E01-E02-registro-y-perfil.md](E01-E02-registro-y-perfil.md) | Sprint 1: US-04 (recuperar contraseña), US-07 (perfil del centro) y US-68 (ubicación). Sprint 2: US-10 (perfil de otro centro). El resto de historias del archivo son de sprints posteriores. |
 | [E03-publicacion-de-material.md](E03-publicacion-de-material.md) | Sprint 1: «Base común» de los anuncios y las historias US-12 a US-18 y US-70, con sus criterios (CA), flujos e2e y tareas. |
-| [E04-busqueda-y-exploracion.md](E04-busqueda-y-exploracion.md) | Sprint 2: «Base común» del catálogo y US-96, US-21, US-22, US-73, US-74 y US-24. El resto de historias del archivo son de sprints posteriores. |
-| [E05-comunicacion.md](E05-comunicacion.md) | Sprint 2: «Reglas comunes» de la épica y US-28 (escribir al centro de un anuncio) y US-77 (responder los mensajes de mis anuncios). |
-| [E06-pedidos-y-pago.md](E06-pedidos-y-pago.md) | Sprint 2: «Base común» de los pedidos y US-32, US-108, US-109, US-33, US-79, US-35, US-34 y US-80. US-39 y US-38 son de sprints posteriores. |
+| [E04-busqueda-y-exploracion.md](E04-busqueda-y-exploracion.md) | Sprint 2: «Base común» del catálogo y US-96, US-21, US-22, US-73, US-74 y US-24. Sprint 3: US-25 (favoritos). El resto de historias del archivo son de sprints posteriores. |
+| [E05-comunicacion.md](E05-comunicacion.md) | Sprint 2: «Reglas comunes» de la épica y US-28 (escribir al centro de un anuncio) y US-77 (responder los mensajes de mis anuncios). Sprint 3: US-65 (bandeja de conversaciones). |
+| [E06-pedidos-y-pago.md](E06-pedidos-y-pago.md) | Sprint 2: «Base común» de los pedidos y US-32, US-108, US-109, US-33, US-79, US-35, US-34 y US-80. Sprint 3: US-39 (cancelar un pedido). US-38 es de un sprint posterior. |
 | [E07-E09-entrega-y-avisos.md](E07-E09-entrega-y-avisos.md) | Sprint 2: «Decisiones comunes» y US-40 y US-42. El resto de historias del archivo son de sprints posteriores. |
 
 ## Historias del Sprint 2
@@ -30,6 +30,17 @@ Siguiendo el criterio del Sprint 1 (las variantes de una historia son criterios 
 Dentro de una historia, las tareas de las secciones incluidas se juntan por área (base de datos y backend, frontend, QA); la issue de cada tarea indica qué tareas originales cubre. Lo que una sección marque como dependiente de una historia de un sprint posterior (por ejemplo, la devolución de unidades al cancelar, de US-39, o la cita de entrega, de US-41) no se hace en este sprint.
 
 Las demás épicas se añaden aquí cuando entran en un sprint. La misma información está en Trello (historias) y en GitHub (historias y tareas).
+
+## Historias del Sprint 3
+
+Planning de la PO (26/11). Primer corte (en `dev` con QA hecho el 30/11 a las 16:30, para la revisión del 2/12): US-77 (lo que quedó del Sprint 2), US-65, US-25 y US-39. Segundo corte (14/12, para la entrega del 16/12): US-44, US-45, US-116, US-47 y US-83; su especificación se añade aquí antes de empezarlas.
+
+| Historia (GitHub y Trello) | Secciones que incluye | Archivo |
+|---|---|---|
+| US-77 · Responder los mensajes de mis anuncios | US-77 (viene del Sprint 2) | E05 |
+| US-65 · Ver todas mis conversaciones | US-65 | E05 |
+| US-25 · Guardar anuncios en favoritos | US-25 | E04 |
+| US-39 · Cancelar un pedido con motivo | US-39 (lo que dependa de la cita de entrega, US-41, no entra) | E06 |
 
 ## Cómo se organiza el trabajo en GitHub
 
