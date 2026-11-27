@@ -454,7 +454,9 @@ test('US-32 · CA13, CA22 y CA28 · pendientes a la vez, duplicado y volver a pe
     const motivo = columnas.has('motivo_codigo')
       ? `, motivo_codigo = '${estado === 'rechazado' ? 'sin_unidades' : 'ya_no_necesario'}', cerrado_por = '${estado === 'rechazado' ? 'vendedor' : 'comprador'}'`
       : '';
-    await db.query(`UPDATE public.pedidos SET estado = $2${motivo} WHERE anuncio_id = $1 AND comprador_centro_id = $3 AND estado = 'pendiente'`, [a1, estado, centros.b.id]);
+    // Con la migración de US-39, un pedido cancelado necesita cancelado_en (pedidos_cancelado_con_fecha).
+    const fecha = estado === 'cancelado' && columnas.has('cancelado_en') ? ', cancelado_en = now()' : '';
+    await db.query(`UPDATE public.pedidos SET estado = $2${motivo}${fecha} WHERE anuncio_id = $1 AND comprador_centro_id = $3 AND estado = 'pendiente'`, [a1, estado, centros.b.id]);
     expect((await postPedido(request, token, cuerpoPedido(a1, { columnas }))).status(), estado).toBe(201);
   }
 });

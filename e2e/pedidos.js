@@ -111,6 +111,8 @@ export async function insertarPedido(db, { anuncioId, compradorId, vendedorId, a
   if (columnas.has('metodo_pago')) fila.metodo_pago = datos.modalidad === 'venta' ? 'transferencia' : null;
   if (columnas.has('metodo_entrega')) fila.metodo_entrega = 'recogida';
   Object.assign(fila, cambios);
+  // US-39 CA11 (check pedidos_cancelado_con_fecha): un pedido cancelado guarda cuándo se canceló.
+  if (columnas.has('cancelado_en') && fila.estado === 'cancelado' && !fila.cancelado_en) fila.cancelado_en = fila.actualizado_en;
   const nombres = Object.keys(fila).filter((nombre) => columnas.has(nombre));
   const valores = nombres.map((nombre) => (nombre === 'direccion_envio' && fila[nombre] ? JSON.stringify(fila[nombre]) : fila[nombre]));
   await db.query(
