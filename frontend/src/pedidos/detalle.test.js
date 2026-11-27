@@ -177,6 +177,17 @@ describe('historial (punto 8, CA6)', () => {
     assert.deepEqual(historial({ ...PEDIDO, estado: 'cancelado', cancelado_en: '2026-10-21T09:00:00Z', cerrado_por: 'vendedor' })[1],
       'Cancelado el 21/10/2026 11:00 por vendedor');
   });
+
+  test('aceptado y después cancelado: «Aceptado el …» y luego «Cancelado el …» (US-39 CA3)', () => {
+    const pedido = {
+      ...PEDIDO, estado: 'cancelado', respondido_en: '2026-10-21T09:00:00Z', cancelado_en: '2026-10-23T08:00:00Z', cerrado_por: 'comprador',
+    };
+    assert.deepEqual(historial(pedido), [
+      'Pedido el 21/10/2026 10:30',
+      'Aceptado el 21/10/2026 11:00',
+      'Cancelado el 23/10/2026 10:00 por comprador',
+    ]);
+  });
 });
 
 test('resultadoDeLaCarga (CA3, CA4)', () => {
