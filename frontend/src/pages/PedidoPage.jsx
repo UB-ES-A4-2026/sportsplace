@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
+import AccionesCancelacion from '../components/AccionesCancelacion.jsx';
 import AccionesCierrePedido from '../components/AccionesCierrePedido.jsx';
 import AccionesPedidoVendedor from '../components/AccionesPedidoVendedor.jsx';
 import Aviso from '../components/Aviso.jsx';
@@ -25,7 +26,8 @@ import '../pedidos/pedido.css';
 // E06 US-108 (T32-5): /pedidos/:id · «Pedido de <título>». Privada (CA1, la protege RutaPrivada).
 // Secciones en el orden del boceto: volver, estado, frase, anuncio, datos, otro centro, entrega (US-40), historial.
 // US-79: sección «Motivo» (SeccionMotivo) tras el otro centro. Barra de acciones al final (punto 9): US-33 y US-79
-// (AccionesPedidoVendedor) y «Marcar como cobrado» de US-80 (AccionesCierrePedido). «He recibido el material» (US-42)
+// (AccionesPedidoVendedor), «Marcar como cobrado» de US-80 (AccionesCierrePedido) y, al final, «Cancelar pedido»
+// de US-39 (AccionesCancelacion). «He recibido el material» (US-42)
 // va al final de la sección «Entrega», con «Recibido el …». La etiqueta «Pagado» es EtiquetaPagado.
 // El aviso verde «Pedido enviado. El vendedor lo revisará.» llega en `location.state.aviso` desde «Pedir» (US-32 CA14).
 export default function PedidoPage() {
@@ -164,6 +166,7 @@ function DetallePedido({ pedido, onActualizado, onAviso, onFallo }) {
       <div className="pedido-acciones">
         <AccionesPedidoVendedor pedido={pedido} {...acciones} />
         <AccionesCierrePedido pedido={pedido} solo="marcar_pagado" {...acciones} />
+        <AccionesCancelacion pedido={pedido} {...acciones} />
       </div>
     </section>
   );

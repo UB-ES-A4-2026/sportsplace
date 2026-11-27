@@ -136,7 +136,8 @@ export function datosDeEntrega(pedido) {
 export function historial(pedido) {
   const lineas = [];
   if (pedido.creado_en) lineas.push(`Pedido el ${formatearFechaHora(pedido.creado_en)}`);
-  if (pedido.respondido_en && ['aceptado', 'recibido'].includes(pedido.estado)) {
+  // Un pedido aceptado y después cancelado (US-39) conserva su «Aceptado el …» antes del «Cancelado el …».
+  if (pedido.respondido_en && ['aceptado', 'recibido', 'cancelado'].includes(pedido.estado)) {
     lineas.push(`Aceptado el ${formatearFechaHora(pedido.respondido_en)}`);
   }
   if (pedido.respondido_en && pedido.estado === 'rechazado') {

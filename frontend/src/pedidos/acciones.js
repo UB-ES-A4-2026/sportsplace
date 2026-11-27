@@ -1,5 +1,6 @@
-// Reglas de la web para aceptar y rechazar un pedido (E06: US-33, US-79 y US-34). Funciones puras para
-// probarlas sin navegador; los componentes AccionesPedidoVendedor, DialogoRechazo y SeccionMotivo las usan.
+// Reglas de la web para aceptar y rechazar un pedido (E06: US-33, US-79 y US-34) y listas de motivos de E06.
+// Funciones puras para probarlas sin navegador; las usan AccionesPedidoVendedor, DialogoRechazo, SeccionMotivo
+// y las de cancelar (pedidos/cancelar.js, US-39).
 
 export const AVISO_ACEPTADO = 'Pedido aceptado.';
 export const AVISO_RECHAZADO = 'Pedido rechazado.';
@@ -15,9 +16,22 @@ export const MOTIVOS_RECHAZO = [
   { codigo: 'otro', texto: 'Otro motivo' },
 ];
 
+// E06 «Listas fijas de motivos», cancelación (US-39): cada motivo con los papeles que lo ven en el desplegable.
+export const MOTIVOS_CANCELACION = [
+  { codigo: 'ya_no_necesario', texto: 'Ya no necesitamos el material', papeles: ['comprador'] },
+  { codigo: 'otra_opcion', texto: 'Hemos encontrado otra opción', papeles: ['comprador'] },
+  { codigo: 'material_no_disponible', texto: 'El material ya no está disponible', papeles: ['vendedor'] },
+  { codigo: 'sin_acuerdo_entrega', texto: 'No hemos podido acordar la entrega', papeles: ['comprador', 'vendedor'] },
+  { codigo: 'sin_respuesta', texto: 'La otra parte no responde', papeles: ['comprador', 'vendedor'] },
+  { codigo: 'error_pedido', texto: 'El pedido tenía un error', papeles: ['comprador', 'vendedor'] },
+  { codigo: 'otro', texto: 'Otro motivo', papeles: ['comprador', 'vendedor'] },
+];
+
+// La sección «Motivo» traduce cualquier motivo guardado: de rechazo, del sistema o de cancelación.
 const TEXTO_MOTIVO = Object.fromEntries([
   ...MOTIVOS_RECHAZO.map(({ codigo, texto }) => [codigo, texto]),
   ['anuncio_sin_stock', 'Se han agotado las unidades del anuncio'],
+  ...MOTIVOS_CANCELACION.map(({ codigo, texto }) => [codigo, texto]),
 ]);
 
 export function textoDelMotivo(codigo) {
@@ -40,11 +54,13 @@ export function etiquetaExplicacion(motivoCodigo) {
   return motivoCodigo === 'otro' ? 'Explicación (obligatoria)' : 'Explicación';
 }
 
-// Devuelve un objeto campo → mensaje (`motivo_codigo`, `motivo_texto`), vacío si todo es correcto.
-export function validarRechazo({ motivoCodigo, motivoTexto }) {
+// Regla común de E06 para el motivo de un cierre (rechazo de US-79 o cancelación de US-39): el motivo tiene que
+// ser uno de `motivos`; la explicación, 10-300 caracteres con «otro» y 0-300 con el resto. Devuelve un objeto
+// campo → mensaje (`motivo_codigo`, `motivo_texto`), vacío si todo es correcto.
+export function validarMotivo({ motivoCodigo, motivoTexto }, motivos) {
   const errores = {};
   const texto = (motivoTexto ?? '').trim();
-  if (!MOTIVOS_RECHAZO.some((motivo) => motivo.codigo === motivoCodigo)) {
+  if (!motivos.some((motivo) => motivo.codigo === motivoCodigo)) {
     errores.motivo_codigo = MENSAJES_RECHAZO.motivo;
   }
   if (longitud(texto) > EXPLICACION_MAX) {
@@ -55,7 +71,12 @@ export function validarRechazo({ motivoCodigo, motivoTexto }) {
   return errores;
 }
 
-// Cuerpo de POST /rechazar: la explicación recortada, o null si está vacía.
+// US-79 CA2 y CA3.
+export function validarRechazo(valores) {
+  return validarMotivo(valores, MOTIVOS_RECHAZO);
+}
+
+// Cuerpo de POST /rechazar y /cancelar: la explicación recortada, o null si está vacía.
 export function cuerpoDelRechazo({ motivoCodigo, motivoTexto }) {
   const texto = (motivoTexto ?? '').trim();
   return { motivoCodigo, motivoTexto: texto === '' ? null : texto };

@@ -96,6 +96,9 @@
   color: var(--s2-peligro); background: var(--s2-superficie);
 }
 .pedido-acciones .pedido-acciones-vendedor .boton-borde-peligro:hover:not(:disabled) { color: var(--s2-peligro); background: var(--s2-peligro-50); filter: none; }
+/* US-39: «Cancelar pedido», botón secundario rojo al final de la barra de acciones. */
+.pedido-acciones .pedido-acciones-cancelar { display: flex; margin-top: 10px; }
+.pedido-acciones .pedido-acciones-cancelar button { margin: 0; }
 .pedido-acciones-vendedor button::before {
   content: ''; flex: none; width: 22px; height: 22px; background: currentColor;
   -webkit-mask: var(--pedido-icono) center / contain no-repeat; mask: var(--pedido-icono) center / contain no-repeat;
