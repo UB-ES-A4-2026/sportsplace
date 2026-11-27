@@ -11,7 +11,7 @@ import {
   hayTablaPedidos, postPedido, retirarAnuncios, tokenDe,
 } from '../pedidos.js';
 import {
-  EXPLICA, LARGO, TRANSICION, aLaVez, aceptar, anuncioConPedido, cambiarEstado, contarAcciones, errorDe,
+  EXPLICA, LARGO, TRANSICION, aceptar, anuncioConPedido, cambiarEstado, contarAcciones, errorDe,
   hayRuta, pedido, tokenSinConfirmar,
 } from '../pedidos-respuesta.js';
 
@@ -338,23 +338,61 @@ test('US-39 · CA7 y CA8 · resto de errores', async ({ request, cuentas }) => {
   expect((await pedido(db, id)).estado).toBe('pendiente');
 });
 
+// Con la fila del anuncio bloqueada desde otra conexión, lanza las peticiones de una en una y espera a que cada
+// una se quede esperando ese bloqueo antes de lanzar la siguiente. PostgreSQL concede el FOR UPDATE por orden de
+// llegada, así que la primera de la lista es la primera en confirmar (a diferencia de aLaVez, que las lanza
+// juntas y deja el orden al azar). Devuelve las respuestas en el mismo orden.
+async function enOrden(anuncioId, peticiones) {
+  const enVuelo = [];
+  await db.transaction(async (client) => {
+    await client.query('SELECT 1 FROM public.anuncios WHERE id = $1 FOR UPDATE', [anuncioId]);
+    const { rows: [{ pid }] } = await client.query('SELECT pg_backend_pid() AS pid');
+    for (const peticion of peticiones) {
+      enVuelo.push(peticion());
+      await expect.poll(async () => {
+        const { rows: [{ n }] } = await db.query(
+          `WITH RECURSIVE esperan(pid) AS (
+             SELECT pid FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))
+             UNION SELECT a.pid FROM pg_stat_activity a JOIN esperan e ON e.pid = ANY(pg_blocking_pids(a.pid))
+           ) SELECT count(*)::int AS n FROM esperan`,
+          [pid],
+        );
+        return n;
+      }, { message: 'la petición espera el bloqueo del anuncio', intervals: [50, 100, 200], timeout: 1_500 })
+        .toBe(enVuelo.length);
+    }
+  }).catch(async (error) => {
+    await Promise.allSettled(enVuelo);
+    throw error;
+  });
+  return Promise.all(enVuelo);
+}
+
 test('US-39 · CA10 · cancelar y aceptar a la vez: gana el primero', async ({ request, cuentas }) => {
+  // Cancela primero: la aceptación ya ve el pedido cancelado y responde 409.
   const { id, anuncioId } = await nuevoPedido({ anuncio: A1, unidades: 4 });
   const tokens = await conApi(request, cuentas, id);
-  const [cancelacion, aceptacion] = await aLaVez(db, anuncioId, [
+  const [cancelacion, aceptacion] = await enOrden(anuncioId, [
     () => cancelar(request, tokens.b, id, { motivo_codigo: 'sin_respuesta' }),
     () => aceptar(request, tokens.a, id),
   ]);
-  const estados = [cancelacion.status(), aceptacion.status()].sort();
-  expect(estados).toEqual([200, 409]);
-  const perdedora = cancelacion.status() === 409 ? cancelacion : aceptacion;
-  expect((await perdedora.json()).error.code).toBe('TRANSICION_NO_PERMITIDA');
+  expect(cancelacion.status()).toBe(200);
+  const error = await errorDe(aceptacion, 409, 'TRANSICION_NO_PERMITIDA');
+  expect(error.details).toEqual({ estado_actual: 'cancelado' });
+  expect((await pedido(db, id)).estado).toBe('cancelado');
+  expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 12 });
 
-  // Las unidades cuadran con el ganador.
-  const fila = await pedido(db, id);
-  const disponibles = fila.estado === 'aceptado' ? 8 : 12;
-  expect(['aceptado', 'cancelado']).toContain(fila.estado);
-  expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: disponibles });
+  // Acepta primero: la cancelación encuentra un aceptado, que sí se puede cancelar (CA1), y las unidades
+  // reservadas vuelven (CA9). En ningún orden queda el anuncio descuadrado.
+  const otro = await nuevoPedido({ anuncio: A1, unidades: 4 });
+  const [aceptado, cancelado] = await enOrden(otro.anuncioId, [
+    () => aceptar(request, tokens.a, otro.id),
+    () => cancelar(request, tokens.b, otro.id, { motivo_codigo: 'sin_respuesta' }),
+  ]);
+  expect(aceptado.status()).toBe(200);
+  expect(cancelado.status()).toBe(200);
+  expect(await pedido(db, otro.id)).toMatchObject({ estado: 'cancelado', cerrado_por: 'comprador' });
+  expect(await anuncio(db, otro.anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 12 });
 });
 
 test('US-39 · CA11 · migración de cancelado_en', async ({ request, cuentas }) => {
