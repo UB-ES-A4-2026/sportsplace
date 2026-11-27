@@ -18,6 +18,7 @@ import {
 } from '../pedidos-respuesta.js';
 
 const TEXTO_RESERVADO = 'Reservado';
+const NO_DISPONIBLE = 'Este anuncio no existe o ya no está disponible.';
 const AUTOMATICO = 'El pedido se ha rechazado automáticamente porque ya no quedan unidades suficientes.';
 
 let db;
@@ -114,11 +115,11 @@ test('US-34 · E2E-3 · agotar el anuncio lo deja reservado', async ({ page, req
   const tokens = await conApi(request, cuentas, ids.b);
   expect((await aceptar(request, tokens.a, ids.b)).status()).toBe(200);
   expect(await anuncio(db, anuncioId)).toEqual({ estado: 'reservado', unidades_disponibles: 0 });
-  // En la web (#388): B ve el anuncio «Reservado» con «Pedir» deshabilitado (US-32 CA2).
+  // En la web (#388): con 0 disponibles el anuncio deja de verse para B (E04: no visible) y no hay «Pedir».
   await entrar(page, cuentas.centroB, cuentas.password);
   await page.goto(`/anuncios/${anuncioId}`);
-  await expect(page.getByRole('main').getByText(TEXTO_RESERVADO, { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Pedir', exact: true })).toBeDisabled();
+  await expect(page.getByText(NO_DISPONIBLE)).toBeVisible();
+  await expect(boton(page, 'Pedir')).toHaveCount(0);
   // Con 0 disponibles y el anuncio reservado ya no se puede pedir (US-32 CA20).
   test.skip(!(await hayPostPedidos(request, tokens.b)), 'POST /api/pedidos (T32-2) aún no está en esta rama.');
   const columnas = await columnasDe(db, 'pedidos');
