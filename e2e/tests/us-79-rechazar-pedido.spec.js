@@ -10,7 +10,7 @@ import {
   hayTablaPedidos, postPedido, retirarAnuncios, tokenDe,
 } from '../pedidos.js';
 import {
-  EXPLICA, LARGO, MOTIVOS_RECHAZO, SIN_PERMISO, TRANSICION, aceptar, anuncioConPedido, cambiarEstado,
+  EXPLICA, LARGO, MOTIVOS_RECHAZO, SIN_PERMISO, SIN_STOCK, TRANSICION, aceptar, anuncioConPedido, cambiarEstado,
   contarAcciones, errorDe, hayBotonesVendedor, hayRuta, pedido, rechazar, tokenSinConfirmar,
 } from '../pedidos-respuesta.js';
 
@@ -149,7 +149,7 @@ test('US-79 · E2E-2 · «Otro motivo» exige la explicación y no envía nada',
   expect(envios).toHaveLength(1);
 });
 
-test('US-79 · E2E-3 · el motivo del sistema no se acepta', async ({ request, cuentas }) => {
+test('US-79 · E2E-3 · el motivo del sistema no se acepta', async ({ page, request, cuentas }) => {
   const { id } = await nuevoPedido();
   const tokens = await conApi(request, cuentas, id);
   // CA8: ausente, fuera de la lista o el del sistema.
@@ -158,9 +158,15 @@ test('US-79 · E2E-3 · el motivo del sistema no se acepta', async ({ request, c
     expect(error.details.motivo_codigo).toBe('Elige un motivo.');
   }
   expect((await pedido(db, id)).estado).toBe('pendiente');
+
+  // En la web (#388): el desplegable solo ofrece los motivos del vendedor, nunca el del sistema.
+  const ventana = await abrirDialogo(page, cuentas, id);
+  const opciones = (await campoMotivo(ventana).locator('option').allTextContents()).map((texto) => texto.trim());
+  expect(opciones).toEqual(['Elige un motivo', ...Object.values(MOTIVOS_RECHAZO)]);
+  expect(opciones).not.toContain(SIN_STOCK);
 });
 
-test('US-79 · E2E-4 · rechazar un pedido ya aceptado responde 409', async ({ request, cuentas }) => {
+test('US-79 · E2E-4 · rechazar un pedido ya aceptado responde 409', async ({ page, request, cuentas }) => {
   const { id } = await nuevoPedido({ anuncio: A1, unidades: 4 });
   const tokens = await conApi(request, cuentas, id);
   expect((await aceptar(request, tokens.a, id)).status()).toBe(200);
@@ -170,6 +176,11 @@ test('US-79 · E2E-4 · rechazar un pedido ya aceptado responde 409', async ({ r
   );
   expect(error).toMatchObject({ message: TRANSICION, details: { estado_actual: 'aceptado' } });
   expect((await pedido(db, id)).estado).toBe('aceptado');
+
+  // En la web (#388): el pedido aceptado ya no ofrece «Rechazar».
+  await alPedido(page, cuentas, id);
+  await expect(page.getByRole('main').getByText('Aceptado', { exact: true }).first()).toBeVisible();
+  await expect(boton(page, 'Rechazar')).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------- criterios de aceptación

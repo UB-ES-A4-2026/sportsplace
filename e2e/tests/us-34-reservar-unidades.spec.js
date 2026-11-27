@@ -17,6 +17,8 @@ import {
   SIN_STOCK, aLaVez, aceptar, errorDe, hayBotonesVendedor, hayRuta, pedido, pedidosComo,
 } from '../pedidos-respuesta.js';
 
+const TEXTO_RESERVADO = 'Reservado';
+const NO_DISPONIBLE = 'Este anuncio no existe o ya no está disponible.';
 const AUTOMATICO = 'El pedido se ha rechazado automáticamente porque ya no quedan unidades suficientes.';
 
 let db;
@@ -71,7 +73,7 @@ async function alPedido(page, cuentas, id, email) {
 
 // ---------------------------------------------------------------- flujos e2e
 
-test('US-34 · E2E-1 · aceptar resta las unidades', async ({ request, cuentas }) => {
+test('US-34 · E2E-1 · aceptar resta las unidades', async ({ page, request, cuentas }) => {
   const { anuncioId, ids } = await escenario(12, { b: 4 });
   const tokens = await conApi(request, cuentas, ids.b);
   const res = await aceptar(request, tokens.a, ids.b);
@@ -79,6 +81,13 @@ test('US-34 · E2E-1 · aceptar resta las unidades', async ({ request, cuentas }
   expect(await anuncio(db, anuncioId)).toEqual({ estado: 'activo', unidades_disponibles: 8 });
   // CA9: el objeto pedido trae las disponibles del anuncio.
   expect((await res.json()).pedido.anuncio).toMatchObject({ id: anuncioId, unidades_disponibles: 8 });
+
+  // En la web (#388): el comprador ve el pedido aceptado y el anuncio sigue con «Pedir» y 8 disponibles.
+  await alPedido(page, cuentas, ids.b, cuentas.centroB);
+  await expect(page.getByRole('main').getByText('Aceptado', { exact: true }).first()).toBeVisible();
+  await page.goto(`/anuncios/${anuncioId}`);
+  await expect(boton(page, 'Pedir')).toBeEnabled();
+  await expect(page.getByRole('main').getByText(TEXTO_RESERVADO, { exact: true })).toHaveCount(0);
 });
 
 test('US-34 · E2E-2 · las últimas unidades rechazan solos los pendientes que no caben', async ({ page, request, cuentas }) => {
@@ -101,11 +110,16 @@ test('US-34 · E2E-2 · las últimas unidades rechazan solos los pendientes que 
   await expect(main.getByText(AUTOMATICO)).toBeVisible();
 });
 
-test('US-34 · E2E-3 · agotar el anuncio lo deja reservado', async ({ request, cuentas }) => {
+test('US-34 · E2E-3 · agotar el anuncio lo deja reservado', async ({ page, request, cuentas }) => {
   const { anuncioId, ids } = await escenario(4, { b: 4 });
   const tokens = await conApi(request, cuentas, ids.b);
   expect((await aceptar(request, tokens.a, ids.b)).status()).toBe(200);
   expect(await anuncio(db, anuncioId)).toEqual({ estado: 'reservado', unidades_disponibles: 0 });
+  // En la web (#388): con 0 disponibles el anuncio deja de verse para B (E04: no visible) y no hay «Pedir».
+  await entrar(page, cuentas.centroB, cuentas.password);
+  await page.goto(`/anuncios/${anuncioId}`);
+  await expect(page.getByText(NO_DISPONIBLE)).toBeVisible();
+  await expect(boton(page, 'Pedir')).toHaveCount(0);
   // Con 0 disponibles y el anuncio reservado ya no se puede pedir (US-32 CA20).
   test.skip(!(await hayPostPedidos(request, tokens.b)), 'POST /api/pedidos (T32-2) aún no está en esta rama.');
   const columnas = await columnasDe(db, 'pedidos');
@@ -114,7 +128,7 @@ test('US-34 · E2E-3 · agotar el anuncio lo deja reservado', async ({ request, 
   expect((await pedidosComo(db, 'anuncio_id', anuncioId))).toBe(1);
 });
 
-test('US-34 · E2E-5 · dos aceptaciones a la vez sobre las últimas unidades', async ({ request, cuentas }) => {
+test('US-34 · E2E-5 · dos aceptaciones a la vez sobre las últimas unidades', async ({ page, request, cuentas }) => {
   const { anuncioId, ids } = await escenario(5, { sabadell: 4, b: 4 });
   const tokens = await conApi(request, cuentas, ids.b);
   // Las dos esperan el mismo bloqueo del anuncio antes de soltarlo: se solapan siempre.
@@ -131,6 +145,16 @@ test('US-34 · E2E-5 · dos aceptaciones a la vez sobre las últimas unidades', 
   const filas = [await pedido(db, ids.sabadell), await pedido(db, ids.b)];
   expect(filas.map((fila) => fila.estado).sort()).toEqual(['aceptado', 'rechazado']);
   expect(filas.find((fila) => fila.estado === 'rechazado')).toMatchObject({ motivo_codigo: 'anuncio_sin_stock', cerrado_por: 'sistema' });
+
+  // En la web (#388): el vendedor ve uno aceptado y el otro rechazado con el motivo automático.
+  const [aceptadoId, rechazadoId] = filas[0].estado === 'aceptado' ? [ids.sabadell, ids.b] : [ids.b, ids.sabadell];
+  await alPedido(page, cuentas, aceptadoId, cuentas.centroA);
+  const main = page.getByRole('main');
+  await expect(main.getByText('Aceptado', { exact: true }).first()).toBeVisible();
+  await page.goto(`/pedidos/${rechazadoId}`);
+  await expect(main.getByText('Rechazado', { exact: true }).first()).toBeVisible();
+  await expect(main.getByText(SIN_STOCK)).toBeVisible();
+  await expect(boton(page, 'Aceptar')).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------- criterios de aceptación
