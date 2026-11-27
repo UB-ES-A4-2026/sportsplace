@@ -173,6 +173,7 @@ la revisión del esquema y la coordinación establecidas en el README.
 | `GET /api/pedidos/:id` | US-108 y US-40 (US-32) | Sí (email confirmado) | Alex y Carlos |
 | `POST /api/pedidos/:id/marcar-pagado` | US-80 (US-42) | Sí (email confirmado) | Alex |
 | `POST /api/pedidos/:id/recibir` | US-42 | Sí (email confirmado) | Alex |
+| `POST /api/pedidos/:id/cancelar` | US-39 | Sí (email confirmado) | Marta |
 | `POST /api/pedidos/:id/aceptar` | US-33, US-34 | Sí (email confirmado) | Carlos |
 | `POST /api/pedidos/:id/rechazar` | US-79 | Sí (email confirmado) | Carlos |
 | `GET /api/anuncios/:id/conversacion` | US-28 | Sí (email confirmado) | Alex |
@@ -735,8 +736,8 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Detalle de un pedido del que 
 - `mi_papel`: `comprador` o `vendedor` según el centro de la sesión.
 - `entrega` contiene `{ metodo, direccion_envio, direccion_recogida }`. La copia de envío está disponible para los participantes. Para recogida, la dirección actual del vendedor se devuelve solo al comprador en `aceptado` o `recibido` y si está informada; en los demás casos es `null`.
 - `comprador.email`/`telefono` y `vendedor.email`/`telefono` solo vienen en `aceptado` y `recibido`; en otro estado esas claves no aparecen (CA7, CA12). El email es el `email_contacto` del centro y, si no tiene, `null`: el email de acceso de la cuenta no sale nunca (privacidad).
-- `pagado_en` (US-80) y `recibido_en` (US-42) son fechas ISO o `null`. Las columnas que aún no existen en `pedidos` (las añade US-39 con su migración) salen `null`: `cancelado_en`.
-- `acciones` se calcula en el servidor con la tabla de `backend/src/services/transiciones-pedido.js`, la misma que valida las transiciones (`comprobarTransicion`, CA13). Ahora: `aceptar` y `rechazar` para el vendedor en `pendiente`; `aceptar` no aparece si `unidades` > `anuncio.unidades_disponibles`; `marcar_pagado` para el vendedor de una venta `aceptado` o `recibido` con `pagado_en` nulo (US-80 CA1); `recibir` para el comprador en `aceptado` sin incidencia abierta (US-42 CA1). `cancelar` (US-39) se añade a la tabla con su endpoint.
+- `pagado_en` (US-80), `recibido_en` (US-42) y `cancelado_en` (US-39) son fechas ISO o `null`.
+- `acciones` se calcula en el servidor con la tabla de `backend/src/services/transiciones-pedido.js`, la misma que valida las transiciones (`comprobarTransicion`, CA13). Ahora: `aceptar` y `rechazar` para el vendedor en `pendiente`; `aceptar` no aparece si `unidades` > `anuncio.unidades_disponibles`; `marcar_pagado` para el vendedor de una venta `aceptado` o `recibido` con `pagado_en` nulo (US-80 CA1); `recibir` para el comprador en `aceptado` sin incidencia abierta (US-42 CA1); `cancelar` para el comprador y el vendedor en `pendiente` o `aceptado` con `pagado_en` nulo y sin incidencia abierta (US-39 CA1), siempre la última de la lista.
 - `404 NO_ENCONTRADO` «Pedido no encontrado.» si el id no es UUID, el pedido no existe o el centro no es parte (CA11, CA14).
 - `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`, `503 BASE_DATOS_NO_DISPONIBLE`.
 - `/api/pedidos/:id` admite `GET`; con otro método, `405` con `Allow: GET`.
@@ -780,6 +781,23 @@ Privada: `requireAuth` + `requireEmailConfirmado`. Sin cuerpo. El comprador conf
 - Otro método: `405` con `Allow: POST`.
 
 Las dos transiciones bloquean el pedido (`SELECT … FOR UPDATE OF p`), comprueban papel, estado y bloqueo con la tabla de `transiciones-pedido.js` y hacen `UPDATE … WHERE id = $1 AND estado …`. De dos confirmaciones simultáneas, la primera da `200` y la segunda `409 TRANSICION_NO_PERMITIDA` sin cambiar `recibido_en` (CA14); con dos marcas de cobro, la segunda da `409 YA_PAGADO`.
+
+### `POST /api/pedidos/:id/cancelar` (US-39 · T39-1)
+
+Privada: `requireAuth` + `requireEmailConfirmado`. El comprador o el vendedor cancelan un pedido `pendiente` o `aceptado` que no está cobrado. Cuerpo:
+
+```json
+{ "motivo_codigo": "sin_acuerdo_entrega", "motivo_texto": "No coincidimos en horarios." }
+```
+
+- `200 { "pedido": pedido }` con `estado: "cancelado"`, `cancelado_en`, `cerrado_por` (`comprador` o `vendedor`, el papel de quien cancela), `motivo_codigo` y `motivo_texto`, y sin `cancelar` en `acciones` (CA5).
+- `motivo_codigo` (E06 «Listas fijas de motivos», cancelación). Comprador: `ya_no_necesario`, `otra_opcion`, `sin_acuerdo_entrega`, `sin_respuesta`, `error_pedido` u `otro`. Vendedor: `material_no_disponible`, `sin_acuerdo_entrega`, `sin_respuesta`, `error_pedido` u `otro`.
+- `motivo_texto` se recorta y admite hasta 300 caracteres; con `otro` exige al menos 10. Vacío se guarda como `null` (CA2).
+- Si el pedido estaba `aceptado`, sus unidades vuelven a `anuncio.unidades_disponibles` en la misma transacción y, si el anuncio estaba `reservado`, pasa a `activo` (CA9, US-34 CA6). Si estaba `pendiente`, el anuncio no cambia.
+- Errores, en este orden: `401 NO_AUTENTICADO`, `403 EMAIL_NO_CONFIRMADO`; `400 DATOS_INVALIDOS` con `details.motivo_codigo` «Elige un motivo.» si el motivo no es de cancelación, o `details.motivo_texto` («Explica el motivo (entre 10 y 300 caracteres).» o «El texto no puede superar 300 caracteres.»); `404 NO_ENCONTRADO` (id no UUID, inexistente o ajeno, CA7); `400 DATOS_INVALIDOS` con `details.motivo_codigo` «Elige un motivo.» si el motivo es del otro papel (CA6); `409 TRANSICION_NO_PERMITIDA` con `details.estado_actual` (`rechazado`, `cancelado` o `recibido`); `409 PEDIDO_PAGADO` «No se puede cancelar un pedido ya cobrado. Si hay un problema, abre una incidencia.»; `409 INCIDENCIA_ABIERTA` «Cierra la incidencia antes de cancelar el pedido.» (cuando exista `pedidos.incidencia_abierta`, US-43) (CA8); `503 BASE_DATOS_NO_DISPONIBLE`.
+- La transacción bloquea primero el anuncio y después el pedido, en el mismo orden que aceptar (T33-3), y hace `UPDATE … WHERE id = $1 AND estado IN ('pendiente', 'aceptado') AND pagado_en IS NULL`. Si se cancela y se acepta a la vez, gana el primero y el otro recibe `409 TRANSICION_NO_PERMITIDA` con el estado real (CA10).
+- Migración `20261127110000_pedidos_cancelado_en.sql`: columna `cancelado_en` y check `pedidos_cancelado_con_fecha` (un pedido `cancelado` tiene `cancelado_en`). Los motivos ya estaban en el enum `pedido_motivo_codigo` (CA11).
+- Otro método: `405` con `Allow: POST`.
 
 ### Conversaciones y mensajes (US-28, T28-2)
 

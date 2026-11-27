@@ -1,6 +1,7 @@
 import { ApiError, errorInterno } from '../errors.js';
 import { aPedido } from '../services/serializar-pedido.js';
-import { comprobarTransicion, transicionNoPermitida } from '../services/transiciones-pedido.js';
+import { comprobarTransicion, papelEn, transicionNoPermitida } from '../services/transiciones-pedido.js';
+import { motivoDelPapel } from '../validation/cancelar-pedido.js';
 import { validarMetodoPago } from '../validation/pedidos.js';
 import { createAceptarPedido } from './aceptar-pedido.js';
 import { anuncioNoEncontrado } from './anuncios.js';
@@ -270,6 +271,86 @@ export function createPedidosRepository(database, { urlFoto = () => null } = {})
       } catch (error) {
         if (error instanceof ApiError) throw error;
         console.error(`No se pudo rechazar el pedido: ${error?.code ?? 'error desconocido'}`);
+        if (typeof error?.code === 'string' && error.code.startsWith('23')) throw errorInterno();
+        throw databaseUnavailable();
+      }
+    },
+
+    // US-39 (CA5, CA8-CA10): comprador o vendedor cancelan un pedido pendiente o
+    // aceptado, sin cobrar. Mismo orden de bloqueo que aceptarPedido (anuncio y
+    // después pedido): cancelar y aceptar a la vez se esperan, y el segundo ya ve
+    // el estado nuevo y responde 409 (CA10). Si estaba aceptado, las unidades
+    // vuelven al anuncio en la misma transacción (CA9, US-34 CA6).
+    async cancelar(usuarioId, id, { motivo_codigo: motivoCodigo, motivo_texto: motivoTexto }) {
+      if (!esIdDePedido(id)) throw pedidoNoEncontrado();
+      try {
+        return await database.transaction(async (client) => {
+          const { rows: [encontrado] } = await client.query(
+            `SELECT p.anuncio_id FROM public.pedidos p
+             JOIN public.centros yo ON yo.usuario_id = $1
+               AND yo.id IN (p.comprador_centro_id, p.vendedor_centro_id)
+             WHERE p.id = $2`,
+            [usuarioId, id],
+          );
+          if (!encontrado) throw pedidoNoEncontrado(); // CA7: tercero o inexistente.
+
+          const { rows: [anuncio] } = await client.query(
+            'SELECT estado FROM public.anuncios WHERE id = $1 FOR UPDATE',
+            [encontrado.anuncio_id],
+          );
+          // Con el anuncio bloqueado, el pedido se lee de nuevo (otra petición pudo cambiarlo).
+          const { rows: [fila] } = await client.query(
+            `SELECT p.estado, p.unidades, p.comprador_centro_id, p.vendedor_centro_id,
+                    to_jsonb(p) ->> 'pagado_en' AS pagado_en,
+                    (to_jsonb(p) ->> 'incidencia_abierta')::boolean AS incidencia_abierta,
+                    yo.id AS centro_id
+             FROM public.pedidos p
+             JOIN public.centros yo ON yo.usuario_id = $1
+               AND yo.id IN (p.comprador_centro_id, p.vendedor_centro_id)
+             WHERE p.id = $2 FOR UPDATE OF p`,
+            [usuarioId, id],
+          );
+          if (!anuncio || !fila) throw pedidoNoEncontrado();
+          const pedido = {
+            estado: fila.estado,
+            pagado_en: fila.pagado_en,
+            incidencia_abierta: fila.incidencia_abierta === true,
+            comprador: { id: fila.comprador_centro_id },
+            vendedor: { id: fila.vendedor_centro_id },
+          };
+          const papel = papelEn(pedido, fila.centro_id);
+          motivoDelPapel(motivoCodigo, papel); // CA6
+          comprobarTransicion(pedido, fila.centro_id, 'cancelar'); // CA8
+
+          const { rowCount } = await client.query(
+            `UPDATE public.pedidos
+             SET estado = 'cancelado', motivo_codigo = $2, motivo_texto = $3, cerrado_por = $4,
+                 cancelado_en = now(), actualizado_en = now()
+             WHERE id = $1 AND estado IN ('pendiente', 'aceptado') AND pagado_en IS NULL`,
+            [id, motivoCodigo, motivoTexto, papel],
+          );
+          if (rowCount === 0) {
+            // Con el FOR UPDATE no debería pasar; si pasa, se informa del estado real.
+            throw transicionNoPermitida(await estadoReal(client, id, fila.estado));
+          }
+
+          // CA9 y US-34 CA6: un aceptado devuelve sus unidades; si el anuncio estaba
+          // reservado, vuelve a activo. Un pendiente no toca el anuncio.
+          if (fila.estado === 'aceptado') {
+            await client.query(
+              `UPDATE public.anuncios
+               SET unidades_disponibles = unidades_disponibles + $2,
+                   estado = CASE WHEN estado = 'reservado' THEN 'activo' ELSE estado END,
+                   actualizado_en = now()
+               WHERE id = $1`,
+              [encontrado.anuncio_id, fila.unidades],
+            );
+          }
+          return aDetalle((await client.query(SELECT_DETALLE, [usuarioId, id])).rows);
+        });
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        console.error(`No se pudo cancelar el pedido: ${error?.code ?? 'error desconocido'}`);
         if (typeof error?.code === 'string' && error.code.startsWith('23')) throw errorInterno();
         throw databaseUnavailable();
       }

@@ -70,7 +70,7 @@ test('CA10: el objeto pedido tiene la forma de la base común de E06', () => {
     creado_en: '2026-10-21T08:30:00.000Z',
     respondido_en: null,
     cancelado_en: null,
-    acciones: [],
+    acciones: ['cancelar'], // US-39 CA1: el comprador puede cancelar su pedido pendiente.
   });
 });
 
@@ -119,9 +119,9 @@ test('papelEn: un tercero no es parte del pedido', () => {
   assert.equal(papelEn(pedido, null), null);
 });
 
-test('CA13: el vendedor puede aceptar y rechazar un pedido pendiente; el comprador, nada todavía', () => {
-  assert.deepEqual(pedidoDe({}, LES_CORTS).acciones, ['aceptar', 'rechazar']);
-  assert.deepEqual(pedidoDe({}, GRACIA).acciones, []);
+test('CA13: el vendedor puede aceptar y rechazar un pedido pendiente; los dos, cancelarlo (US-39)', () => {
+  assert.deepEqual(pedidoDe({}, LES_CORTS).acciones, ['aceptar', 'rechazar', 'cancelar']);
+  assert.deepEqual(pedidoDe({}, GRACIA).acciones, ['cancelar']);
 });
 
 test('CA13: fuera de pendiente no hay aceptar ni rechazar', () => {
@@ -132,8 +132,8 @@ test('CA13: fuera de pendiente no hay aceptar ni rechazar', () => {
 });
 
 test('US-34 CA9: sin unidades suficientes en el anuncio no se ofrece aceptar', () => {
-  assert.deepEqual(pedidoDe({ unidades: 13 }, LES_CORTS, { unidades_disponibles: 12 }).acciones, ['rechazar']);
-  assert.deepEqual(pedidoDe({ unidades: 12 }, LES_CORTS, { unidades_disponibles: 12 }).acciones, ['aceptar', 'rechazar']);
+  assert.deepEqual(pedidoDe({ unidades: 13 }, LES_CORTS, { unidades_disponibles: 12 }).acciones, ['rechazar', 'cancelar']);
+  assert.deepEqual(pedidoDe({ unidades: 12 }, LES_CORTS, { unidades_disponibles: 12 }).acciones, ['aceptar', 'rechazar', 'cancelar']);
 });
 
 test('accionesPermitidas de un tercero está vacía', () => {
@@ -152,8 +152,9 @@ test('comprobarTransicion usa la misma tabla: 403 SIN_PERMISO y 409 TRANSICION_N
   assert.throws(() => comprobarTransicion(pendiente, LES_CORTS, 'volar'), /desconocida/);
 });
 
-test('cada acción de la tabla es de un papel del pedido', () => {
+test('cada acción de la tabla es de uno o de los dos papeles del pedido', () => {
   for (const regla of Object.values(ACCIONES_PEDIDO)) {
-    assert.ok(['comprador', 'vendedor'].includes(regla.papel));
+    const papeles = Array.isArray(regla.papel) ? regla.papel : [regla.papel];
+    assert.ok(papeles.length > 0 && papeles.every((papel) => ['comprador', 'vendedor'].includes(papel)));
   }
 });
