@@ -286,7 +286,9 @@ BEGIN
                     THEN 'sin_unidades'::public.pedido_motivo_codigo
                     ELSE 'ya_no_necesario'::public.pedido_motivo_codigo END,
                 cerrado_por = CASE WHEN estado_final = 'rechazado' THEN 'vendedor' ELSE 'comprador' END,
-                respondido_en = CASE WHEN estado_final = 'rechazado' THEN now() ELSE NULL END
+                respondido_en = CASE WHEN estado_final = 'rechazado' THEN now() ELSE NULL END,
+                -- US-39 CA11 (pedidos_cancelado_con_fecha): un cancelado guarda cuando se cancelo.
+                cancelado_en = CASE WHEN estado_final = 'cancelado' THEN now() ELSE NULL END
             WHERE id = pedido_renovado;
         END IF;
         INSERT INTO public.pedidos (
