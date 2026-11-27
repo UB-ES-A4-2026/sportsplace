@@ -17,6 +17,7 @@ import {
 } from '../pedidos-respuesta.js';
 
 const DIALOGO = '¿Aceptar el pedido?';
+const SIN_ACCESO = 'Este pedido no existe o no tienes acceso.';
 
 let db;
 let centros;
@@ -124,15 +125,21 @@ test('US-33 · E2E-2 · el comprador no puede aceptar su pedido', async ({ page,
   await expect(boton(page, 'Aceptar')).toHaveCount(0);
 });
 
-test('US-33 · E2E-3 · aceptar dos veces responde 409', async ({ request, cuentas }) => {
+test('US-33 · E2E-3 · aceptar dos veces responde 409', async ({ page, request, cuentas }) => {
   const { id } = await nuevoPedido();
   const tokens = await conApi(request, cuentas, id);
   expect((await aceptar(request, tokens.a, id)).status()).toBe(200);
   const error = await errorDe(await aceptar(request, tokens.a, id), 409, 'TRANSICION_NO_PERMITIDA');
   expect(error).toMatchObject({ message: TRANSICION, details: { estado_actual: 'aceptado' } });
+
+  // En la web (#388): el vendedor ve el pedido aceptado y ya no puede aceptarlo otra vez.
+  await alPedido(page, cuentas, id);
+  await expect(page.getByRole('main').getByText('Aceptado', { exact: true }).first()).toBeVisible();
+  await expect(boton(page, 'Aceptar')).toHaveCount(0);
+  await expect(boton(page, 'Rechazar')).toHaveCount(0);
 });
 
-test('US-33 · E2E-4 · un tercero recibe 404', async ({ request, cuentas }) => {
+test('US-33 · E2E-4 · un tercero recibe 404', async ({ page, request, cuentas }) => {
   const { id } = await nuevoPedido();
   const tokens = await conApi(request, cuentas, id);
   // A no es parte de un pedido entre el centro sin confirmar (comprador) y B (vendedor).
@@ -141,6 +148,12 @@ test('US-33 · E2E-4 · un tercero recibe 404', async ({ request, cuentas }) => 
     await errorDe(await aceptar(request, tokens.a, otro), 404, 'NO_ENCONTRADO');
   }
   expect((await pedido(db, ajeno.id)).estado).toBe('pendiente');
+
+  // En la web (#388): A no ve el pedido ajeno ni ningún botón para aceptarlo (US-108 CA3).
+  await alPedido(page, cuentas, id);
+  await page.goto(`/pedidos/${ajeno.id}`);
+  await expect(page.getByText(SIN_ACCESO)).toBeVisible();
+  await expect(boton(page, 'Aceptar')).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------- criterios de aceptación
