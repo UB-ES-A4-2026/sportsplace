@@ -3,6 +3,7 @@ import { methodNotAllowed } from '../errors.js';
 import { getPedidos, requireAuth, requireEmailConfirmado } from '../middleware/auth.js';
 import { validarEntregaPedido } from '../validation/entrega-pedido.js';
 import { validarListaPedidos, validarPedido } from '../validation/pedidos.js';
+import { validarCancelacionPedido } from '../validation/cancelar-pedido.js';
 import { validarRechazoPedido } from '../validation/rechazar-pedido.js';
 
 // E06: todas las rutas de pedidos son privadas y exigen el email confirmado.
@@ -55,6 +56,13 @@ export function pedidosRouter() {
     response.json({ pedido });
   });
 
+  // US-39 CA5: cancelar con motivo; el motivo del papel lo comprueba el repositorio (CA6).
+  router.post('/:id/cancelar', async (request, response) => {
+    const datos = validarCancelacionPedido(request.body);
+    const pedido = await getPedidos(request).cancelar(request.usuario.id, request.params.id, datos);
+    response.json({ pedido });
+  });
+
   router.all('/', methodNotAllowed(['GET', 'POST']));
   router.all('/contador', methodNotAllowed(['GET']));
   router.all('/:id', methodNotAllowed(['GET']));
@@ -62,6 +70,7 @@ export function pedidosRouter() {
   router.all('/:id/rechazar', methodNotAllowed(['POST']));
   router.all('/:id/marcar-pagado', methodNotAllowed(['POST']));
   router.all('/:id/recibir', methodNotAllowed(['POST']));
+  router.all('/:id/cancelar', methodNotAllowed(['POST']));
 
   return router;
 }
