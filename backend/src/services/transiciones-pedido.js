@@ -4,8 +4,8 @@ import { ApiError } from '../errors.js';
 // Cada acción dice qué papel la hace y desde qué estados. La misma tabla calcula
 // `pedido.acciones` (US-108 CA13) y valida las transiciones (comprobarTransicion),
 // así la web nunca ofrece un botón que la API vaya a rechazar.
-// US-33 y US-79 traen aquí sus rutas; US-39 (cancelar) añadirá su entrada
-// cuando tenga endpoint, para no pintar botones sin ruta.
+// Cada acción entra en la tabla junto con su ruta, para no pintar botones sin ruta.
+// `papel` es el papel que la hace, o la lista de papeles si la hacen los dos (US-39).
 // `bloqueo` devuelve el error propio de la acción cuando el papel y el estado
 // valen pero el pedido no la admite; mientras lo devuelva, no sale en `acciones`.
 export const ACCIONES_PEDIDO = Object.freeze({
@@ -32,7 +32,21 @@ export const ACCIONES_PEDIDO = Object.freeze({
     desde: Object.freeze(['aceptado']),
     bloqueo: (pedido) => (pedido.incidencia_abierta === true ? incidenciaAbierta() : null),
   }),
+  // US-39 CA1 y CA8: comprador o vendedor, pendiente o aceptado, sin cobrar y sin
+  // incidencia abierta (US-43). Va la última: el botón cierra la barra de acciones.
+  cancelar: Object.freeze({
+    papel: Object.freeze(['comprador', 'vendedor']),
+    desde: Object.freeze(['pendiente', 'aceptado']),
+    bloqueo: (pedido) => {
+      if (pedido.pagado_en) return pedidoPagado();
+      return pedido.incidencia_abierta === true ? incidenciaAbierta(CANCELAR_CON_INCIDENCIA) : null;
+    },
+  }),
 });
+
+const CANCELAR_CON_INCIDENCIA = 'Cierra la incidencia antes de cancelar el pedido.';
+
+const hacePapel = (regla, papel) => (Array.isArray(regla.papel) ? regla.papel.includes(papel) : regla.papel === papel);
 
 // Papel del centro en el pedido; null si no es parte (se responde 404).
 export function papelEn(pedido, centroId) {
@@ -63,8 +77,17 @@ export function yaPagado() {
   return new ApiError(409, 'YA_PAGADO', 'Este pedido ya consta como cobrado.');
 }
 
-export function incidenciaAbierta() {
-  return new ApiError(409, 'INCIDENCIA_ABIERTA', 'Cierra la incidencia antes de confirmar la recepción.');
+export function incidenciaAbierta(mensaje = 'Cierra la incidencia antes de confirmar la recepción.') {
+  return new ApiError(409, 'INCIDENCIA_ABIERTA', mensaje);
+}
+
+// US-39 CA8 (y US-80 CA7): un pedido cobrado no se cancela.
+export function pedidoPagado() {
+  return new ApiError(
+    409,
+    'PEDIDO_PAGADO',
+    'No se puede cancelar un pedido ya cobrado. Si hay un problema, abre una incidencia.',
+  );
 }
 
 // Lanza el error que toca si el centro no puede hacer `accion` en el pedido.
@@ -72,7 +95,7 @@ export function incidenciaAbierta() {
 export function comprobarTransicion(pedido, centroId, accion) {
   const regla = ACCIONES_PEDIDO[accion];
   if (!regla) throw new Error(`Acción de pedido desconocida: ${accion}`);
-  if (papelEn(pedido, centroId) !== regla.papel) throw sinPermiso();
+  if (!hacePapel(regla, papelEn(pedido, centroId))) throw sinPermiso();
   if (!regla.desde.includes(pedido.estado)) throw transicionNoPermitida(pedido.estado);
   const bloqueo = regla.bloqueo?.(pedido);
   if (bloqueo) throw bloqueo;
@@ -83,7 +106,7 @@ export function accionesPermitidas(pedido, centroId) {
   const papel = papelEn(pedido, centroId);
   if (papel === null) return [];
   return Object.entries(ACCIONES_PEDIDO)
-    .filter(([, regla]) => regla.papel === papel && regla.desde.includes(pedido.estado))
+    .filter(([, regla]) => hacePapel(regla, papel) && regla.desde.includes(pedido.estado))
     .filter(([, regla]) => !regla.disponible || regla.disponible(pedido))
     .filter(([, regla]) => !regla.bloqueo?.(pedido))
     .map(([accion]) => accion);

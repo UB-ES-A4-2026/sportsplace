@@ -72,23 +72,25 @@ async function comprobarError(respuesta, status, code, message) {
 }
 
 test('US-80 CA1: marcar_pagado solo para el vendedor de una venta aceptada o recibida sin pagar', () => {
-  assert.deepEqual(pedidoDe({}, LES_CORTS).acciones, ['marcar_pagado']);
+  // En aceptado, además, `cancelar` (US-39 CA1), que desaparece en cuanto está cobrado (US-80 CA7).
+  assert.deepEqual(pedidoDe({}, LES_CORTS).acciones, ['marcar_pagado', 'cancelar']);
   assert.deepEqual(pedidoDe({ estado: 'recibido', recibido_en: RECIBIDO_EN }, LES_CORTS).acciones, ['marcar_pagado']);
   assert.ok(!pedidoDe({}, GRACIA).acciones.includes('marcar_pagado'));
   assert.deepEqual(pedidoDe({ pagado_en: PAGADO_EN }, LES_CORTS).acciones, []);
-  assert.deepEqual(pedidoDe(donacion, LES_CORTS).acciones, []);
+  assert.deepEqual(pedidoDe(donacion, LES_CORTS).acciones, ['cancelar']);
   for (const estado of ['pendiente', 'rechazado', 'cancelado']) {
     assert.ok(!pedidoDe({ estado }, LES_CORTS).acciones.includes('marcar_pagado'), estado);
   }
 });
 
 test('US-42 CA1 y CA6: recibir solo para el comprador de un pedido aceptado sin incidencia abierta', () => {
-  assert.deepEqual(pedidoDe({}, GRACIA).acciones, ['recibir']);
-  assert.deepEqual(pedidoDe(donacion, GRACIA).acciones, ['recibir']);
+  assert.deepEqual(pedidoDe({}, GRACIA).acciones, ['recibir', 'cancelar']);
+  assert.deepEqual(pedidoDe(donacion, GRACIA).acciones, ['recibir', 'cancelar']);
   assert.ok(!pedidoDe({}, LES_CORTS).acciones.includes('recibir'));
+  // Con incidencia abierta no se recibe (US-42 CA12) ni se cancela (US-39 CA8).
   assert.deepEqual(pedidoDe({ incidencia_abierta: true }, GRACIA).acciones, []);
   for (const estado of ['pendiente', 'rechazado', 'cancelado', 'recibido']) {
-    assert.deepEqual(pedidoDe({ estado }, GRACIA).acciones, [], estado);
+    assert.ok(!pedidoDe({ estado }, GRACIA).acciones.includes('recibir'), estado);
   }
 });
 

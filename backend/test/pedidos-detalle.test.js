@@ -56,14 +56,14 @@ test('CA10: el comprador recibe 200 { pedido } con mi_papel comprador', async ()
   assert.equal(pedido.id, PEDIDO);
   assert.equal(pedido.mi_papel, 'comprador');
   assert.equal(pedido.total_centimos, 3400);
-  assert.deepEqual(pedido.acciones, []);
+  assert.deepEqual(pedido.acciones, ['cancelar']); // US-39 CA1
   assert.equal('email' in pedido.vendedor, false); // CA12
 });
 
-test('CA10 y CA13: el vendedor recibe mi_papel vendedor y las acciones aceptar y rechazar', async () => {
+test('CA10 y CA13: el vendedor recibe mi_papel vendedor y las acciones aceptar, rechazar y cancelar', async () => {
   const { pedido } = await (await pedir(PEDIDO, 'token-lescorts')).json();
   assert.equal(pedido.mi_papel, 'vendedor');
-  assert.deepEqual(pedido.acciones, ['aceptar', 'rechazar']);
+  assert.deepEqual(pedido.acciones, ['aceptar', 'rechazar', 'cancelar']);
 });
 
 test('CA14: un tercero recibe 404 NO_ENCONTRADO', async () => {
