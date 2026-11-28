@@ -10,7 +10,8 @@ Esta carpeta es la especificación funcional y técnica del proyecto. Se impleme
 | [E04-busqueda-y-exploracion.md](E04-busqueda-y-exploracion.md) | Sprint 2: «Base común» del catálogo y US-96, US-21, US-22, US-73, US-74 y US-24. Sprint 3: US-25 (favoritos). El resto de historias del archivo son de sprints posteriores. |
 | [E05-comunicacion.md](E05-comunicacion.md) | Sprint 2: «Reglas comunes» de la épica y US-28 (escribir al centro de un anuncio) y US-77 (responder los mensajes de mis anuncios). Sprint 3: US-65 (bandeja de conversaciones). |
 | [E06-pedidos-y-pago.md](E06-pedidos-y-pago.md) | Sprint 2: «Base común» de los pedidos y US-32, US-108, US-109, US-33, US-79, US-35, US-34 y US-80. Sprint 3: US-39 (cancelar un pedido). US-38 es de un sprint posterior. |
-| [E07-E09-entrega-y-avisos.md](E07-E09-entrega-y-avisos.md) | Sprint 2: «Decisiones comunes» y US-40 y US-42. El resto de historias del archivo son de sprints posteriores. |
+| [E07-E09-entrega-y-avisos.md](E07-E09-entrega-y-avisos.md) | Sprint 2: «Decisiones comunes» y US-40 y US-42. Sprint 3: US-116 (campana y página de avisos), US-47 (aviso de mensaje) y US-83 (avisos de pedidos). El resto de historias del archivo son de sprints posteriores. |
+| [E08-valoraciones.md](E08-valoraciones.md) | Sprint 3: US-44 (valorar al otro centro) y US-45 (puntuación y valoraciones de un centro). |
 
 ## Historias del Sprint 2
 
@@ -33,7 +34,7 @@ Las demás épicas se añaden aquí cuando entran en un sprint. La misma informa
 
 ## Historias del Sprint 3
 
-Planning de la PO (26/11). Primer corte (en `dev` con QA hecho el 30/11 a las 16:30, para la revisión del 2/12): US-77 (lo que quedó del Sprint 2), US-65, US-25 y US-39. Segundo corte (14/12, para la entrega del 16/12): US-44, US-45, US-116, US-47 y US-83; su especificación se añade aquí antes de empezarlas.
+Planning de la PO (26/11). Primer corte (en `dev` con QA hecho el 30/11 a las 16:30, para la revisión del 2/12): US-77 (lo que quedó del Sprint 2), US-65, US-25 y US-39. Segundo corte (en `dev` con QA hecho el 14/12, para la entrega del 16/12): US-44, US-45, US-116, US-47 y US-83.
 
 | Historia (GitHub y Trello) | Secciones que incluye | Archivo |
 |---|---|---|
@@ -41,6 +42,11 @@ Planning de la PO (26/11). Primer corte (en `dev` con QA hecho el 30/11 a las 16
 | US-65 · Ver todas mis conversaciones | US-65 | E05 |
 | US-25 · Guardar anuncios en favoritos | US-25 | E04 |
 | US-39 · Cancelar un pedido con motivo | US-39 (lo que dependa de la cita de entrega, US-41, no entra) | E06 |
+| US-44 · Valorar al otro centro | US-44 (lo que dependa de US-11, centro eliminado, no entra) | E08 |
+| US-45 · Ver la puntuación y las valoraciones de un centro | US-45 (lo que dependa de US-11 y US-46 no entra) | E08 |
+| US-116 · Ver mis avisos | US-116 (los avisos de US-118 y el email de US-117 no entran) | E07-E09 |
+| US-47 · Recibir un aviso cuando me escriben | US-47 | E07-E09 |
+| US-83 · Recibir un aviso cuando cambia un pedido | US-83 | E07-E09 |
 
 ## Cómo se organiza el trabajo en GitHub
 

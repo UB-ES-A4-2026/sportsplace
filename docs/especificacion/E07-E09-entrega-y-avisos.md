@@ -510,8 +510,8 @@ Como responsable del centro comprador, quiero cerrar la incidencia indicando si 
 
 ## (3) US-116 · Veo mis avisos en la campana y en la página de avisos
 
-**Épica:** E09 · **Prioridad:** Should · **Puntos:** 3 · **Sprint:** 5 · **Depende de:** US-03
-**Cambios respecto al backlog original:** Historia nueva; sale de dividir US-47. Recoge la base común de todos los avisos (tabla, campana, contador, lista, marcar como leído) para que US-47, US-83 y US-118 solo tengan que generar sus avisos.
+**Épica:** E09 · **Prioridad:** Should · **Puntos:** 3 · **Sprint:** 3 · **Depende de:** US-03
+**Cambios respecto al backlog original:** Historia nueva; sale de dividir US-47. Recoge la base común de todos los avisos (tabla, campana, contador, lista, marcar como leído) para que US-47, US-83 y US-118 solo tengan que generar sus avisos. Sprint 3: entran los avisos de US-47 y US-83; los de US-118 y el email (US-117) no entran. La insignia llega a «99+», como en los CA de Trello.
 
 **Historia**
 Como responsable de un centro, quiero ver en la cabecera cuántos avisos tengo sin leer y abrirlos, para enterarme de lo que pasa sin revisarlo todo.
@@ -533,7 +533,7 @@ Como responsable de un centro, quiero ver en la cabecera cuántos avisos tengo s
 **Criterios de aceptación**
 
 *Comportamiento de la campana*
-- CA1. Insignia: 0 → oculta; 1-9 → el número; ≥ 10 → «9+».
+- CA1. Insignia: 0 → oculta; 1-99 → el número; ≥ 100 → «99+».
 - CA2. Refresco: `GET /api/avisos/contador` al cargar la zona privada, en cada cambio de ruta, cada 30 s mientras la pestaña está visible (`document.visibilityState = 'visible'`) y al volver a hacerla visible. Con la pestaña oculta no se consulta. No hay websockets.
 - CA3. Si el contador falla (red o 5xx), se mantiene el último valor y se reintenta en el siguiente ciclo; no se muestra error.
 - CA4. Abrir el panel pide `GET /api/avisos?limite=10` y no marca nada como leído. Mientras carga: «Cargando…»; si falla: «No se ha podido cargar. » + «Reintentar».
@@ -546,7 +546,7 @@ Como responsable de un centro, quiero ver en la cabecera cuántos avisos tengo s
 - CA9. «Marcar todos como leídos» llama `POST /api/avisos/leer-todos`; el contador pasa a 0 y todos los avisos dejan de estar en negrita. Marca solo los creados hasta ese momento (`creado_en ≤` momento de la petición).
 
 *Contenido*
-- CA10. Cada aviso tiene `tipo` (lista cerrada de US-47, US-83 y US-118), `texto` (1-300 caracteres, ya redactado al crearse, no se recalcula), `enlace` (ruta interna que empieza por `/`), `leido` y `creado_en`. Si el recurso del enlace ya no existe, la página destino muestra su propio «no encontrado».
+- CA10. Cada aviso tiene `tipo` (lista cerrada de US-47, US-83 y US-118; en el Sprint 3, solo los de US-47 y US-83), `texto` (1-300 caracteres, ya redactado al crearse, no se recalcula), `enlace` (ruta interna que empieza por `/`), `leido` y `creado_en`. Si el recurso del enlace ya no existe, la página destino muestra su propio «no encontrado».
 - CA11. Un centro nunca recibe avisos de las acciones que hace él mismo.
 - CA12. Los avisos con más de 90 días se borran cada noche (tarea programada a las 03:00 Madrid).
 
@@ -559,11 +559,11 @@ Como responsable de un centro, quiero ver en la cabecera cuántos avisos tengo s
 
 *Datos*
 - CA18. Tabla `avisos`: `id uuid`, `centro_id fk`, `tipo text check (lista cerrada)`, `texto text`, `enlace text`, `referencia_id uuid null` (conversación, pedido…), `leido_en timestamptz null`, `creado_en timestamptz default now()`. Índice `(centro_id, leido_en, creado_en desc)`.
-- CA19. Servicio interno `crearAviso({ centro_id, tipo, texto, enlace, referencia_id })` que usan las demás historias; se llama dentro de la misma transacción que la acción que lo provoca y, después del commit, notifica al servicio de email [Depende de US-117].
+- CA19. Servicio interno `crearAviso({ centro_id, tipo, texto, enlace, referencia_id })` que usan las demás historias; se llama dentro de la misma transacción que la acción que lo provoca y, después del commit, notifica al servicio de email [Depende de US-117; no entra en el Sprint 3].
 
 **Flujos e2e**
 - E2E-1. Se insertan 3 avisos no leídos para B. B entra en `/catalogo` → insignia «3». Abre el panel → 3 avisos en negrita. Pulsa el primero → navega a su enlace, insignia «2». BD: `leido_en` no nulo en ese aviso.
-- E2E-2. Con 12 no leídos → «9+». «Marcar todos como leídos» → insignia oculta; `/avisos` pestaña «Sin leer» → «No tienes avisos sin leer.»
+- E2E-2. Con 12 no leídos → «12»; con 100 → «99+». «Marcar todos como leídos» → insignia oculta; `/avisos` pestaña «Sin leer» → «No tienes avisos sin leer.»
 - E2E-3 (polling). B en `/catalogo`; se inserta un aviso nuevo; antes de 30 s (reloj simulado) la insignia pasa de 0 a «1» sin recargar. Con la pestaña oculta no hay peticiones.
 - E2E-4 (paginación). 45 avisos → `/avisos` muestra 20, «Siguiente» → 20, «Siguiente» → 5; «Siguiente» deshabilitado.
 - E2E-5 (permisos). B llama `POST /api/avisos/{aviso de A}/leer` → 404; sin token → 401.
@@ -582,7 +582,7 @@ Como responsable de un centro, quiero ver en la cabecera cuántos avisos tengo s
 
 ## (2) US-47 · Recibo un aviso cuando otro centro me escribe
 
-**Épica:** E09 · **Prioridad:** Should · **Puntos:** 2 · **Sprint:** 5 · **Depende de:** US-116, US-28
+**Épica:** E09 · **Prioridad:** Should · **Puntos:** 2 · **Sprint:** 3 · **Depende de:** US-116, US-28
 **Cambios respecto al backlog original:** La campana, el contador y el marcado pasan a US-116 (nueva). Esta historia solo genera el aviso `mensaje_nuevo` y lo agrupa por conversación. Baja de 3 a 2 puntos.
 
 **Historia**
@@ -618,8 +618,8 @@ Como responsable de un centro, quiero recibir un aviso cuando otro centro me esc
 
 ## (3) US-83 · Recibo un aviso cuando me llega un pedido o cambia el estado de uno mío
 
-**Épica:** E09 · **Prioridad:** Should · **Puntos:** 3 · **Sprint:** 5 · **Depende de:** US-116, US-32, US-33, US-79, US-39, US-42
-**Cambios respecto al backlog original:** Se fija la lista cerrada de avisos de estado de pedido. Los avisos de entrega e incidencias pasan a US-118 (nueva).
+**Épica:** E09 · **Prioridad:** Should · **Puntos:** 3 · **Sprint:** 3 · **Depende de:** US-116, US-32, US-33, US-79, US-34, US-39, US-42
+**Cambios respecto al backlog original:** Se fija la lista cerrada de avisos de estado de pedido. Los avisos de entrega e incidencias pasan a US-118 (nueva). Se añade el aviso del rechazo automático por falta de unidades (US-34), como en el CA6 de Trello.
 
 **Historia**
 Como responsable de un centro, quiero un aviso cada vez que me llega un pedido o cambia el estado de un pedido mío, para enterarme de lo que pasa con mis operaciones.
@@ -635,10 +635,11 @@ Como responsable de un centro, quiero un aviso cada vez que me llega un pedido o
   - `pedido_nuevo` · se crea un pedido [US-32] · vendedor · «{comprador} te ha pedido {n} unidades de «{título}».» (con n = 1: «1 unidad»).
   - `pedido_aceptado` · el vendedor acepta [US-33] · comprador · «{vendedor} ha aceptado tu pedido de «{título}».»
   - `pedido_rechazado` · el vendedor rechaza [US-79] · comprador · «{vendedor} ha rechazado tu pedido de «{título}».»
+  - `pedido_rechazado_sin_unidades` · el sistema rechaza los pedidos pendientes que ya no caben al aceptar otro (motivo `anuncio_sin_stock`) [US-34] · comprador de cada pedido rechazado · «Tu pedido de «{título}» se ha rechazado porque ya no quedan unidades suficientes.»
   - `pedido_cancelado` · un centro cancela [US-39] · el otro centro · «{centro} ha cancelado el pedido de «{título}».»
   - `pedido_recibido` · el comprador confirma [US-42] · vendedor · «{comprador} ha confirmado que ha recibido «{título}».»
 - CA2. Enlace de todos: `/pedidos/{pedido_id}`; `referencia_id` = `pedido_id`.
-- CA3. Cada transición genera exactamente un aviso al otro centro y ninguno al que actúa.
+- CA3. Cada transición genera exactamente un aviso al otro centro y ninguno al que actúa. En el rechazo automático (US-34) el vendedor que acepta recibe solo lo suyo (nada) y cada comprador rechazado recibe un aviso.
 - CA4. Los avisos no se agrupan: cada evento es un aviso.
 - CA5. El aviso se crea en la misma transacción que el cambio de estado; si la transición falla (409, etc.), no se crea.
 - CA6. Al abrir `/pedidos/{id}` (la API responde con éxito), se marcan como leídos todos los avisos no leídos del centro con `referencia_id` = ese pedido (incluidos los de US-118).
@@ -650,9 +651,10 @@ Como responsable de un centro, quiero un aviso cada vez que me llega un pedido o
 - E2E-3. Otro pedido P2 de 1 unidad → «… te ha pedido 1 unidad de …». A rechaza → aviso de rechazo a B. Pedido P3: B cancela → A recibe «Club Bàsquet Gràcia ha cancelado el pedido de …».
 - E2E-4. A intenta aceptar P2 ya rechazado → 409 y B no recibe aviso nuevo.
 - E2E-5. A tiene 2 avisos no leídos de P1; abre `/pedidos/P1` desde «Pedidos» → los 2 quedan leídos.
+- E2E-6 (sin unidades). Anuncio nuevo de A «Petos de entrenamiento» con 10 unidades: B pide 8 (P4) y C pide 4 (P5). A acepta P4 → C recibe «Tu pedido de «Petos de entrenamiento» se ha rechazado porque ya no quedan unidades suficientes.»; A no recibe aviso del rechazo.
 
 **Tareas**
-- T83-1 · Backend: llamar a `crearAviso` en las 5 transiciones (servicio de pedidos) con plantillas de texto en un único módulo `avisos/plantillas`.
+- T83-1 · Backend: llamar a `crearAviso` en las 5 transiciones y en el rechazo automático de US-34 (servicio de pedidos) con plantillas de texto en un único módulo `avisos/plantillas`.
 - T83-2 · Backend: marcar leídos al abrir el pedido.
 - T83-3 · QA: automatizar e2e.
 
